@@ -140,20 +140,22 @@ public class ReplaySimulatedGame extends SimulatedGame {
         if (BUILDING_NAMES.contains(unitName)) {
             // Initial structures (Nexus at loop 0) arrive as UnitBorn, already complete
             if (ctrlId != null && ctrlId == watchedPlayerId) {
-                BuildingType bt  = toBuildingType(unitName);
-                Point2d      pos = new Point2d(event.getXCoord(), event.getYCoord());
-                addBuilding(new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), true));
+                BuildingType bt = toBuildingType(unitName);
+                if (bt != BuildingType.UNKNOWN) {
+                    Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
+                    addBuilding(new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), true));
+                }
             }
         } else {
-            // Unit (Probe, Zealot, etc.) — fully trained
+            // Unit (Probe, Zealot, etc.) — fully trained; skip unrecognized SC2-internal types
+            UnitType ut = toUnitType(unitName);
+            if (ut == UnitType.UNKNOWN) return;
             if (ctrlId != null && ctrlId == watchedPlayerId) {
-                UnitType ut  = toUnitType(unitName);
-                Point2d  pos = new Point2d(event.getXCoord(), event.getYCoord());
+                Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
                 addUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut)));
             } else if (ctrlId != null && ctrlId != 0) {
                 // Enemy unit — visible on map
-                UnitType ut  = toUnitType(unitName);
-                Point2d  pos = new Point2d(event.getXCoord(), event.getYCoord());
+                Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
                 spawnEnemyUnit(ut, pos);
             }
         }

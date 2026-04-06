@@ -83,9 +83,14 @@ public class ReplayEngine implements SC2Engine {
 
     @Override
     public GameState observe() {
+        if (game == null) return emptyState();
         GameState state = game.snapshot();
         frameListeners.forEach(l -> l.accept(state));
         return state;
+    }
+
+    private static GameState emptyState() {
+        return new GameState(0, 0, 0, 0, List.of(), List.of(), List.of(), 0L);
     }
 
     /**
