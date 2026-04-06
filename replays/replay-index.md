@@ -94,3 +94,68 @@ The JSON files in each dataset contain the full event stream. Key fields:
 - Game loops ÷ 22.4 = game time in seconds (Faster speed is 22.4 game loops/second)
 - `SQ` (Spending Quotient) measures economic efficiency — higher = fewer wasted resources
 - Labels: `early-game` (<8 min), `mid-game` (8-15 min), `late-game` (>15 min), `very-long` (>20 min), `short` (<6 min)
+
+---
+
+## Dataset 2: AI Arena Bot Replays — April 2026
+
+**Source:** [AI Arena](https://aiarena.net) ladder — live bot vs bot matches (account required)  
+**Downloaded:** 2026-04-06  
+**Local path:** `replays/aiarena_protoss/` (29 `.SC2Replay` files)  
+**Format:** Raw `.SC2Replay` — use `RepParserEngine.parseReplay(path)` to parse  
+**Game version:** Build 75689 (AI Arena's fixed SC2 LotV version)  
+**Parseable:** 22/29 (7 appear to be a newer build not yet in s2protocol .dat files)  
+**Maps:** Magannatha AIE, Torches AIE, Persephone AIE, Ley Lines AIE, Pylon AIE, Ultralove AIE, Incorporeal AIE  
+
+### Bots
+
+| Bot | Race | Style notes |
+|---|---|---|
+| **ArgoBot** (ID=966) | Protoss | Active ladder bot |
+| **Nothing** (ID=971) | Protoss | Consistent 8-9min games — likely fixed opening |
+| **puck** (ID=943) | Protoss | 10-11min games vs Zerg |
+| **Starlight** (ID=1052) | Protoss | Variable — short losses, long wins |
+| **Tyckles** (ID=112) | Protoss | Long games — macro player, goes 44min |
+| **Zozo** (ID=496) | Protoss | Mix of results |
+
+### Parsed Replays (22 usable)
+
+| File | Map | Duration | Matchup | Result | Labels |
+|---|---|---|---|---|---|
+| `ArgoBot_4721229.SC2Replay` | Magannatha AIE | 9m58s | PvT | ArgoBot wins | `pvt` `protoss-wins` `mid-game` |
+| `ArgoBot_4721230.SC2Replay` | Magannatha AIE | 9m57s | PvT | ArgoBot wins | `pvt` `protoss-wins` `mid-game` |
+| `Nothing_4720935.SC2Replay` | Persephone AIE | 18m48s | PvT | RustyNikolaj wins | `pvt` `terran-wins` `late-game` |
+| `Nothing_4720936.SC2Replay` | Torches AIE | 8m21s | PvZ | Nothing wins | `pvz` `protoss-wins` `mid-game` |
+| `Nothing_4720937.SC2Replay` | Magannatha AIE | 8m07s | PvP | Nothing wins | `pvp` `protoss-wins` `mid-game` |
+| `Nothing_4720938.SC2Replay` | Ley Lines AIE | 8m32s | PvZ | Nothing wins | `pvz` `protoss-wins` `mid-game` |
+| `Nothing_4720939.SC2Replay` | Persephone AIE | 8m18s | PvZ | Nothing wins | `pvz` `protoss-wins` `mid-game` |
+| `puck_4720480.SC2Replay` | Persephone AIE | 4m13s | PvZ | puck wins | `pvz` `protoss-wins` `early-game` `short` |
+| `puck_4721233.SC2Replay` | Ultralove AIE | 10m39s | PvZ | Eris wins | `pvz` `zerg-wins` `mid-game` |
+| `puck_4721235.SC2Replay` | Magannatha AIE | 11m25s | PvZ | Eris wins | `pvz` `zerg-wins` `mid-game` |
+| `Starlight_4721163.SC2Replay` | Persephone AIE | 13m12s | PvZ | DoopyBot wins | `pvz` `zerg-wins` `mid-game` |
+| `Starlight_4721164.SC2Replay` | Pylon AIE | 13m55s | PvP | Starlight wins | `pvp` `protoss-wins` `mid-game` |
+| `Starlight_4721165.SC2Replay` | Magannatha AIE | 6m25s | PvT | Siriusly wins | `pvt` `terran-wins` `early-game` |
+| `Starlight_4721166.SC2Replay` | Persephone AIE | 20m37s | PvZ | Starlight wins | `pvz` `protoss-wins` `late-game` `long` |
+| `Tyckles_4721034.SC2Replay` | Ley Lines AIE | 15m36s | PvT | RustyNikolaj wins | `pvt` `terran-wins` `late-game` |
+| `Tyckles_4721035.SC2Replay` | Ultralove AIE | 11m54s | PvZ | DoopyBot wins | `pvz` `zerg-wins` `mid-game` |
+| `Tyckles_4721036.SC2Replay` | Magannatha AIE | 43m37s | PvP | Tyckles wins | `pvp` `protoss-wins` `very-long` `marathon` |
+| `Tyckles_4721038.SC2Replay` | Ley Lines AIE | 25m17s | PvZ | Belzebuth wins | `pvz` `zerg-wins` `late-game` `long` |
+| `Zozo_4720216.SC2Replay` | Incorporeal AIE | 9m14s | PvP | Zozo wins | `pvp` `protoss-wins` `mid-game` |
+
+### Good Games for Specific Scenarios
+
+| Scenario | File | Why |
+|---|---|---|
+| **Consistent Protoss opening** | `Nothing_4720936/38/39.SC2Replay` | Nothing wins 4 straight in 8-9min — identical build order, great baseline |
+| **Short early pressure** | `puck_4720480.SC2Replay` | 4min PvZ — aggressive early game, fast puck win |
+| **Long macro PvP** | `Tyckles_4721036.SC2Replay` | 44min PvP — full tech, late-game colossus/carrier compositions |
+| **Protoss vs Terran loss** | `Nothing_4720935.SC2Replay` | 19min loss — good example of how Terran beats macro Protoss |
+| **Standard mid-game** | `ArgoBot_4721229.SC2Replay` | Clean 10min PvT win, consistent bot behaviour |
+
+### Notes for ReplaySimulatedGame
+
+- **Nothing bot** has the most consistent build order — 4 games on similar maps, all ~8min wins. Load these as the "standard Protoss opening" baseline.
+- All maps are AI Arena season maps ("AIE" suffix) — different from ladder maps. Shouldn't matter for testing.
+- Build 75689 is within Scelight's supported range (max: 81009). ✅
+- 7 unparseable replays (ArgoBot_4721222, ArgoBot_4721231, puck_4720479, puck_4721234, Starlight_4721162, Tyckles_4721037, Zozo_4720215/17/32/36) — likely newer SC2 build. Add new .dat files to scelight-s2protocol when available.
+
