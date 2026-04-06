@@ -6,9 +6,9 @@ Status: JVM mode only (Phase 0)
 
 | Dependency | Version | Native Status | Notes |
 |---|---|---|---|
-| quarkus-rest | 3.32.2 | ✅ Supported | |
-| quarkus-rest-jackson | 3.32.2 | ✅ Supported | |
-| quarkus-scheduler | 3.32.2 | ✅ Supported | |
+| quarkus-rest | 3.34.2 | ✅ Supported | |
+| quarkus-rest-jackson | 3.34.2 | ✅ Supported | |
+| quarkus-scheduler | 3.34.2 | ✅ Supported | |
 | casehub-core | 1.0.0-SNAPSHOT | 🔲 Not verified | Verify before native build |
 | ocraft-s2client-bot | 0.4.21 | 🔲 Not added yet | Added in Phase 1; uses RxJava + Protobuf |
 
