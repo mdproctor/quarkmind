@@ -36,6 +36,12 @@ mvn quarkus:dev
 curl -X POST http://localhost:8080/sc2/start
 ```
 
+**Run (replay mode, no SC2 needed):**
+```bash
+mvn quarkus:dev -Dquarkus.profile=replay
+# Default replay: Nothing_4720936.SC2Replay — override with -Dstarcraft.replay.file=...
+```
+
 **Run (real SC2):**
 ```bash
 mvn quarkus:dev -Dquarkus.profile=sc2
@@ -46,6 +52,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 | Profile | SC2 needed | Purpose |
 |---|---|---|
 | `%mock` (default) | No | Development and unit testing against SimulatedGame |
+| `%replay` | No | Agent loop against a real `.SC2Replay` — observe-only |
 | `%sc2` | Yes | Real SC2 integration |
 | `%test` | No | @QuarkusTest — scheduler disabled |
 | `%prod` | — | Production — QA endpoints stripped |
@@ -54,7 +61,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Unit tests** (no Quarkus, fast):
 - Instantiate classes directly via `new` — no CDI
-- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `BasicEconomicsTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`
+- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
 - Use `@Inject` to get beans; scheduler is disabled — call `orchestrator.gameTick()` directly

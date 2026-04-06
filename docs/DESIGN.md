@@ -99,6 +99,7 @@ UnitInit, UnitDone) rather than the hand-crafted economic trickle.
 |---|---|
 | `SimulatedGame` | Hand-crafted stateful SC2 simulation; CDI bean in `%mock` profile |
 | `ReplaySimulatedGame` | Replay-driven variant; plain Java, used directly in tests |
+| `ReplayEngine` | `SC2Engine` for `%replay` profile — observe-only, records agent intents |
 | `ScenarioLibrary` | Named test scenarios (set-resources, spawn-enemy-attack, etc.) |
 
 ---
@@ -110,6 +111,7 @@ UnitInit, UnitDone) rather than the hand-crafted economic trickle.
 | `%mock` (default) | No | `SimulatedGame`, `MockSC2Client`, `MockGameObserver`, `MockCommandDispatcher` |
 | `%sc2` | Yes | `RealSC2Client`, `RealGameObserver`, `RealCommandDispatcher`, `SC2BotAgent` |
 | `%test` | No | Same as mock; scheduler disabled |
+| `%replay` | No | `ReplayEngine` — full agent loop against a `.SC2Replay` file; `dispatch()` is observe-only |
 | `%prod` | — | QA endpoints stripped (`@UnlessBuildProfile("prod")`) |
 
 ---

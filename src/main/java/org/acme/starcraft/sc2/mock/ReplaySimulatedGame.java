@@ -194,6 +194,14 @@ public class ReplaySimulatedGame extends SimulatedGame {
         }
     }
 
+    // --- Replay metadata ---
+
+    /** Total number of tracker events in this replay. */
+    public int eventCount() { return trackerEvents.length; }
+
+    /** True when all tracker events have been processed. */
+    public boolean isComplete() { return eventCursor >= trackerEvents.length; }
+
     // --- Helpers ---
 
     private static String makeTag(int index, int recycle) {
