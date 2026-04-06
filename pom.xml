@@ -58,6 +58,20 @@
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
+        <!-- SC2 Replay parsing — extracted from Scelight (Apache 2.0) -->
+        <!-- Source: /Users/mdproctor/claude/scelight, branch: feature/standalone-modules -->
+        <!-- Rebuild: cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh -->
+        <dependency>
+            <groupId>hu.scelight</groupId>
+            <artifactId>scelight-mpq</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>hu.scelight</groupId>
+            <artifactId>scelight-s2protocol</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
         <!-- Real SC2 API client — only needed at runtime in %sc2 profile -->
         <dependency>
             <groupId>com.github.ocraft</groupId>

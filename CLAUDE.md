@@ -106,6 +106,16 @@ cd /Users/mdproctor/claude/alpha && mvn install -DskipTests
 
 CaseHub will move to GitHub Packages then Maven Central as it matures.
 
+## Replay Library Dependency
+
+The SC2 replay parser (`scelight-mpq` + `scelight-s2protocol`) is built from the Scelight fork:
+
+```bash
+cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh
+```
+
+Run this when setting up a new environment or after any change to the `feature/standalone-modules` branch. Takes ~10 seconds.
+
 ## Key Conventions
 
 - **Domain model** (`domain/`) must remain plain Java — no CDI, no Quarkus imports, no framework dependencies. Records and enums only.
