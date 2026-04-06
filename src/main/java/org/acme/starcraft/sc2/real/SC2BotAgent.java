@@ -4,6 +4,8 @@ import com.github.ocraft.s2client.bot.S2Agent;
 import org.acme.starcraft.domain.GameState;
 import org.acme.starcraft.sc2.IntentQueue;
 import org.jboss.logging.Logger;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -19,6 +21,13 @@ public class SC2BotAgent extends S2Agent {
 
     private final IntentQueue intentQueue;
     private final AtomicReference<GameState> latestGameState = new AtomicReference<>(null);
+
+    /**
+     * Pending debug commands queued by SC2DebugScenarioRunner.
+     * Debug API calls must be issued from within onStep(); commands posted
+     * here are drained and executed (followed by sendDebug()) each frame.
+     */
+    private final Queue<Runnable> pendingDebugCommands = new ConcurrentLinkedQueue<>();
 
     public SC2BotAgent(IntentQueue intentQueue) {
         this.intentQueue = intentQueue;
@@ -44,6 +53,16 @@ public class SC2BotAgent extends S2Agent {
         //    Phase 3+: translate Intent types to ocraft actions here.
         intentQueue.drainAll().forEach(intent ->
             log.debugf("[SC2] Intent (Phase 1 no-op): %s", intent));
+
+        // 3. Drain pending debug commands (queued by SC2DebugScenarioRunner).
+        //    Debug API calls must be issued from onStep(); sendDebug() flushes them.
+        if (!pendingDebugCommands.isEmpty()) {
+            Runnable cmd;
+            while ((cmd = pendingDebugCommands.poll()) != null) {
+                cmd.run();
+            }
+            debug().sendDebug();
+        }
     }
 
     @Override
@@ -54,5 +73,14 @@ public class SC2BotAgent extends S2Agent {
     /** Called by RealGameObserver — returns null until first onStep() fires. */
     public GameState getLatestGameState() {
         return latestGameState.get();
+    }
+
+    /**
+     * Enqueue a debug command to be executed on the next onStep() frame.
+     * SC2's debug API must be called from within the onStep() callback;
+     * this queue bridges calls made outside that context.
+     */
+    public void enqueueDebugCommand(Runnable command) {
+        pendingDebugCommands.add(command);
     }
 }
