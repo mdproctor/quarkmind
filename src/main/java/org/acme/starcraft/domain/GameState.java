@@ -11,4 +11,10 @@ public record GameState(
     List<Building> myBuildings,
     List<Unit> enemyUnits,
     long gameFrame
-) {}
+) {
+    public GameState {
+        myUnits     = List.copyOf(myUnits);
+        myBuildings = List.copyOf(myBuildings);
+        enemyUnits  = List.copyOf(enemyUnits);
+    }
+}
