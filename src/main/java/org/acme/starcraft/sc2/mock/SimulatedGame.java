@@ -21,7 +21,7 @@ public class SimulatedGame {
     private final Queue<Runnable> buildQueue = new LinkedList<>();
     private int nextTag = 200;
 
-    public void reset() {
+    public synchronized void reset() {
         minerals = 50;
         vespene = 0;
         supply = 15;
@@ -65,12 +65,12 @@ public class SimulatedGame {
         // AttackIntent and MoveIntent: positions updated in future phases
     }
 
-    public GameState snapshot() {
+    public synchronized GameState snapshot() {
         return new GameState(minerals, vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits), gameFrame.get());
     }
 
-    public void spawnEnemyUnit(UnitType type, Point2d position) {
+    public synchronized void spawnEnemyUnit(UnitType type, Point2d position) {
         enemyUnits.add(new Unit("enemy-" + nextTag++, type, position, maxHealth(type), maxHealth(type)));
     }
 
