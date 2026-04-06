@@ -120,3 +120,30 @@ https://liquipedia.net/commons/images/<first>/<second>/SC2<UnitName>.jpg
 Or look up the Liquipedia page for the unit and inspect the infobox image URL. The pattern is consistent across all SC2 units and buildings.
 
 The hash path (`<first>/<second>`) varies per file but follows MD5 sharding — you need to look it up from the page rather than guessing it.
+
+---
+
+## TODO — Expand Index When These Phases Begin
+
+These gaps are intentionally deferred. When the relevant phase starts, do a focused web search and add what you find here.
+
+### Atmospheric / Hero Images (needed now for any new blog post)
+The wallpaper collection sites are indexed above but we have no direct URLs ready to use.
+When writing any new blog post that needs a wide cinematic header, pull one from the wallpaper sites and add the direct URL + local filename here.
+- **Trigger:** any new blog post that needs a post header image (not a unit portrait)
+- **Sources to check first:** Alpha Coders, Wallpaper Flare (4K options), WallpaperAccess
+
+### AI Arena / SC2 Bot Competition Imagery (Phase 3+)
+When we write about competing on the ladder or the competitive bot ecosystem, screenshots from the AI Arena leaderboard, match results, or race breakdowns will be useful.
+- **Trigger:** Phase 3 blog posts, or any post mentioning AI Arena / bot laddering
+- **Source:** https://aiarena.net — screenshots of leaderboard, race distribution, match replays
+
+### SC2 Map Screenshots with Terrain Overlays (Phase 3+)
+Relevant when we implement map analysis (SC2MapAnalysis Python sidecar, influence maps, choke points, expansion locations). A top-down map view with coloured region overlays would be ideal.
+- **Trigger:** Phase 3 blog posts covering `GameMap`, terrain analysis, or the Python sidecar
+- **Sources:** SC2MapAnalysis GitHub repo has example images; generate your own from the sidecar once it's running
+
+### Terran and Zerg Icons (opportunistic)
+Useful if we write a post explaining why we chose Protoss, or covering the broader SC2 ecosystem.
+- **Trigger:** any post contrasting the three races
+- **Likely URLs:** `https://liquipedia.net/commons/images/3/33/TerranIcon.png` and `https://liquipedia.net/commons/images/5/5e/ZergIcon.png` (unverified — check before using)
