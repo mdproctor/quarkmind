@@ -4,7 +4,7 @@ import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import org.acme.starcraft.sc2.GameObserver;
+import org.acme.starcraft.sc2.SC2Engine;
 import org.acme.starcraft.sc2.IntentQueue;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
 public class IntentResource {
 
     @Inject IntentQueue intentQueue;
-    @Inject GameObserver gameObserver;
+    @Inject SC2Engine engine;
 
     @GET
     @Path("/intents/pending")
@@ -32,7 +32,7 @@ public class IntentResource {
     @GET
     @Path("/frame")
     public Map<String, Object> frame() {
-        var state = gameObserver.observe();
+        var state = engine.observe();
         return Map.of(
             "gameFrame", state.gameFrame(),
             "connected", true,

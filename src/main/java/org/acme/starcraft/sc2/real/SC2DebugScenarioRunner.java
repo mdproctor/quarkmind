@@ -47,11 +47,11 @@ public class SC2DebugScenarioRunner implements ScenarioRunner {
     );
 
     @Inject
-    RealGameObserver gameObserver;
+    RealSC2Engine engine;
 
     @Override
     public void run(String scenarioName) {
-        SC2BotAgent agent = gameObserver.getBotAgent();
+        SC2BotAgent agent = engine.getBotAgent();
         if (agent == null) {
             throw new IllegalStateException(
                 "SC2 not connected — cannot run scenario: " + scenarioName);

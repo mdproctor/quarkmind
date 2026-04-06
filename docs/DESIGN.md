@@ -27,11 +27,11 @@ SC2Client  →  GameObserver  →  GameStateTranslator  →  AgentOrchestrator
 ```
 
 The game loop fires once per Quarkus Scheduler tick. Each tick:
-1. `GameObserver` reads raw SC2 state
-2. `GameStateTranslator` converts it to `GameState` (domain records)
-3. `AgentOrchestrator` writes state into the CaseHub CaseFile and cycles the engine
-4. Plugins fire, produce `Intent` objects (build/train/attack/move)
-5. `CommandDispatcher` dispatches queued intents to SC2
+1. `SC2Engine.tick()` advances the internal clock (mock only; no-op for real SC2)
+2. `SC2Engine.observe()` returns the current `GameState`
+3. `GameStateTranslator` converts it to a CaseHub CaseFile map
+4. `AgentOrchestrator` cycles the CaseEngine; plugins fire and produce `Intent` objects
+5. `SC2Engine.dispatch()` flushes the `IntentQueue` to the game
 
 ---
 
@@ -56,7 +56,7 @@ native-compatible.
 | Package | Responsibility |
 |---|---|
 | `domain/` | Plain Java records — no CDI, no framework imports |
-| `sc2/` | CDI interfaces: `SC2Client`, `GameObserver`, `CommandDispatcher`, `ScenarioRunner` |
+| `sc2/` | CDI interfaces: `SC2Engine` (unified engine seam), `ScenarioRunner`, `IntentQueue` |
 | `sc2/intent/` | Intent types: `BuildIntent`, `TrainIntent`, `AttackIntent`, `MoveIntent` |
 | `sc2/mock/` | Mock implementation: `SimulatedGame`, `MockGameObserver`, `MockCommandDispatcher` |
 | `sc2/mock/scenario/` | `ScenarioLibrary` — living specification of SC2 behaviour |
