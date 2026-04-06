@@ -61,7 +61,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Unit tests** (no Quarkus, fast):
 - Instantiate classes directly via `new` — no CDI
-- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`
+- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `BasicStrategyTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
 - Use `@Inject` to get beans; scheduler is disabled — call `orchestrator.gameTick()` directly
