@@ -73,7 +73,12 @@ native-compatible.
 Each plugin seam (`StrategyTask`, `EconomicsTask`, `TacticsTask`, `ScoutingTask`)
 is a CDI interface extending CaseHub's `TaskDefinition`. Swap an implementation
 by providing a new `@ApplicationScoped @CaseType("starcraft-game")` bean — no
-wiring changes elsewhere. Current implementations are pass-through stubs.
+wiring changes elsewhere.
+
+`EconomicsTask` has a first real implementation (`BasicEconomicsTask`): probe
+production (target 22 workers per base) and pylon supply management (build when
+headroom ≤ 4 supply). `StrategyTask`, `TacticsTask`, and `ScoutingTask` remain
+pass-through stubs.
 
 Four plugin levels (outermost to innermost):
 1. **Frame** — per-tick wrapper

@@ -23,9 +23,10 @@ public class GameStateTranslator {
         List<Unit> army = state.myUnits().stream()
             .filter(u -> u.type() != UnitType.PROBE).toList();
 
-        data.put(StarCraftCaseFile.WORKERS,     workers);
-        data.put(StarCraftCaseFile.ARMY,        army);
-        data.put(StarCraftCaseFile.ENEMY_UNITS, state.enemyUnits());
+        data.put(StarCraftCaseFile.WORKERS,      workers);
+        data.put(StarCraftCaseFile.ARMY,         army);
+        data.put(StarCraftCaseFile.MY_BUILDINGS, state.myBuildings());
+        data.put(StarCraftCaseFile.ENEMY_UNITS,  state.enemyUnits());
         return data;
     }
 }

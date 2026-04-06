@@ -8,6 +8,7 @@ public final class StarCraftCaseFile {
     public static final String SUPPLY_CAP    = "game.resources.supply.cap";
     public static final String WORKERS       = "game.units.workers";
     public static final String ARMY          = "game.units.army";
+    public static final String MY_BUILDINGS  = "game.units.buildings";
     public static final String ENEMY_UNITS   = "game.intel.enemy.units";
     public static final String GAME_FRAME    = "game.frame";
     public static final String READY         = "game.ready";
