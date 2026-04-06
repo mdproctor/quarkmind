@@ -1,5 +1,6 @@
 package org.acme.starcraft.qa;
 
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -8,6 +9,7 @@ import org.acme.starcraft.sc2.mock.SimulatedGame;
 import java.util.List;
 import java.util.Map;
 
+@UnlessBuildProfile("prod")
 @Path("/sc2")
 @Produces(MediaType.APPLICATION_JSON)
 public class IntentResource {
