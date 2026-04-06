@@ -16,6 +16,7 @@ Use this before searching the web. Update it when new images are found or downlo
 |---|---|---|
 | `protoss-icon.png` | Liquipedia | 493×493 PNG, transparent background. Gold Protoss crest/emblem. Clean, works on light or dark. |
 | `sc2-zealot.jpg` | Liquipedia | 900×700 in-game render. Zealot mid-stance on dark floor tiles. Matches units in our `UnitType.ZEALOT`. |
+| `sc2-stalker.jpg` | Liquipedia | 900×700 in-game render. Stalker — blue glowing orbs, dark armour, distinctive silhouette. Used in Phase 1 header (spawned in `spawn-enemy-attack` debug scenario). Maps to `UnitType.STALKER`. |
 | `architecture-plugins.png` | Local screenshot | 1400×900 @2x. Our four-level plugin architecture diagram from the brainstorming session. |
 
 ---
