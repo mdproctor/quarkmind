@@ -28,4 +28,29 @@ class IntentQueueTest {
         var queue = new IntentQueue();
         assertThat(queue.drainAll()).isEmpty();
     }
+
+    @Test
+    void drainedIntentsAppearInRecentlyDispatched() {
+        var queue = new IntentQueue();
+        queue.add(new AttackIntent("tag-1", new Point2d(50, 50)));
+        queue.add(new MoveIntent("tag-2", new Point2d(30, 30)));
+        queue.drainAll();
+
+        var dispatched = queue.recentlyDispatched();
+        assertThat(dispatched).hasSize(2);
+        assertThat(dispatched.get(0)).isInstanceOf(AttackIntent.class);
+        assertThat(dispatched.get(1)).isInstanceOf(MoveIntent.class);
+    }
+
+    @Test
+    void recentlyDispatchedIsCapppedAt100() {
+        var queue = new IntentQueue();
+        for (int i = 0; i < 150; i++) {
+            queue.add(new MoveIntent("tag-" + i, new Point2d(i, i)));
+        }
+        queue.drainAll();
+
+        assertThat(queue.recentlyDispatched()).hasSize(100);
+        assertThat(queue.pending()).isEmpty();
+    }
 }
