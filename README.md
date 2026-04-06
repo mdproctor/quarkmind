@@ -1,60 +1,133 @@
-# starcraft-agent
+# StarCraft II Quarkus Agent
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A Quarkus application that plays StarCraft II (Protoss) as a **plugin platform**.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+The agent provides scaffolding, SC2 connection, and a [CaseHub](https://github.com/casehub) blackboard control loop. Intelligence is provided by swappable plugins behind CDI seams — swap a plugin by dropping in a new `@ApplicationScoped` bean, no wiring changes needed.
 
-## Running the application in dev mode
+Primary purpose is R&D: a living testbed for [Drools](https://www.drools.org/), Quarkus Flow, and CaseHub (a Blackboard/CMMN framework).
 
-You can run your application in dev mode that enables live coding using:
+---
 
-```shell script
-./mvnw quarkus:dev
+## Quick Start
+
+### Prerequisites
+
+- Java 21+, Maven 3.9+
+- CaseHub installed to local Maven repo:
+  ```bash
+  cd /path/to/casehub && mvn install -DskipTests
+  ```
+- Scelight replay libs installed:
+  ```bash
+  cd /path/to/scelight && ./scripts/publish-replay-libs.sh
+  ```
+
+### Run (no SC2 needed — mock mode)
+
+```bash
+mvn quarkus:dev
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+Then start the game loop in a second terminal:
 
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
+```bash
+curl -X POST http://localhost:8080/sc2/start
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Run against a real replay (no SC2 needed)
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+```bash
+mvn quarkus:dev -Dquarkus.profile=replay
+# Defaults to replays/aiarena_protoss/Nothing_4720936.SC2Replay
+# Override: add -Dstarcraft.replay.file=replays/aiarena_protoss/ArgoBot_4721229.SC2Replay
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+The agent auto-starts and ticks every 500ms through the replay. Query it while it runs — see [Observe the Agent](#observe-the-agent) below.
 
-## Creating a native executable
+### Run against real StarCraft II
 
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
+```bash
+mvn quarkus:dev -Dquarkus.profile=sc2
 ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+---
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
+## Observe the Agent
+
+While running, query the agent state via the QA REST API (available in all non-prod profiles):
+
+```bash
+# Current game state — minerals, supply, units, buildings
+curl http://localhost:8080/sc2/casefile
+
+# What the agent decided this tick
+curl http://localhost:8080/sc2/intents/dispatched
+
+# Pending intents in the queue
+curl http://localhost:8080/sc2/intents/pending
+
+# Frame counter and connection status
+curl http://localhost:8080/sc2/frame
+
+# Trigger a named test scenario
+curl -X POST http://localhost:8080/sc2/debug/scenario/spawn-enemy-attack
+curl -X POST http://localhost:8080/sc2/debug/scenario/set-resources-500
+curl -X POST http://localhost:8080/sc2/debug/scenario/supply-almost-capped
 ```
 
-You can then execute your native executable with: `./target/starcraft-agent-1.0.0-SNAPSHOT-runner`
+---
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+## How Plugins Work
 
-## Related Guides
+Each concern is a CDI interface extending CaseHub's `TaskDefinition`:
 
-- Scheduler ([guide](https://quarkus.io/guides/scheduler)): Schedule jobs and tasks
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
+| Seam | Interface | Current implementation |
+|---|---|---|
+| Economics | `EconomicsTask` | `BasicEconomicsTask` — probe production + pylon supply |
+| Strategy | `StrategyTask` | `BasicStrategyTask` — gateway opener, Stalker training, strategy assessment |
+| Tactics | `TacticsTask` | `PassThroughTacticsTask` — stub |
+| Scouting | `ScoutingTask` | `PassThroughScoutingTask` — stub |
+
+To replace a plugin, implement the interface and annotate it — the platform picks it up automatically:
+
+```java
+@ApplicationScoped
+@CaseType("starcraft-game")
+public class MyStrategyTask implements StrategyTask {
+    @Override public String getId() { return "strategy.mine"; }
+    // read from CaseFile, write intents to IntentQueue
+}
+```
+
+See **[docs/plugin-guide.md](docs/plugin-guide.md)** for the full plugin developer guide.
+
+---
+
+## Build and Test
+
+```bash
+mvn compile     # build
+mvn test        # run all tests
+```
+
+---
+
+## Running Modes
+
+| Mode | Command | SC2 needed | Notes |
+|---|---|---|---|
+| Mock | `mvn quarkus:dev` | No | Hand-crafted simulation; POST /sc2/start to begin |
+| Replay | `mvn quarkus:dev -Dquarkus.profile=replay` | No | Real replay data; intents recorded, not applied |
+| Real SC2 | `mvn quarkus:dev -Dquarkus.profile=sc2` | Yes | Full closed loop via ocraft-s2client |
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|---|---|
+| [docs/DESIGN.md](docs/DESIGN.md) | Architecture, domain model, component structure |
+| [docs/plugin-guide.md](docs/plugin-guide.md) | Writing and deploying plugins |
+| [docs/running.md](docs/running.md) | All run modes, REST API reference, scenarios |
+| [docs/roadmap-sc2-engine.md](docs/roadmap-sc2-engine.md) | Engine roadmap (replay, network bridge, emulation) |
+| [replays/replay-index.md](replays/replay-index.md) | Available replay datasets |
