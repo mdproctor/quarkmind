@@ -1,5 +1,6 @@
 package org.acme.starcraft.sc2.mock;
 
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.starcraft.sc2.CommandDispatcher;
@@ -8,6 +9,7 @@ import org.acme.starcraft.sc2.intent.Intent;
 import org.jboss.logging.Logger;
 import java.util.List;
 
+@UnlessBuildProfile("sc2")
 @ApplicationScoped
 public class MockCommandDispatcher implements CommandDispatcher {
     private static final Logger log = Logger.getLogger(MockCommandDispatcher.class);

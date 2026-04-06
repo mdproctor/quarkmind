@@ -1,5 +1,6 @@
 package org.acme.starcraft.sc2.mock;
 
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.starcraft.domain.GameState;
@@ -8,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+@UnlessBuildProfile("sc2")
 @ApplicationScoped
 public class MockGameObserver implements GameObserver {
     private final SimulatedGame game;

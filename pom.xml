@@ -57,6 +57,19 @@
             <artifactId>casehub-core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
+
+        <!-- Real SC2 API client — only needed at runtime in %sc2 profile -->
+        <dependency>
+            <groupId>com.github.ocraft</groupId>
+            <artifactId>ocraft-s2client-bot</artifactId>
+            <version>0.4.21</version>
+        </dependency>
+
+        <!-- SC2 connection resilience: @CircuitBreaker, @Retry, @Fallback -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>

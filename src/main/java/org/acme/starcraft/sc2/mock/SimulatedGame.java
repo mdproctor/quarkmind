@@ -1,5 +1,6 @@
 package org.acme.starcraft.sc2.mock;
 
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.starcraft.domain.*;
 import org.acme.starcraft.sc2.intent.*;
@@ -7,6 +8,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
+@UnlessBuildProfile("sc2")
 @ApplicationScoped
 public class SimulatedGame {
 

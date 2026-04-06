@@ -1,5 +1,6 @@
 package org.acme.starcraft.sc2.mock;
 
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.starcraft.sc2.ScenarioRunner;
@@ -7,6 +8,7 @@ import org.acme.starcraft.sc2.mock.scenario.ScenarioLibrary;
 import org.jboss.logging.Logger;
 import java.util.Set;
 
+@UnlessBuildProfile("sc2")
 @ApplicationScoped
 public class MockScenarioRunner implements ScenarioRunner {
     private static final Logger log = Logger.getLogger(MockScenarioRunner.class);
