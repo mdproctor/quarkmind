@@ -3,6 +3,7 @@ package org.acme.starcraft.agent;
 import io.casehub.coordination.CaseEngine;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import org.acme.starcraft.sc2.CommandDispatcher;
 import org.acme.starcraft.sc2.GameObserver;
@@ -21,13 +22,15 @@ public class AgentOrchestrator {
     @Inject GameStateTranslator translator;
     @Inject CaseEngine caseEngine;
     @Inject CommandDispatcher commandDispatcher;
-    @Inject SimulatedGame simulatedGame;
+    @Inject Instance<SimulatedGame> simulatedGame; // Optional — absent in %sc2 profile
 
     public void startGame() {
-        simulatedGame.reset();
+        if (simulatedGame.isResolvable()) {
+            simulatedGame.get().reset();
+        }
         sc2Client.connect();
         sc2Client.joinGame();
-        log.info("Game started — mock SC2 ready");
+        log.info("Game started");
     }
 
     public void stopGame() {
@@ -39,15 +42,17 @@ public class AgentOrchestrator {
     public void gameTick() {
         if (!sc2Client.isConnected()) return;
 
-        simulatedGame.tick();
+        // Advance mock game clock — skipped in %sc2 profile (ocraft drives timing)
+        if (simulatedGame.isResolvable()) {
+            simulatedGame.get().tick();
+        }
+
         var gameState = gameObserver.observe();
         Map<String, Object> caseData = translator.toMap(gameState);
 
         try {
             caseEngine.createAndSolve("starcraft-game", caseData, Duration.ofSeconds(5));
         } catch (Exception e) {
-            // Catches CaseCreationException and timeout exceptions.
-            // Narrow this catch once the exact checked exceptions from CaseEngine are confirmed.
             log.errorf("CaseEngine decision cycle failed at frame %d: %s", gameState.gameFrame(), e.getMessage());
         }
 
