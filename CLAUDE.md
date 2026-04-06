@@ -32,6 +32,8 @@ mvn test -Dtest=SimulatedGameTest -q
 **Run (mock mode, no SC2 needed):**
 ```bash
 mvn quarkus:dev
+# Then trigger the mock game loop (once, in a second terminal):
+curl -X POST http://localhost:8080/sc2/start
 ```
 
 **Run (real SC2):**
@@ -116,6 +118,10 @@ cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh
 
 Run this when setting up a new environment or after any change to the `feature/standalone-modules` branch. Takes ~10 seconds.
 
+## Writing Style Guide
+
+**The writing style guide at `~/claude-workspace/writing-styles/blog-technical.md` is mandatory for all blog and diary entries.** Load it in full before drafting. Complete the pre-draft voice classification (I / we / Claude-named) before generating any prose. Do not show a draft without verifying it against the style guide.
+
 ## Key Conventions
 
 - **Domain model** (`domain/`) must remain plain Java — no CDI, no Quarkus imports, no framework dependencies. Records and enums only.
@@ -133,3 +139,8 @@ Run this when setting up a new environment or after any change to the `feature/s
 **Check it before searching the web for any SC2 image.** It contains direct Liquipedia URLs for all Protoss units and buildings in our domain model, race icons, wallpaper collection links, and already-downloaded assets in `docs/blog/assets/`.
 
 **When a new image is found** (during blog writing, research, or web fetches) — add it to the index with URL, style notes, and relevance. Keep it growing.
+
+### Replay Index
+`replays/replay-index.md` is a living index of SC2 replay datasets for testing and `ReplaySimulatedGame`. Two datasets available: IEM10 Taipei 2016 (30 games, pre-processed JSON) and AI Arena bot replays (29 `.SC2Replay` files, 22 parseable).
+
+**Check it before downloading new replays.** When a new dataset is added, update the index with metadata, labels, and scenario recommendations.
