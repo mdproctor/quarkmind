@@ -36,7 +36,7 @@ public class AgentOrchestrator {
     }
 
     @Scheduled(every = "${starcraft.tick.interval:500ms}", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
-    void gameTick() {
+    public void gameTick() {
         if (!sc2Client.isConnected()) return;
 
         simulatedGame.tick();
