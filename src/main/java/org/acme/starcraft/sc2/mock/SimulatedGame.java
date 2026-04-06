@@ -1,0 +1,113 @@
+package org.acme.starcraft.sc2.mock;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import org.acme.starcraft.domain.*;
+import org.acme.starcraft.sc2.intent.*;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
+
+@ApplicationScoped
+public class SimulatedGame {
+
+    private volatile int minerals;
+    private volatile int vespene;
+    private volatile int supply;
+    private volatile int supplyUsed;
+    private final AtomicLong gameFrame = new AtomicLong(0);
+    private final List<Unit> myUnits = new CopyOnWriteArrayList<>();
+    private final List<Building> myBuildings = new CopyOnWriteArrayList<>();
+    private final List<Unit> enemyUnits = new CopyOnWriteArrayList<>();
+    private final Queue<Runnable> buildQueue = new LinkedList<>();
+    private int nextTag = 200;
+
+    public void reset() {
+        minerals = 50;
+        vespene = 0;
+        supply = 15;
+        supplyUsed = 12;
+        gameFrame.set(0);
+        myUnits.clear();
+        myBuildings.clear();
+        enemyUnits.clear();
+        buildQueue.clear();
+        nextTag = 200;
+
+        // 12 Probes
+        for (int i = 0; i < 12; i++) {
+            myUnits.add(new Unit("probe-" + i, UnitType.PROBE, new Point2d(9 + i * 0.5f, 9), 45, 45));
+        }
+        // 1 Nexus
+        myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8), 1500, 1500, true));
+    }
+
+    public synchronized void tick() {
+        gameFrame.incrementAndGet();
+        minerals = Math.min(minerals + 5, 9999); // rough mineral trickle
+        Runnable completion = buildQueue.poll();
+        if (completion != null) completion.run();
+    }
+
+    public synchronized void applyIntent(Intent intent) {
+        if (intent instanceof TrainIntent t) {
+            int cost = supplyCost(t.unitType());
+            buildQueue.add(() -> {
+                supplyUsed += cost;
+                myUnits.add(new Unit("unit-" + nextTag++, t.unitType(), new Point2d(9, 9), maxHealth(t.unitType()), maxHealth(t.unitType())));
+            });
+        } else if (intent instanceof BuildIntent b) {
+            buildQueue.add(() -> {
+                int supplyBonus = supplyBonus(b.buildingType());
+                supply += supplyBonus;
+                myBuildings.add(new Building("bldg-" + nextTag++, b.buildingType(), b.location(), maxBuildingHealth(b.buildingType()), maxBuildingHealth(b.buildingType()), true));
+            });
+        }
+        // AttackIntent and MoveIntent: positions updated in future phases
+    }
+
+    public GameState snapshot() {
+        return new GameState(minerals, vespene, supply, supplyUsed,
+            List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits), gameFrame.get());
+    }
+
+    public void spawnEnemyUnit(UnitType type, Point2d position) {
+        enemyUnits.add(new Unit("enemy-" + nextTag++, type, position, maxHealth(type), maxHealth(type)));
+    }
+
+    public void setMinerals(int amount) { this.minerals = amount; }
+    public void setVespene(int amount) { this.vespene = amount; }
+    public void setSupply(int cap) { this.supply = cap; }
+    public void setSupplyUsed(int used) { this.supplyUsed = used; }
+
+    private int supplyCost(UnitType type) {
+        return switch (type) {
+            case PROBE -> 1;
+            case ZEALOT -> 2;
+            case STALKER -> 2;
+            case IMMORTAL -> 4;
+            default -> 2;
+        };
+    }
+
+    private int supplyBonus(BuildingType type) {
+        return type == BuildingType.PYLON ? 8 : 0;
+    }
+
+    private int maxHealth(UnitType type) {
+        return switch (type) {
+            case PROBE -> 45;
+            case ZEALOT -> 100;
+            case STALKER -> 80;
+            default -> 100;
+        };
+    }
+
+    private int maxBuildingHealth(BuildingType type) {
+        return switch (type) {
+            case NEXUS -> 1500;
+            case PYLON -> 200;
+            case GATEWAY -> 500;
+            default -> 500;
+        };
+    }
+}
