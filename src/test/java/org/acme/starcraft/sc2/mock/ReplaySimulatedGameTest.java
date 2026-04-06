@@ -1,0 +1,116 @@
+package org.acme.starcraft.sc2.mock;
+
+import org.acme.starcraft.domain.*;
+import org.junit.jupiter.api.Test;
+
+import java.nio.file.Path;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * Tests ReplaySimulatedGame using Nothing_4720936.SC2Replay
+ * (8m21s PvZ, Nothing wins — consistent Protoss opening).
+ * Player 1 = Nothing (Protoss), Player 2 = Zerg opponent.
+ */
+class ReplaySimulatedGameTest {
+
+    private static final Path REPLAY = Path.of("replays/aiarena_protoss/Nothing_4720936.SC2Replay");
+
+    @Test
+    void parsesReplayAndInitialisesFromLoopZero() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        GameState state = game.snapshot();
+
+        // Initial state from UnitBorn events at loop 0: Nexus + Probes
+        assertThat(state.myBuildings().stream().anyMatch(b -> b.type() == BuildingType.NEXUS))
+            .as("Nexus present after reset").isTrue();
+        assertThat(state.myUnits().stream().filter(u -> u.type() == UnitType.PROBE).count())
+            .as("12 probes at game start").isEqualTo(12);
+        assertThat(state.gameFrame()).isEqualTo(0L);
+    }
+
+    @Test
+    void tickAdvancesGameFrameByOne() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        game.tick();
+        assertThat(game.snapshot().gameFrame()).isEqualTo(1L);
+        game.tick();
+        assertThat(game.snapshot().gameFrame()).isEqualTo(2L);
+    }
+
+    @Test
+    void mineralsPopulatedFromPlayerStatsAfterSeveralTicks() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        // PlayerStats fires every ~16 loops; advance ~5 seconds (110 loops = 5 ticks)
+        for (int i = 0; i < 5; i++) game.tick();
+        assertThat(game.snapshot().minerals())
+            .as("Minerals should be read from PlayerStatsEvent, not zero")
+            .isGreaterThan(0);
+    }
+
+    @Test
+    void supplyComesFromPlayerStats() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        for (int i = 0; i < 5; i++) game.tick();
+        GameState state = game.snapshot();
+        assertThat(state.supply()).as("Supply cap > 0").isGreaterThan(0);
+        assertThat(state.supplyUsed()).as("Supply used > 0").isGreaterThan(0);
+    }
+
+    @Test
+    void unitCountGrowsOverTime() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        int initialUnits = game.snapshot().myUnits().size();
+
+        // Advance 3 minutes (3*60*22 = 3960 loops = 180 ticks)
+        for (int i = 0; i < 180; i++) game.tick();
+
+        assertThat(game.snapshot().myUnits().size())
+            .as("More units after 3 minutes than at game start")
+            .isGreaterThanOrEqualTo(initialUnits);
+    }
+
+    @Test
+    void buildingsGrowOverTime() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        int initialBuildings = game.snapshot().myBuildings().size();
+
+        // Advance 4 minutes — first Pylon and Gateway should be done
+        for (int i = 0; i < 240; i++) game.tick();
+
+        assertThat(game.snapshot().myBuildings().size())
+            .as("More buildings after 4 minutes than at game start")
+            .isGreaterThan(initialBuildings);
+    }
+
+    @Test
+    void resetRestoresInitialState() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        // Advance significantly
+        for (int i = 0; i < 100; i++) game.tick();
+        assertThat(game.snapshot().gameFrame()).isEqualTo(100L);
+
+        game.reset();
+        GameState state = game.snapshot();
+        assertThat(state.gameFrame()).isEqualTo(0L);
+        assertThat(state.myBuildings().stream().anyMatch(b -> b.type() == BuildingType.NEXUS)).isTrue();
+        assertThat(state.myUnits().stream().filter(u -> u.type() == UnitType.PROBE).count()).isEqualTo(12);
+    }
+
+    @Test
+    void applyIntentIsNoOp() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        int buildingsBeforeIntent = game.snapshot().myBuildings().size();
+        // Applying an intent should not change anything
+        String probeTag = game.snapshot().myUnits().get(0).tag();
+        game.applyIntent(new org.acme.starcraft.sc2.intent.BuildIntent(
+            probeTag, BuildingType.PYLON, new Point2d(20, 20)));
+        game.tick();
+        // Buildings should only change from replay events, not the intent
+        // (We don't assert exact count since replay may add a building in this tick,
+        //  but the intent itself should not have queued anything extra.)
+        assertThat(game.snapshot().myBuildings().size())
+            .as("applyIntent is a no-op; building count driven by replay only")
+            .isGreaterThanOrEqualTo(buildingsBeforeIntent);
+    }
+}

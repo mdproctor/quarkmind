@@ -81,6 +81,25 @@ public class SimulatedGame {
     public void setSupply(int cap) { this.supply = cap; }
     public void setSupplyUsed(int used) { this.supplyUsed = used; }
 
+    // --- Protected mutation helpers for subclasses ---
+
+    protected void setGameFrame(long frame) { gameFrame.set(frame); }
+    protected void addUnit(Unit u) { myUnits.add(u); }
+    protected void removeUnitByTag(String tag) { myUnits.removeIf(u -> u.tag().equals(tag)); }
+    protected void addBuilding(Building b) { myBuildings.add(b); }
+    protected void removeBuildingByTag(String tag) { myBuildings.removeIf(b -> b.tag().equals(tag)); }
+    protected void markBuildingComplete(String tag) {
+        myBuildings.replaceAll(b -> b.tag().equals(tag)
+            ? new Building(b.tag(), b.type(), b.position(), b.health(), b.maxHealth(), true)
+            : b);
+    }
+    protected void removeEnemyByTag(String tag) { enemyUnits.removeIf(u -> u.tag().equals(tag)); }
+    protected void clearAll() {
+        myUnits.clear();
+        myBuildings.clear();
+        enemyUnits.clear();
+    }
+
     private int supplyCost(UnitType type) {
         return switch (type) {
             case PROBE -> 1;
