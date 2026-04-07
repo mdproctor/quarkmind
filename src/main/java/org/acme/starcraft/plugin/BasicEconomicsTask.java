@@ -1,9 +1,6 @@
 package org.acme.starcraft.plugin;
 
-import io.casehub.annotation.CaseType;
 import io.casehub.core.CaseFile;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import org.acme.starcraft.agent.ResourceBudget;
 import org.acme.starcraft.agent.StarCraftCaseFile;
 import org.acme.starcraft.agent.plugin.EconomicsTask;
@@ -26,9 +23,10 @@ import java.util.Set;
  * </ol>
  *
  * <p>Uses {@link ResourceBudget} to prevent double-spending with other plugins.
+ *
+ * <p><b>Status:</b> superseded by {@link FlowEconomicsTask} as the active CaseHub plugin.
+ * Retained as a plain class for direct-instantiation tests and as a reference implementation.
  */
-@ApplicationScoped
-@CaseType("starcraft-game")
 public class BasicEconomicsTask implements EconomicsTask {
 
     static final int PROBE_CAP       = 22;  // optimal: 16 mineral + 6 gas workers per base
@@ -41,7 +39,6 @@ public class BasicEconomicsTask implements EconomicsTask {
 
     private final IntentQueue intentQueue;
 
-    @Inject
     public BasicEconomicsTask(IntentQueue intentQueue) {
         this.intentQueue = intentQueue;
     }
@@ -97,7 +94,7 @@ public class BasicEconomicsTask implements EconomicsTask {
      * Returns a Pylon placement position. Spreads up to 4 pylons per row,
      * starting at (15,15) — safe for standard mock/bot maps.
      */
-    static Point2d pylonPosition(int buildingCount) {
+    public static Point2d pylonPosition(int buildingCount) {
         int col = buildingCount % 4;
         int row = buildingCount / 4;
         return new Point2d(15 + col * 3, 15 + row * 3);
