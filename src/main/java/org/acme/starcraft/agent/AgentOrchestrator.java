@@ -3,9 +3,13 @@ package org.acme.starcraft.agent;
 import io.casehub.coordination.CaseEngine;
 import io.quarkus.scheduler.Scheduled;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
+import org.acme.starcraft.sc2.GameStarted;
+import org.acme.starcraft.sc2.GameStopped;
 import org.acme.starcraft.sc2.SC2Engine;
 import org.jboss.logging.Logger;
+
 import java.time.Duration;
 import java.util.Map;
 
@@ -16,15 +20,19 @@ public class AgentOrchestrator {
     @Inject SC2Engine engine;
     @Inject GameStateTranslator translator;
     @Inject CaseEngine caseEngine;
+    @Inject Event<GameStarted> gameStartedEvent;
+    @Inject Event<GameStopped> gameStoppedEvent;
 
     public void startGame() {
         engine.connect();
         engine.joinGame();
+        gameStartedEvent.fire(new GameStarted());
         log.info("Game started");
     }
 
     public void stopGame() {
         engine.leaveGame();
+        gameStoppedEvent.fire(new GameStopped());
         log.info("Game stopped");
     }
 
