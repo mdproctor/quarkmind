@@ -1,7 +1,7 @@
 # StarCraft II Quarkus Agent — Design Snapshot
 **Date:** 2026-04-06
 **Topic:** End-of-day-one state — Phase 0 and Phase 1 complete, replay infrastructure in place
-**Superseded by:** *(leave blank — filled in if this snapshot is later superseded)*
+**Superseded by:** [2026-04-07-full-agent-loop-complete](2026-04-07-full-agent-loop-complete.md)
 
 ---
 
