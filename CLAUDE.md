@@ -64,7 +64,8 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
 - Use `@Inject` to get beans; scheduler is disabled — call `orchestrator.gameTick()` directly
-- Tests: `QaEndpointsTest`, `FullMockPipelineIT`
+- Tests: `QaEndpointsTest`, `FullMockPipelineIT`, `DroolsStrategyTaskTest`, `EconomicsFlowTest`
+- Flow integration tests emit to a SmallRye channel and assert after `Thread.sleep(300)` — the flow processes asynchronously
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 
@@ -94,7 +95,8 @@ src/main/java/org/acme/starcraft/
   sc2/mock/scenario/   ScenarioLibrary — living specification of SC2 behaviour
   agent/               CaseHub intelligence layer — StarCraftCaseFile keys, GameStateTranslator, AgentOrchestrator
   agent/plugin/        Plugin seam interfaces (StrategyTask, EconomicsTask, TacticsTask, ScoutingTask)
-  plugin/              Default (dummy) plugin implementations — PassThrough*Task
+  plugin/              Active plugin implementations (DroolsStrategyTask, FlowEconomicsTask, Basic*Task stubs)
+  plugin/flow/         Quarkus Flow integration — EconomicsFlow, EconomicsDecisionService, EconomicsLifecycle
   qa/                  QA REST endpoints — dev/test only (@UnlessBuildProfile("prod"))
 ```
 
@@ -127,6 +129,11 @@ Run this when setting up a new environment or after any change to the `feature/s
 ## Writing Style Guide
 
 **The writing style guide at `~/claude-workspace/writing-styles/blog-technical.md` is mandatory for all blog and diary entries.** Load it in full before drafting. Complete the pre-draft voice classification (I / we / Claude-named) before generating any prose. Do not show a draft without verifying it against the style guide.
+
+## Architecture Decision Records
+
+`docs/adr/` holds ADRs for significant architectural choices. Reference ADR-0001
+(Quarkus Flow placement) when deciding where new framework integrations belong.
 
 ## Key Conventions
 
