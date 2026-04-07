@@ -14,6 +14,9 @@ public final class StarCraftCaseFile {
     public static final String GAME_FRAME      = "game.frame";
     public static final String READY           = "game.ready";
 
+    // Per-tick resource budget — written by GameStateTranslator, consumed by plugins
+    public static final String RESOURCE_BUDGET = "agent.resources.budget";
+
     // Agent state — written by plugins
     public static final String STRATEGY        = "agent.strategy.current";
     public static final String CRISIS          = "agent.intent.crisis";

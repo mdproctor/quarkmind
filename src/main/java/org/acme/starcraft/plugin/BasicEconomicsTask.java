@@ -4,6 +4,7 @@ import io.casehub.annotation.CaseType;
 import io.casehub.core.CaseFile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.acme.starcraft.agent.ResourceBudget;
 import org.acme.starcraft.agent.StarCraftCaseFile;
 import org.acme.starcraft.agent.plugin.EconomicsTask;
 import org.acme.starcraft.domain.*;
@@ -21,11 +22,10 @@ import java.util.Set;
  * <p>Rules (in priority order):
  * <ol>
  *   <li>Build a Pylon when supply headroom drops to {@link #SUPPLY_HEADROOM} or below.</li>
- *   <li>Train a Probe when worker count is below {@link #PROBE_CAP} and minerals allow.</li>
+ *   <li>Train a Probe when worker count is below {@link #PROBE_CAP} and budget allows.</li>
  * </ol>
  *
- * <p>Pylon placement uses a fixed spread of positions starting at (15,15) — sufficient
- * for mock mode. Real spatial placement is deferred to a later plugin revision.
+ * <p>Uses {@link ResourceBudget} to prevent double-spending with other plugins.
  */
 @ApplicationScoped
 @CaseType("starcraft-game")
@@ -54,25 +54,26 @@ public class BasicEconomicsTask implements EconomicsTask {
     @Override
     @SuppressWarnings("unchecked")
     public void execute(CaseFile caseFile) {
-        int minerals   = caseFile.get(StarCraftCaseFile.MINERALS,    Integer.class).orElse(0);
         int supplyUsed = caseFile.get(StarCraftCaseFile.SUPPLY_USED, Integer.class).orElse(0);
         int supplyCap  = caseFile.get(StarCraftCaseFile.SUPPLY_CAP,  Integer.class).orElse(0);
 
         List<Unit>     workers   = (List<Unit>)     caseFile.get(StarCraftCaseFile.WORKERS,      List.class).orElse(List.of());
         List<Building> buildings = (List<Building>) caseFile.get(StarCraftCaseFile.MY_BUILDINGS, List.class).orElse(List.of());
+        ResourceBudget budget    = caseFile.get(StarCraftCaseFile.RESOURCE_BUDGET, ResourceBudget.class)
+            .orElse(new ResourceBudget(0, 0));
 
-        maybeBuildPylon(minerals, supplyUsed, supplyCap, workers, buildings);
-        maybeTrainProbe(minerals, workers, buildings);
+        maybeBuildPylon(budget, supplyUsed, supplyCap, workers, buildings);
+        maybeTrainProbe(budget, workers, buildings);
 
-        log.debugf("[ECONOMICS] workers=%d/%d supply=%d/%d minerals=%d",
-            workers.size(), PROBE_CAP, supplyUsed, supplyCap, minerals);
+        log.debugf("[ECONOMICS] workers=%d/%d supply=%d/%d budget=%s",
+            workers.size(), PROBE_CAP, supplyUsed, supplyCap, budget);
     }
 
-    private void maybeBuildPylon(int minerals, int supplyUsed, int supplyCap,
+    private void maybeBuildPylon(ResourceBudget budget, int supplyUsed, int supplyCap,
                                  List<Unit> workers, List<Building> buildings) {
         if (supplyCap >= MAX_SUPPLY) return;
         if (supplyUsed < supplyCap - SUPPLY_HEADROOM) return;
-        if (minerals < PYLON_COST) return;
+        if (!budget.spendMinerals(PYLON_COST)) return;
         workers.stream().findFirst().ifPresent(probe -> {
             Point2d pos = pylonPosition(buildings.size());
             intentQueue.add(new BuildIntent(probe.tag(), BuildingType.PYLON, pos));
@@ -80,9 +81,9 @@ public class BasicEconomicsTask implements EconomicsTask {
         });
     }
 
-    private void maybeTrainProbe(int minerals, List<Unit> workers, List<Building> buildings) {
+    private void maybeTrainProbe(ResourceBudget budget, List<Unit> workers, List<Building> buildings) {
         if (workers.size() >= PROBE_CAP) return;
-        if (minerals < PROBE_COST) return;
+        if (!budget.spendMinerals(PROBE_COST)) return;
         buildings.stream()
             .filter(b -> b.type() == BuildingType.NEXUS && b.isComplete())
             .findFirst()

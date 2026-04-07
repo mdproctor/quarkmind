@@ -1,6 +1,7 @@
 package org.acme.starcraft.plugin;
 
 import io.casehub.core.DefaultCaseFile;
+import org.acme.starcraft.agent.ResourceBudget;
 import org.acme.starcraft.agent.StarCraftCaseFile;
 import org.acme.starcraft.domain.*;
 import org.acme.starcraft.sc2.IntentQueue;
@@ -160,13 +161,15 @@ class BasicStrategyTaskTest {
                                      List<Unit> workers, List<Building> buildings,
                                      List<Unit> enemies) {
         var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
-        cf.put(StarCraftCaseFile.MINERALS,    minerals);
-        cf.put(StarCraftCaseFile.VESPENE,     vespene);
-        cf.put(StarCraftCaseFile.WORKERS,     workers);
-        cf.put(StarCraftCaseFile.ARMY,        List.of());
-        cf.put(StarCraftCaseFile.MY_BUILDINGS, buildings);
-        cf.put(StarCraftCaseFile.ENEMY_UNITS, enemies);
-        cf.put(StarCraftCaseFile.READY,       Boolean.TRUE);
+        cf.put(StarCraftCaseFile.MINERALS,        minerals);
+        cf.put(StarCraftCaseFile.VESPENE,         vespene);
+        cf.put(StarCraftCaseFile.WORKERS,         workers);
+        cf.put(StarCraftCaseFile.ARMY,            List.of());
+        cf.put(StarCraftCaseFile.MY_BUILDINGS,    buildings);
+        cf.put(StarCraftCaseFile.ENEMY_UNITS,     enemies);
+        cf.put(StarCraftCaseFile.GEYSERS,         List.of());
+        cf.put(StarCraftCaseFile.RESOURCE_BUDGET, new ResourceBudget(minerals, vespene));
+        cf.put(StarCraftCaseFile.READY,           Boolean.TRUE);
         return cf;
     }
 

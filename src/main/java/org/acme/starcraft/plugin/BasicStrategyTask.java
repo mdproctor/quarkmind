@@ -4,6 +4,7 @@ import io.casehub.annotation.CaseType;
 import io.casehub.core.CaseFile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.acme.starcraft.agent.ResourceBudget;
 import org.acme.starcraft.agent.StarCraftCaseFile;
 import org.acme.starcraft.agent.plugin.StrategyTask;
 import org.acme.starcraft.domain.*;
@@ -70,48 +71,45 @@ public class BasicStrategyTask implements StrategyTask {
     @Override
     @SuppressWarnings("unchecked")
     public void execute(CaseFile caseFile) {
-        int minerals  = caseFile.get(StarCraftCaseFile.MINERALS,    Integer.class).orElse(0);
-        int vespene   = caseFile.get(StarCraftCaseFile.VESPENE,     Integer.class).orElse(0);
-
         List<Unit>     workers   = (List<Unit>)     caseFile.get(StarCraftCaseFile.WORKERS,      List.class).orElse(List.of());
         List<Unit>     army      = (List<Unit>)     caseFile.get(StarCraftCaseFile.ARMY,         List.class).orElse(List.of());
         List<Building> buildings = (List<Building>) caseFile.get(StarCraftCaseFile.MY_BUILDINGS, List.class).orElse(List.of());
         List<Unit>     enemies   = (List<Unit>)     caseFile.get(StarCraftCaseFile.ENEMY_UNITS,  List.class).orElse(List.of());
         List<Resource> geysers   = (List<Resource>) caseFile.get(StarCraftCaseFile.GEYSERS,      List.class).orElse(List.of());
+        ResourceBudget budget    = caseFile.get(StarCraftCaseFile.RESOURCE_BUDGET, ResourceBudget.class)
+            .orElse(new ResourceBudget(0, 0));
 
-        maybeBuildGateway(minerals, workers, buildings);
-        maybeBuildAssimilator(minerals, workers, buildings, geysers);
-        maybeBuildCyberneticsCore(minerals, workers, buildings);
-        maybeTrainStalker(minerals, vespene, buildings);
+        maybeBuildGateway(budget, workers, buildings);
+        maybeBuildAssimilator(budget, workers, buildings, geysers);
+        maybeBuildCyberneticsCore(budget, workers, buildings);
+        maybeTrainStalker(budget, buildings);
 
         String strategy = assessStrategy(army, enemies);
         caseFile.put(StarCraftCaseFile.STRATEGY, strategy);
 
-        log.debugf("[STRATEGY] %s | stalkers=%d | enemies=%d | minerals=%d gas=%d",
+        log.debugf("[STRATEGY] %s | stalkers=%d | enemies=%d | %s",
             strategy,
             army.stream().filter(u -> u.type() == UnitType.STALKER).count(),
-            enemies.size(), minerals, vespene);
+            enemies.size(), budget);
     }
 
-    private void maybeBuildGateway(int minerals, List<Unit> workers, List<Building> buildings) {
-        if (minerals < GATEWAY_COST) return;
+    private void maybeBuildGateway(ResourceBudget budget, List<Unit> workers, List<Building> buildings) {
         boolean hasGateway = buildings.stream().anyMatch(b -> b.type() == BuildingType.GATEWAY);
         if (hasGateway) return;
         boolean hasPylon = buildings.stream().anyMatch(b -> b.type() == BuildingType.PYLON && b.isComplete());
         if (!hasPylon) return;
+        if (!budget.spendMinerals(GATEWAY_COST)) return;
         workers.stream().findFirst().ifPresent(probe -> {
             intentQueue.add(new BuildIntent(probe.tag(), BuildingType.GATEWAY, GATEWAY_POS));
             log.debugf("[STRATEGY] Queuing Gateway");
         });
     }
 
-    private void maybeBuildAssimilator(int minerals, List<Unit> workers,
+    private void maybeBuildAssimilator(ResourceBudget budget, List<Unit> workers,
                                        List<Building> buildings, List<Resource> geysers) {
-        if (minerals < ASSIMILATOR_COST) return;
         if (geysers.isEmpty()) return;
         boolean hasGateway = buildings.stream().anyMatch(b -> b.type() == BuildingType.GATEWAY && b.isComplete());
         if (!hasGateway) return;
-        // Find a geyser not already occupied by an Assimilator
         Set<Point2d> occupied = buildings.stream()
             .filter(b -> b.type() == BuildingType.ASSIMILATOR)
             .map(Building::position)
@@ -119,30 +117,33 @@ public class BasicStrategyTask implements StrategyTask {
         geysers.stream()
             .filter(g -> !occupied.contains(g.position()))
             .findFirst()
-            .ifPresent(geyser -> workers.stream().findFirst().ifPresent(probe -> {
-                intentQueue.add(new BuildIntent(probe.tag(), BuildingType.ASSIMILATOR, geyser.position()));
-                log.debugf("[STRATEGY] Queuing Assimilator at %s", geyser.position());
-            }));
+            .ifPresent(geyser -> {
+                if (!budget.spendMinerals(ASSIMILATOR_COST)) return;
+                workers.stream().findFirst().ifPresent(probe -> {
+                    intentQueue.add(new BuildIntent(probe.tag(), BuildingType.ASSIMILATOR, geyser.position()));
+                    log.debugf("[STRATEGY] Queuing Assimilator at %s", geyser.position());
+                });
+            });
     }
 
-    private void maybeBuildCyberneticsCore(int minerals, List<Unit> workers, List<Building> buildings) {
-        if (minerals < CYBERNETICS_CORE_COST) return;
+    private void maybeBuildCyberneticsCore(ResourceBudget budget, List<Unit> workers, List<Building> buildings) {
         boolean gatewayComplete = buildings.stream()
             .anyMatch(b -> b.type() == BuildingType.GATEWAY && b.isComplete());
         if (!gatewayComplete) return;
         boolean hasCore = buildings.stream().anyMatch(b -> b.type() == BuildingType.CYBERNETICS_CORE);
         if (hasCore) return;
+        if (!budget.spendMinerals(CYBERNETICS_CORE_COST)) return;
         workers.stream().findFirst().ifPresent(probe -> {
             intentQueue.add(new BuildIntent(probe.tag(), BuildingType.CYBERNETICS_CORE, CYBERNETICS_CORE_POS));
             log.debugf("[STRATEGY] Queuing CyberneticsCore");
         });
     }
 
-    private void maybeTrainStalker(int minerals, int vespene, List<Building> buildings) {
-        if (minerals < STALKER_MINERAL_COST || vespene < STALKER_GAS_COST) return;
+    private void maybeTrainStalker(ResourceBudget budget, List<Building> buildings) {
         boolean coreComplete = buildings.stream()
             .anyMatch(b -> b.type() == BuildingType.CYBERNETICS_CORE && b.isComplete());
         if (!coreComplete) return;
+        if (!budget.spend(STALKER_MINERAL_COST, STALKER_GAS_COST)) return;
         buildings.stream()
             .filter(b -> b.type() == BuildingType.GATEWAY && b.isComplete())
             .findFirst()

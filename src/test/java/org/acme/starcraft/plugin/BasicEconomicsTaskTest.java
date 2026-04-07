@@ -1,6 +1,7 @@
 package org.acme.starcraft.plugin;
 
 import io.casehub.core.DefaultCaseFile;
+import org.acme.starcraft.agent.ResourceBudget;
 import org.acme.starcraft.agent.StarCraftCaseFile;
 import org.acme.starcraft.domain.*;
 import org.acme.starcraft.sc2.IntentQueue;
@@ -126,12 +127,13 @@ class BasicEconomicsTaskTest {
     private DefaultCaseFile caseFile(int minerals, int supplyUsed, int supplyCap,
                                      List<Unit> workers, List<Building> buildings) {
         var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
-        cf.put(StarCraftCaseFile.MINERALS,    minerals);
-        cf.put(StarCraftCaseFile.SUPPLY_USED, supplyUsed);
-        cf.put(StarCraftCaseFile.SUPPLY_CAP,  supplyCap);
-        cf.put(StarCraftCaseFile.WORKERS,     workers);
-        cf.put(StarCraftCaseFile.MY_BUILDINGS, buildings);
-        cf.put(StarCraftCaseFile.READY,       Boolean.TRUE);
+        cf.put(StarCraftCaseFile.MINERALS,       minerals);
+        cf.put(StarCraftCaseFile.SUPPLY_USED,    supplyUsed);
+        cf.put(StarCraftCaseFile.SUPPLY_CAP,     supplyCap);
+        cf.put(StarCraftCaseFile.WORKERS,        workers);
+        cf.put(StarCraftCaseFile.MY_BUILDINGS,   buildings);
+        cf.put(StarCraftCaseFile.RESOURCE_BUDGET, new ResourceBudget(minerals, 0));
+        cf.put(StarCraftCaseFile.READY,          Boolean.TRUE);
         return cf;
     }
 
