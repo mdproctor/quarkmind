@@ -4,7 +4,7 @@ import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.acme.starcraft.domain.*;
 import org.acme.starcraft.sc2.intent.*;
-import java.util.*;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -21,8 +21,10 @@ public class SimulatedGame {
     private final List<Building> myBuildings = new CopyOnWriteArrayList<>();
     private final List<Unit> enemyUnits = new CopyOnWriteArrayList<>();
     private final List<Resource> geysers = new CopyOnWriteArrayList<>();
-    private final Queue<Runnable> buildQueue = new LinkedList<>();
+    private final List<PendingCompletion> pendingCompletions = new CopyOnWriteArrayList<>();
     private int nextTag = 200;
+
+    private record PendingCompletion(long completesAtTick, Runnable action) {}
 
     public synchronized void reset() {
         minerals = 50;
@@ -34,7 +36,7 @@ public class SimulatedGame {
         myBuildings.clear();
         enemyUnits.clear();
         geysers.clear();
-        buildQueue.clear();
+        pendingCompletions.clear();
         nextTag = 200;
 
         // 12 Probes
@@ -49,27 +51,38 @@ public class SimulatedGame {
     }
 
     public synchronized void tick() {
-        gameFrame.incrementAndGet();
+        long frame = gameFrame.incrementAndGet();
         minerals = Math.min(minerals + 5, 9999); // rough mineral trickle
-        Runnable completion = buildQueue.poll();
-        if (completion != null) completion.run();
+        pendingCompletions.removeIf(item -> {
+            if (item.completesAtTick() <= frame) {
+                item.action().run();
+                return true;
+            }
+            return false;
+        });
     }
 
     public synchronized void applyIntent(Intent intent) {
         if (intent instanceof TrainIntent t) {
-            int cost = supplyCost(t.unitType());
-            buildQueue.add(() -> {
-                supplyUsed += cost;
-                myUnits.add(new Unit("unit-" + nextTag++, t.unitType(), new Point2d(9, 9), maxHealth(t.unitType()), maxHealth(t.unitType())));
-            });
+            long completesAt = gameFrame.get() + trainTimeInTicks(t.unitType());
+            pendingCompletions.add(new PendingCompletion(completesAt, () -> {
+                supplyUsed += supplyCost(t.unitType());
+                myUnits.add(new Unit("unit-" + nextTag++, t.unitType(), new Point2d(9, 9),
+                    maxHealth(t.unitType()), maxHealth(t.unitType())));
+            }));
         } else if (intent instanceof BuildIntent b) {
-            buildQueue.add(() -> {
-                int supplyBonus = supplyBonus(b.buildingType());
-                supply += supplyBonus;
-                myBuildings.add(new Building("bldg-" + nextTag++, b.buildingType(), b.location(), maxBuildingHealth(b.buildingType()), maxBuildingHealth(b.buildingType()), true));
-            });
+            String bldgTag = "bldg-" + nextTag++;
+            BuildingType bt = b.buildingType();
+            // Add immediately as incomplete — visible to plugins during construction
+            myBuildings.add(new Building(bldgTag, bt, b.location(),
+                maxBuildingHealth(bt), maxBuildingHealth(bt), false));
+            long completesAt = gameFrame.get() + buildTimeInTicks(bt);
+            pendingCompletions.add(new PendingCompletion(completesAt, () -> {
+                markBuildingComplete(bldgTag);
+                supply += supplyBonus(bt); // supply granted only when complete
+            }));
         }
-        // AttackIntent and MoveIntent: positions updated in future phases
+        // AttackIntent and MoveIntent: unit positions updated in future phases
     }
 
     public synchronized GameState snapshot() {
@@ -105,9 +118,36 @@ public class SimulatedGame {
         myBuildings.clear();
         enemyUnits.clear();
         geysers.clear();
+        pendingCompletions.clear();
     }
 
     public List<Resource> getGeysers() { return List.copyOf(geysers); }
+
+    // Build times in ticks (22 loops/tick at SC2 Faster speed = 22.4 loops/sec)
+    private static int trainTimeInTicks(UnitType type) {
+        return switch (type) {
+            case PROBE    -> 12;  // 12s
+            case ZEALOT   -> 28;  // 27s
+            case STALKER  -> 31;  // 30s
+            case IMMORTAL -> 40;  // 39s
+            case OBSERVER -> 22;  // 21s
+            default       -> 30;
+        };
+    }
+
+    private static int buildTimeInTicks(BuildingType type) {
+        return switch (type) {
+            case PYLON             -> 18;  // 18s
+            case GATEWAY           -> 47;  // 46s
+            case CYBERNETICS_CORE  -> 37;  // 36s
+            case ASSIMILATOR       -> 21;  // 21s
+            case ROBOTICS_FACILITY -> 47;  // 46s
+            case STARGATE          -> 44;  // 43s
+            case FORGE             -> 30;  // 29s
+            case TWILIGHT_COUNCIL  -> 37;  // 36s
+            default                -> 40;
+        };
+    }
 
     private int supplyCost(UnitType type) {
         return switch (type) {

@@ -40,7 +40,8 @@ class MockPipelineTest {
         assertThat(intentQueue.pending()).hasSize(1);
 
         engine.dispatch();
-        engine.tick(); // complete training
+        // Zealot train time = 28 ticks
+        for (int i = 0; i < 28; i++) engine.tick();
 
         assertThat(intentQueue.pending()).isEmpty();
         assertThat(intentQueue.recentlyDispatched()).hasSize(1);

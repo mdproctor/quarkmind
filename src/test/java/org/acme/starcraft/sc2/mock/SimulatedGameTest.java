@@ -40,19 +40,33 @@ class SimulatedGameTest {
     void applyTrainIntentIncreasesSupplyUsed() {
         String nexusTag = game.snapshot().myBuildings().get(0).tag();
         game.applyIntent(new TrainIntent(nexusTag, UnitType.ZEALOT));
-        game.tick(); // complete training
+        // Zealot train time = 28 ticks (27s at Faster speed)
+        for (int i = 0; i < 28; i++) game.tick();
         GameState state = game.snapshot();
         assertThat(state.supplyUsed()).isEqualTo(14); // +2 for zealot
     }
 
     @Test
-    void applyBuildIntentAddsPylon() {
+    void applyBuildIntentAddsPylonUnderConstruction() {
         String probeTag = game.snapshot().myUnits().get(0).tag();
         game.applyIntent(new BuildIntent(probeTag, BuildingType.PYLON, new Point2d(15, 15)));
-        game.tick();
+        game.tick(); // 1 tick — Pylon appears immediately as incomplete
         GameState state = game.snapshot();
-        assertThat(state.myBuildings().stream().anyMatch(b -> b.type() == BuildingType.PYLON)).isTrue();
-        assertThat(state.supply()).isEqualTo(23); // +8 from pylon
+        assertThat(state.myBuildings().stream()
+            .anyMatch(b -> b.type() == BuildingType.PYLON && !b.isComplete())).isTrue();
+        assertThat(state.supply()).isEqualTo(15); // supply not yet granted
+    }
+
+    @Test
+    void applyBuildIntentCompletesPylonAfterBuildTime() {
+        String probeTag = game.snapshot().myUnits().get(0).tag();
+        game.applyIntent(new BuildIntent(probeTag, BuildingType.PYLON, new Point2d(15, 15)));
+        // Pylon build time = 18 ticks (18s at Faster speed)
+        for (int i = 0; i < 18; i++) game.tick();
+        GameState state = game.snapshot();
+        assertThat(state.myBuildings().stream()
+            .anyMatch(b -> b.type() == BuildingType.PYLON && b.isComplete())).isTrue();
+        assertThat(state.supply()).isEqualTo(23); // +8 from completed pylon
     }
 
     @Test
