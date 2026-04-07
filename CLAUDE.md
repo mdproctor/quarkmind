@@ -32,8 +32,7 @@ mvn test -Dtest=SimulatedGameTest -q
 **Run (mock mode, no SC2 needed):**
 ```bash
 mvn quarkus:dev
-# Then trigger the mock game loop (once, in a second terminal):
-curl -X POST http://localhost:8080/sc2/start
+# Game loop starts automatically on boot (MockStartupBean)
 ```
 
 **Run (replay mode, no SC2 needed):**

@@ -31,13 +31,7 @@ Drives the agent against a hand-crafted `SimulatedGame`. The game does not auto-
 mvn quarkus:dev
 ```
 
-In a second terminal:
-
-```bash
-curl -X POST http://localhost:8080/sc2/start
-```
-
-The agent will tick every 500ms. `SimulatedGame` provides a basic economic simulation (mineral trickle, build queue). Use [scenarios](#scenarios) to inject interesting situations.
+The game loop starts automatically on boot (`MockStartupBean`). The agent ticks every 500ms against `SimulatedGame`. Use [scenarios](#scenarios) to inject interesting situations.
 
 To stop:
 

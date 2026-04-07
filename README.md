@@ -26,12 +26,7 @@ Primary purpose is R&D: a living testbed for [Drools](https://www.drools.org/), 
 
 ```bash
 mvn quarkus:dev
-```
-
-Then start the game loop in a second terminal:
-
-```bash
-curl -X POST http://localhost:8080/sc2/start
+# Game loop starts automatically — no manual POST needed
 ```
 
 ### Run against a real replay (no SC2 needed)
