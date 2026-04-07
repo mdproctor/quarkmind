@@ -10,10 +10,12 @@ import org.acme.starcraft.domain.*;
 import org.acme.starcraft.sc2.IntentQueue;
 import org.acme.starcraft.sc2.intent.BuildIntent;
 import org.acme.starcraft.sc2.intent.TrainIntent;
+
 import org.jboss.logging.Logger;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Basic Protoss strategy: gateway opener into Stalkers.
@@ -42,6 +44,7 @@ public class BasicStrategyTask implements StrategyTask {
 
     static final int GATEWAY_COST          = 150;
     static final int CYBERNETICS_CORE_COST = 150;
+    static final int ASSIMILATOR_COST      = 75;
     static final int STALKER_MINERAL_COST  = 125;
     static final int STALKER_GAS_COST      = 50;
     static final int ATTACK_THRESHOLD      = 4; // attack with 4+ Stalkers
@@ -74,8 +77,10 @@ public class BasicStrategyTask implements StrategyTask {
         List<Unit>     army      = (List<Unit>)     caseFile.get(StarCraftCaseFile.ARMY,         List.class).orElse(List.of());
         List<Building> buildings = (List<Building>) caseFile.get(StarCraftCaseFile.MY_BUILDINGS, List.class).orElse(List.of());
         List<Unit>     enemies   = (List<Unit>)     caseFile.get(StarCraftCaseFile.ENEMY_UNITS,  List.class).orElse(List.of());
+        List<Resource> geysers   = (List<Resource>) caseFile.get(StarCraftCaseFile.GEYSERS,      List.class).orElse(List.of());
 
         maybeBuildGateway(minerals, workers, buildings);
+        maybeBuildAssimilator(minerals, workers, buildings, geysers);
         maybeBuildCyberneticsCore(minerals, workers, buildings);
         maybeTrainStalker(minerals, vespene, buildings);
 
@@ -98,6 +103,26 @@ public class BasicStrategyTask implements StrategyTask {
             intentQueue.add(new BuildIntent(probe.tag(), BuildingType.GATEWAY, GATEWAY_POS));
             log.debugf("[STRATEGY] Queuing Gateway");
         });
+    }
+
+    private void maybeBuildAssimilator(int minerals, List<Unit> workers,
+                                       List<Building> buildings, List<Resource> geysers) {
+        if (minerals < ASSIMILATOR_COST) return;
+        if (geysers.isEmpty()) return;
+        boolean hasGateway = buildings.stream().anyMatch(b -> b.type() == BuildingType.GATEWAY && b.isComplete());
+        if (!hasGateway) return;
+        // Find a geyser not already occupied by an Assimilator
+        Set<Point2d> occupied = buildings.stream()
+            .filter(b -> b.type() == BuildingType.ASSIMILATOR)
+            .map(Building::position)
+            .collect(Collectors.toSet());
+        geysers.stream()
+            .filter(g -> !occupied.contains(g.position()))
+            .findFirst()
+            .ifPresent(geyser -> workers.stream().findFirst().ifPresent(probe -> {
+                intentQueue.add(new BuildIntent(probe.tag(), BuildingType.ASSIMILATOR, geyser.position()));
+                log.debugf("[STRATEGY] Queuing Assimilator at %s", geyser.position());
+            }));
     }
 
     private void maybeBuildCyberneticsCore(int minerals, List<Unit> workers, List<Building> buildings) {

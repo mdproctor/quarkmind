@@ -58,6 +58,7 @@ public final class ObservationTranslator {
             myUnits,
             myBuildings,
             enemies,
+            List.of(),  // geysers: neutral unit detection deferred to Phase 3+
             obs.getGameLoop()
         );
     }

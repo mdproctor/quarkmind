@@ -20,6 +20,7 @@ public class SimulatedGame {
     private final List<Unit> myUnits = new CopyOnWriteArrayList<>();
     private final List<Building> myBuildings = new CopyOnWriteArrayList<>();
     private final List<Unit> enemyUnits = new CopyOnWriteArrayList<>();
+    private final List<Resource> geysers = new CopyOnWriteArrayList<>();
     private final Queue<Runnable> buildQueue = new LinkedList<>();
     private int nextTag = 200;
 
@@ -32,6 +33,7 @@ public class SimulatedGame {
         myUnits.clear();
         myBuildings.clear();
         enemyUnits.clear();
+        geysers.clear();
         buildQueue.clear();
         nextTag = 200;
 
@@ -41,6 +43,9 @@ public class SimulatedGame {
         }
         // 1 Nexus
         myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8), 1500, 1500, true));
+        // 2 Vespene geysers (typical positions relative to Nexus at 8,8)
+        geysers.add(new Resource("geyser-0", new Point2d(5, 11), 2250));
+        geysers.add(new Resource("geyser-1", new Point2d(11, 5), 2250));
     }
 
     public synchronized void tick() {
@@ -69,7 +74,8 @@ public class SimulatedGame {
 
     public synchronized GameState snapshot() {
         return new GameState(minerals, vespene, supply, supplyUsed,
-            List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits), gameFrame.get());
+            List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits),
+            List.copyOf(geysers), gameFrame.get());
     }
 
     public synchronized void spawnEnemyUnit(UnitType type, Point2d position) {
@@ -98,7 +104,10 @@ public class SimulatedGame {
         myUnits.clear();
         myBuildings.clear();
         enemyUnits.clear();
+        geysers.clear();
     }
+
+    public List<Resource> getGeysers() { return List.copyOf(geysers); }
 
     private int supplyCost(UnitType type) {
         return switch (type) {

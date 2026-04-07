@@ -26,6 +26,7 @@ public class GameStateTranslator {
         data.put(StarCraftCaseFile.WORKERS,      workers);
         data.put(StarCraftCaseFile.ARMY,         army);
         data.put(StarCraftCaseFile.MY_BUILDINGS, state.myBuildings());
+        data.put(StarCraftCaseFile.GEYSERS,      state.geysers());
         data.put(StarCraftCaseFile.ENEMY_UNITS,  state.enemyUnits());
         return data;
     }
