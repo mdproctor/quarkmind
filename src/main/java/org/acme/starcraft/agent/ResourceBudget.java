@@ -1,5 +1,9 @@
 package org.acme.starcraft.agent;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Per-tick resource budget shared across plugins via the CaseFile.
  *
@@ -15,13 +19,19 @@ package org.acme.starcraft.agent;
  *
  * <p>Note: the budget enforces logic-level arbitration only. {@code SimulatedGame}
  * does not enforce mineral costs; real SC2 rejects commands it cannot honour.
+ *
+ * <p>Jackson annotations allow Quarkus Flow to serialise/deserialise this class
+ * when passing it as part of a workflow input via {@code GameStateTick}.
  */
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class ResourceBudget {
 
-    private int minerals;
-    private int vespene;
+    @JsonProperty private int minerals;
+    @JsonProperty private int vespene;
 
-    public ResourceBudget(int minerals, int vespene) {
+    @JsonCreator
+    public ResourceBudget(@JsonProperty("minerals") int minerals,
+                          @JsonProperty("vespene")  int vespene) {
         this.minerals = minerals;
         this.vespene  = vespene;
     }
