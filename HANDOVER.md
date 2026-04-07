@@ -1,48 +1,56 @@
-# Handover — 2026-04-06
+# Handover — 2026-04-07
 
-**Head commit:** `3e07252` — docs: add blog entry 2026-04-06-04
-**Previous handover:** none (first handover)
+**Head commit:** `bd99c5e` — docs: add blog entry 2026-04-07-01 — no more stubs, full agent loop
+**Previous handover:** `git show HEAD~1:HANDOVER.md` | diff: `git diff HEAD~1 HEAD -- HANDOVER.md`
 
 ## What Changed This Session
 
-- **Phase 0** complete: mock architecture, 27 tests, CaseEngine + 4 dummy plugins, QA REST harness
-- **Phase 1** complete (code): `sc2.real` package — RealSC2Client, RealGameObserver, RealCommandDispatcher, SC2DebugScenarioRunner, `%sc2` profile; Task 9 (live SC2 smoke test) pending
-- **Scelight extraction**: `feature/standalone-modules` branch at `/Users/mdproctor/claude/scelight` — `scelight-mpq` and `scelight-s2protocol` standalone Maven modules; 10 clean atomic commits; quick-build: `./scripts/publish-replay-libs.sh`
-- **Replay infrastructure**: IEM10 Taipei 2016 (30 games, pre-processed JSON) + AI Arena bot replays (22 parseable `.SC2Replay`); index at `replays/replay-index.md`; AI Arena token saved in session memory
-- **Bugs fixed this session**: `Protocol.DEFAULT` null (`.dat` files not in JAR), `quarkus:dev` silent skip (missing `build` goal), QA CDI profile injection, Maven aggregator packaging
-- **Scelight commit discipline**: atomic commits only — fixes / build changes / redesigns never mixed; memory saved
+- **SC2Engine abstraction** — merged `SC2Client` + `GameObserver` + `CommandDispatcher` into one CDI seam; `MockEngine` and `RealSC2Engine` replace 6 separate beans; `AgentOrchestrator` has 1 injection instead of 4
+- **ReplayEngine (Phase 3)** — `%replay` profile; auto-starts via `ReplayStartupBean`; `dispatch()` records intents without applying them; endpoints fully functional after fixing NPE (null game before connect) and UNKNOWN unit filtering
+- **All four Basic plugins** — `BasicEconomicsTask`, `BasicStrategyTask` (gateway opener + assimilator + Stalkers), `BasicScoutingTask` (passive intel + active probe dispatch), `BasicTacticsTask` (reads STRATEGY key, AttackIntent/MoveIntent)
+- **ResourceBudget** — per-tick mutable budget in CaseFile; prevents cross-plugin double-spend
+- **Realistic build times** — `PendingCompletion` records with `completesAtTick`; buildings visible as `isComplete=false` during construction
+- **MockStartupBean** — mock mode auto-starts; `mvn quarkus:dev` no longer needs `POST /sc2/start`
+- **GameState.geysers** — vespene geyser positions added to domain; 2 hardcoded in SimulatedGame; Assimilator can be built
+- **Active scouting** — `@ApplicationScoped` volatile probe tag tracks scout across ticks
+- **Docs** — README, `docs/plugin-guide.md`, `docs/running.md` created
+- **GE-0041** (previous session) + **GE-0052** submitted to knowledge garden — Scelight tracker traps; `@UnlessBuildProfile(anyOf=...)` undocumented attribute
+- **94 tests** (was 38 at session start)
 
 ## State Right Now
 
-- `mvn test` passes (30 tests)
-- Replay parser working: `RepParserEngine.parseReplay(path)` on build 75689 replays
-- Scelight JAR rebuilt and in `~/.m2` with `.dat` files included
-- 4 blog entries written for the day; design snapshot frozen
+- `mvn test` passes 94 tests
+- All four plugin seams have real implementations; no pass-through stubs remain
+- Three run modes working: `mvn quarkus:dev` (mock, auto-start), `mvn quarkus:dev -Dquarkus.profile=replay`, `mvn quarkus:dev -Dquarkus.profile=sc2`
+- `DESIGN.md` reflects current architecture; design snapshot frozen at `docs/design-snapshots/2026-04-07-full-agent-loop-complete.md`
 
 ## Immediate Next Step
 
-**Build `ReplaySimulatedGame`** — a `SimulatedGame` variant that steps through tracker events from a real replay instead of the hand-crafted economic trickle. Start with `Nothing_4720936.SC2Replay` (8m21s PvZ win, consistent bot build order). The tracker events in `replay.trackerEvents.events` give `UnitBornEvent`, `PlayerStatsEvent` etc. per game action — translate these to `SimulatedGame` state mutations.
+**Drools `StrategyTask`** — replace `BasicStrategyTask` with a Drools rule engine implementation. This is the first real R&D integration, the stated purpose of the project. Start by reading `docs/library-research.md` for the Drools dependency evaluation, then add `drools-quarkus-ruleunits` to `pom.xml` and implement a `DroolsStrategyTask implements StrategyTask`.
 
 ## Open Questions / Blockers
 
-- Phase 1 Task 9 (live SC2 smoke test) blocked until SC2 installable on this machine
-- Mock mode still requires manual `POST /sc2/start` — quick fix: add `SC2StartupBean` equivalent for mock profile
-- 7 AI Arena replays unparseable (newer build > 81009) — add new `.dat` files when available from Blizzard
+- Which R&D integration first: Drools `StrategyTask` or Quarkus Flow `EconomicsTask`? (decided: Drools first)
+- `SC2Engine.tick()` ownership — mock owns clock, real SC2 doesn't; could unify under scheduler
+- `ReplayEngine` profile vs config-driven — profile is simpler; config allows runtime switching
+- 7 AI Arena replays unparseable (build > 81009) — await new `.dat` files from Blizzard
+- Assimilator placement in real SC2 needs geyser detection (neutral unit scan in `ObservationTranslator`)
+- Phase 1 Task 9 (live SC2 smoke test) — blocked on SC2 availability
 
 ## References
 
 | Context | Where | Retrieve with |
 |---|---|---|
-| Design state | `docs/design-snapshots/2026-04-06-phase0-phase1-complete.md` | `cat` |
-| Design spec | `docs/superpowers/specs/2026-04-06-starcraft-agent-design.md` | `cat` |
+| Design state | `docs/design-snapshots/2026-04-07-full-agent-loop-complete.md` | `cat` |
+| Engine roadmap | `docs/roadmap-sc2-engine.md` | `cat` |
+| Plugin guide | `docs/plugin-guide.md` | `cat` |
 | Library research | `docs/library-research.md` | `cat` |
 | Replay index | `replays/replay-index.md` | `cat` |
-| Phase 1 plan | `docs/superpowers/plans/2026-04-06-phase1-sc2-bootstrap.md` | `cat` |
-| Scelight branch | `/Users/mdproctor/claude/scelight` branch `feature/standalone-modules` | `git log --oneline` |
-| Garden entries | `~/claude/knowledge-garden/GARDEN.md` | index only |
+| Garden gotchas | `~/claude/knowledge-garden/GARDEN.md` | index only |
+| Scelight fork | `/Users/mdproctor/claude/scelight` branch `feature/standalone-modules` | `git log --oneline` |
 
 ## Environment
 
-- Scelight: run `cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh` before building if `.dat` fix is needed
-- CaseHub: run `cd /Users/mdproctor/claude/alpha && mvn install -DskipTests` on fresh machine
-- AI Arena token: `a7d5c711347a865f8855d257649a1ae71f7ae4b6` (use for future replay downloads)
+- AI Arena token: `a7d5c711347a865f8855d257649a1ae71f7ae4b6` (for future replay downloads)
+- CaseHub: `cd /Users/mdproctor/claude/alpha && mvn install -DskipTests` on fresh machine
+- Scelight replay libs: `cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh`
