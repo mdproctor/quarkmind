@@ -109,6 +109,21 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
         </dependency>
+
+        <!-- Quarkus Flow — stateful workflow engine (CNCF Serverless Workflow) -->
+        <!-- See docs/adr/0001-quarkus-flow-placement.md and NATIVE.md -->
+        <dependency>
+            <groupId>io.quarkiverse.flow</groupId>
+            <artifactId>quarkus-flow</artifactId>
+            <version>0.7.1</version>
+        </dependency>
+
+        <!-- SmallRye Reactive Messaging — in-memory channel bridge to EconomicsFlow -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-messaging</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
