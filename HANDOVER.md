@@ -1,56 +1,60 @@
 # Handover — 2026-04-07
 
-**Head commit:** `bd99c5e` — docs: add blog entry 2026-04-07-01 — no more stubs, full agent loop
-**Previous handover:** `git show HEAD~1:HANDOVER.md` | diff: `git diff HEAD~1 HEAD -- HANDOVER.md`
+**Head commit:** `0ba64b0` — docs: add blog entry 2026-04-07-02 — drools strategy arrives
+**Previous handover:** `git show HEAD~3:HANDOVER.md` | diff: `git diff HEAD~3 HEAD -- HANDOVER.md`
 
 ## What Changed This Session
 
-- **SC2Engine abstraction** — merged `SC2Client` + `GameObserver` + `CommandDispatcher` into one CDI seam; `MockEngine` and `RealSC2Engine` replace 6 separate beans; `AgentOrchestrator` has 1 injection instead of 4
-- **ReplayEngine (Phase 3)** — `%replay` profile; auto-starts via `ReplayStartupBean`; `dispatch()` records intents without applying them; endpoints fully functional after fixing NPE (null game before connect) and UNKNOWN unit filtering
-- **All four Basic plugins** — `BasicEconomicsTask`, `BasicStrategyTask` (gateway opener + assimilator + Stalkers), `BasicScoutingTask` (passive intel + active probe dispatch), `BasicTacticsTask` (reads STRATEGY key, AttackIntent/MoveIntent)
-- **ResourceBudget** — per-tick mutable budget in CaseFile; prevents cross-plugin double-spend
-- **Realistic build times** — `PendingCompletion` records with `completesAtTick`; buildings visible as `isComplete=false` during construction
-- **MockStartupBean** — mock mode auto-starts; `mvn quarkus:dev` no longer needs `POST /sc2/start`
-- **GameState.geysers** — vespene geyser positions added to domain; 2 hardcoded in SimulatedGame; Assimilator can be built
-- **Active scouting** — `@ApplicationScoped` volatile probe tag tracks scout across ticks
-- **Docs** — README, `docs/plugin-guide.md`, `docs/running.md` created
-- **GE-0041** (previous session) + **GE-0052** submitted to knowledge garden — Scelight tracker traps; `@UnlessBuildProfile(anyOf=...)` undocumented attribute
-- **94 tests** (was 38 at session start)
+- **DroolsStrategyTask** — first real R&D integration; replaces `BasicStrategyTask` as the active CDI plugin. Drools 10.1.0 Rule Units (AOT via Executable Model). Rules are declarative (build order conditions, strategy posture); budget enforcement and intent dispatch stay in Java.
+- **StarCraftTaskRegistrar** — fixed a silent CaseHub integration gap: all `@CaseType` plugin beans were being removed by Quarkus Arc's dead-bean elimination (nothing was injecting them via CDI). Registry was always empty; plugins had never actually run through CaseHub. Startup registrar injects each seam interface and registers with `TaskDefinitionRegistry`.
+- **StrategyRuleUnit + StarCraftStrategy.drl** — `RuleUnitData` with `DataStore<T>` input facts and `List<String>` decision output. No application-typed plain fields (would cause `ClassNotFoundException` in `SimpleRuleUnitVariable` static init — see GE-0053, GE-0056).
+- **BasicStrategyTask** — demoted to plain (non-CDI) class; retained for direct-instantiation tests and as reference implementation.
+- **DroolsStrategyTaskTest** — 13 new `@QuarkusTest` tests (`DataSource.createStore()` requires Quarkus context in `drools-quarkus`). `@BeforeEach @AfterEach` drains `IntentQueue` to prevent `@ApplicationScoped` state bleed between test classes (GE-0036).
+- **107 tests** — up from 94.
+- **Garden** — GE-0053 (DataSource.createStore() NPE in plain JUnit), GE-0056 (DRL OOPath: empty brackets, `type` keyword, `isComplete` JavaBean convention).
+- **Blog** — `docs/blog/2026-04-07-02-drools-strategy-arrives.md`.
 
 ## State Right Now
 
-- `mvn test` passes 94 tests
-- All four plugin seams have real implementations; no pass-through stubs remain
-- Three run modes working: `mvn quarkus:dev` (mock, auto-start), `mvn quarkus:dev -Dquarkus.profile=replay`, `mvn quarkus:dev -Dquarkus.profile=sc2`
-- `DESIGN.md` reflects current architecture; design snapshot frozen at `docs/design-snapshots/2026-04-07-full-agent-loop-complete.md`
+- `mvn test` passes 107 tests
+- Drools is the active `StrategyTask` — rules fire declaratively each CaseHub tick
+- CaseHub integration is now real: all four plugin seams execute through `TaskDefinitionRegistry`
+- Three run modes working: mock (auto-start), replay, sc2
 
 ## Immediate Next Step
 
-**Drools `StrategyTask`** — replace `BasicStrategyTask` with a Drools rule engine implementation. This is the first real R&D integration, the stated purpose of the project. Start by reading `docs/library-research.md` for the Drools dependency evaluation, then add `drools-quarkus-ruleunits` to `pom.xml` and implement a `DroolsStrategyTask implements StrategyTask`.
+**Quarkus Flow `EconomicsTask`** — replace `BasicEconomicsTask` with a Quarkus Flow workflow implementation. This is the second R&D integration target. See `docs/library-research.md` §4.4 for the Quarkus Flow evaluation. Add `quarkus-flow` dependency and implement a `FlowEconomicsTask implements EconomicsTask`.
 
 ## Open Questions / Blockers
 
-- Which R&D integration first: Drools `StrategyTask` or Quarkus Flow `EconomicsTask`? (decided: Drools first)
 - `SC2Engine.tick()` ownership — mock owns clock, real SC2 doesn't; could unify under scheduler
 - `ReplayEngine` profile vs config-driven — profile is simpler; config allows runtime switching
 - 7 AI Arena replays unparseable (build > 81009) — await new `.dat` files from Blizzard
 - Assimilator placement in real SC2 needs geyser detection (neutral unit scan in `ObservationTranslator`)
 - Phase 1 Task 9 (live SC2 smoke test) — blocked on SC2 availability
+- Arc silent bean removal: three more gotchas worth garden entries (GE-0054+ pending) — see session wrap garden sweep notes
+
+## DRL Gotchas (quick reference for next Drools work)
+
+- No-constraint pattern: `/store` not `/store[]` (empty brackets = parse error)
+- `type` is a DRL keyword: always `this.type()` in constraints
+- `isComplete` maps to property `complete` via JavaBean convention: always `this.isComplete()`
+- Non-DataStore fields with application types in `RuleUnitData` → `ClassNotFoundException` in static init of generated bean. Use `DataStore<T>` (erases to `DataStore`) or `List<String>` decisions.
+- Drools tests always need `@QuarkusTest` — `DataSource.createStore()` factory is null without Quarkus boot.
 
 ## References
 
 | Context | Where | Retrieve with |
 |---|---|---|
-| Design state | `docs/design-snapshots/2026-04-07-full-agent-loop-complete.md` | `cat` |
+| Design state | `docs/DESIGN.md` | `cat` |
+| Previous design snapshot | `docs/design-snapshots/2026-04-07-full-agent-loop-complete.md` | `cat` |
 | Engine roadmap | `docs/roadmap-sc2-engine.md` | `cat` |
 | Plugin guide | `docs/plugin-guide.md` | `cat` |
-| Library research | `docs/library-research.md` | `cat` |
+| Library research (Quarkus Flow §4.4) | `docs/library-research.md` | `cat` |
 | Replay index | `replays/replay-index.md` | `cat` |
 | Garden gotchas | `~/claude/knowledge-garden/GARDEN.md` | index only |
-| Scelight fork | `/Users/mdproctor/claude/scelight` branch `feature/standalone-modules` | `git log --oneline` |
+| Blog | `docs/blog/2026-04-07-02-drools-strategy-arrives.md` | `cat` |
 
 ## Environment
 
-- AI Arena token: `a7d5c711347a865f8855d257649a1ae71f7ae4b6` (for future replay downloads)
-- CaseHub: `cd /Users/mdproctor/claude/alpha && mvn install -DskipTests` on fresh machine
-- Scelight replay libs: `cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh`
+*Unchanged — `git show HEAD~3:HANDOVER.md`*
