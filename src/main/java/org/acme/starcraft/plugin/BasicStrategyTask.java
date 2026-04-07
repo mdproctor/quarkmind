@@ -1,8 +1,6 @@
 package org.acme.starcraft.plugin;
 
-import io.casehub.annotation.CaseType;
 import io.casehub.core.CaseFile;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.acme.starcraft.agent.ResourceBudget;
 import org.acme.starcraft.agent.StarCraftCaseFile;
@@ -38,9 +36,10 @@ import java.util.stream.Collectors;
  * <p>Note: Assimilator construction requires vespene geyser positions which are not
  * yet in the domain model. Vespene comes from {@code PlayerStatsEvent} in replay mode;
  * mock mode tests can set it via scenario. Assimilator is a Phase 3+ concern.
+ *
+ * <p><b>Status:</b> superseded by {@link DroolsStrategyTask} as the active CaseHub plugin.
+ * Retained as a plain class for direct-instantiation tests and as a reference implementation.
  */
-@ApplicationScoped
-@CaseType("starcraft-game")
 public class BasicStrategyTask implements StrategyTask {
 
     static final int GATEWAY_COST          = 150;

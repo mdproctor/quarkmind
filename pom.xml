@@ -13,6 +13,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.34.2</quarkus.platform.version>
+        <drools.version>10.1.0</drools.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.4</surefire-plugin.version>
         <assertj.version>3.26.3</assertj.version>
@@ -24,6 +25,14 @@
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
                 <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Drools BOM — Apache KIE; governs all org.drools:* versions -->
+            <dependency>
+                <groupId>org.drools</groupId>
+                <artifactId>drools-bom</artifactId>
+                <version>${drools.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -77,6 +86,22 @@
             <groupId>com.github.ocraft</groupId>
             <artifactId>ocraft-s2client-bot</artifactId>
             <version>0.4.21</version>
+        </dependency>
+
+        <!-- Drools Quarkus extension — includes Rule Units support, AOT rule compilation -->
+        <!-- Apache KIE 10.x; see docs/library-research.md §2.1 and NATIVE.md -->
+        <!-- Note: artifact renamed from drools-quarkus-ruleunits (8.x) to drools-quarkus (10.x) -->
+        <dependency>
+            <groupId>org.drools</groupId>
+            <artifactId>drools-quarkus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.drools</groupId>
+            <artifactId>drools-ruleunits-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.drools</groupId>
+            <artifactId>drools-ruleunits-impl</artifactId>
         </dependency>
 
         <!-- SC2 connection resilience: @CircuitBreaker, @Retry, @Fallback -->

@@ -63,7 +63,9 @@ native-compatible.
 | `sc2/real/` | Real SC2 implementation via ocraft-s2client (active on `%sc2` profile) |
 | `agent/` | `AgentOrchestrator`, `GameStateTranslator`, `StarCraftCaseFile` (key constants) |
 | `agent/plugin/` | Plugin seam interfaces: `StrategyTask`, `EconomicsTask`, `TacticsTask`, `ScoutingTask` |
-| `plugin/` | Default (pass-through) plugin implementations — `PassThrough*Task` |
+| `plugin/` | Real plugin implementations: `BasicEconomicsTask`, `BasicScoutingTask`, `BasicTacticsTask`, `DroolsStrategyTask` |
+| `plugin/drools/` | Drools Rule Unit: `StrategyRuleUnit` (data context) + `StarCraftStrategy.drl` (rules) |
+| `agent/StarCraftTaskRegistrar` | Startup bean wiring all four plugin seams into `TaskDefinitionRegistry` |
 | `qa/` | QA REST endpoints — dev/test only (`@UnlessBuildProfile("prod")`) |
 
 ---
@@ -75,11 +77,18 @@ is a CDI interface extending CaseHub's `TaskDefinition`. Swap an implementation
 by providing a new `@ApplicationScoped @CaseType("starcraft-game")` bean — no
 wiring changes elsewhere.
 
-Two plugins have real implementations:
-- `BasicEconomicsTask`: probe production (target 22) and pylon supply management (headroom ≤ 4)
-- `BasicStrategyTask`: gateway → CyberneticsCore tech progression, Stalker training, writes `STRATEGY` key (MACRO/DEFEND/ATTACK) to CaseFile each tick
+All four plugin seams have real implementations:
 
-`TacticsTask` and `ScoutingTask` remain pass-through stubs.
+| Task | Class | Approach |
+|---|---|---|
+| `EconomicsTask` | `BasicEconomicsTask` | Probe production (target 22), Pylon supply management (headroom ≤ 4) |
+| `StrategyTask` | `DroolsStrategyTask` | Drools 10.1.0 Rule Units — DRL rules write decisions; Java dispatches intents |
+| `TacticsTask` | `BasicTacticsTask` | Reads `STRATEGY` key; AttackIntent/MoveIntent dispatch |
+| `ScoutingTask` | `BasicScoutingTask` | Passive intel accumulation and active probe scouting |
+
+`BasicStrategyTask` is retained as a plain (non-CDI) class: reference implementation and direct-instantiation test target for the Drools strategy logic.
+
+Plugins are registered with CaseHub at startup by `StarCraftTaskRegistrar` — injecting each seam interface keeps Arc from removing the beans as unused (Arc's dead-bean elimination previously silently kept the registry empty).
 
 Four plugin levels (outermost to innermost):
 1. **Frame** — per-tick wrapper
@@ -122,6 +131,7 @@ UnitInit, UnitDone) rather than the hand-crafted economic trickle.
 | Dependency | Purpose | Native? |
 |---|---|---|
 | `casehub-core` | Blackboard/CMMN engine (local Maven install) | TBD |
+| `drools-quarkus` + `drools-ruleunits-api/impl` | Drools 10.1.0 (Apache KIE) Rule Units — AOT rule compilation via Executable Model | ✅ Native-compatible |
 | `ocraft-s2client` | SC2 protobuf API client | No (JVM-only) — tracked in NATIVE.md |
 | `scelight-mpq` + `scelight-s2protocol` | SC2 replay parsing (local fork) | No — tracked in NATIVE.md |
 | Quarkus 3.34.2 | Container, CDI, scheduler, REST | Yes (BOM) |
@@ -133,3 +143,4 @@ UnitInit, UnitDone) rather than the hand-crafted economic trickle.
 - **Unit tests** (`new`, no CDI): `SimulatedGameTest`, `ReplaySimulatedGameTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`
 - **Integration tests** (`@QuarkusTest`, full CDI): `QaEndpointsTest`, `FullMockPipelineIT` — scheduler disabled, `orchestrator.gameTick()` called directly
 - Never use `@QuarkusTest` for tests that can be plain JUnit
+- Exception: Drools Rule Unit tests require `@QuarkusTest` — `DataSource.createStore()` is initialized by the Quarkus extension at build time and is unavailable in plain JUnit (GE-0053). `DroolsStrategyTaskTest` is the canonical example; it injects `StrategyTask` and calls `execute(CaseFile)` directly.
