@@ -109,6 +109,7 @@ public class DroolsStrategyTask implements StrategyTask {
     /**
      * Processes Drools build decisions in priority order, enforcing the budget.
      * Rules fire declaratively; budget + intent dispatch happen here in Java.
+     * Handles: GATEWAY, CYBERNETICS_CORE, STALKER.
      */
     private void dispatchBuildDecisions(List<String> decisions, ResourceBudget budget,
                                         List<Unit> workers, List<Building> buildings,
@@ -117,17 +118,6 @@ public class DroolsStrategyTask implements StrategyTask {
             if (decision.equals("GATEWAY") && budget.spendMinerals(150)) {
                 workers.stream().findFirst().ifPresent(p ->
                     intentQueue.add(new BuildIntent(p.tag(), BuildingType.GATEWAY, GATEWAY_POS)));
-
-            } else if (decision.equals("ASSIMILATOR") && budget.spendMinerals(75)) {
-                Set<Point2d> occupied = buildings.stream()
-                    .filter(b -> b.type() == BuildingType.ASSIMILATOR)
-                    .map(Building::position).collect(Collectors.toSet());
-                workers.stream().findFirst().ifPresent(p ->
-                    geysers.stream()
-                        .filter(g -> !occupied.contains(g.position()))
-                        .findFirst()
-                        .ifPresent(g -> intentQueue.add(
-                            new BuildIntent(p.tag(), BuildingType.ASSIMILATOR, g.position()))));
 
             } else if (decision.equals("CYBERNETICS_CORE") && budget.spendMinerals(150)) {
                 workers.stream().findFirst().ifPresent(p ->
