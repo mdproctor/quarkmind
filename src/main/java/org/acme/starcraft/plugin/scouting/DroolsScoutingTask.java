@@ -51,8 +51,8 @@ public class DroolsScoutingTask implements ScoutingTask {
 
     /** Tag of the probe currently assigned to scout. Null when no active scout. */
     private volatile String scoutProbeTag;
-    /** Last seen game frame — used to detect game restart in mock loop. */
-    private volatile long lastFrame = -1;
+    // Single scheduler thread — no synchronisation needed
+    private long lastFrame = -1;
 
     @Inject
     public DroolsScoutingTask(RuleUnit<ScoutingRuleUnit> ruleUnit,
@@ -113,9 +113,8 @@ public class DroolsScoutingTask implements ScoutingTask {
         }
 
         // --- Write CEP intel to CaseFile ---
-        if (!data.getDetectedBuilds().isEmpty()) {
-            caseFile.put(StarCraftCaseFile.ENEMY_BUILD_ORDER, data.getDetectedBuilds().get(0));
-        }
+        String build = data.getDetectedBuilds().isEmpty() ? "UNKNOWN" : data.getDetectedBuilds().get(0);
+        caseFile.put(StarCraftCaseFile.ENEMY_BUILD_ORDER, build);
         caseFile.put(StarCraftCaseFile.TIMING_ATTACK_INCOMING, !data.getTimingAlerts().isEmpty());
         String posture = data.getPostureDecisions().isEmpty()
             ? "UNKNOWN"
@@ -123,32 +122,28 @@ public class DroolsScoutingTask implements ScoutingTask {
         caseFile.put(StarCraftCaseFile.ENEMY_POSTURE, posture);
 
         log.debugf("[SCOUTING] enemies=%d | build=%s | timing=%b | posture=%s",
-            enemies.size(),
-            data.getDetectedBuilds().isEmpty() ? "?" : data.getDetectedBuilds().get(0),
-            !data.getTimingAlerts().isEmpty(),
-            posture);
+            enemies.size(), build, !data.getTimingAlerts().isEmpty(), posture);
 
         // --- Active scouting (same as BasicScoutingTask) ---
         if (enemies.isEmpty()) {
-            maybeSendScout(frame, buildings, workers);
+            maybeSendScout(frame, workers, estimatedBase);
         } else {
             scoutProbeTag = null; // enemies found — release scout
         }
     }
 
-    private void maybeSendScout(long frame, List<Building> buildings, List<Unit> workers) {
+    private void maybeSendScout(long frame, List<Unit> workers, Point2d target) {
         if (frame < SCOUT_DELAY_TICKS) return;
         if (workers.isEmpty()) return;
 
         if (scoutProbeTag != null) {
             boolean alive = workers.stream().anyMatch(w -> w.tag().equals(scoutProbeTag));
             if (alive) return;
-            scoutProbeTag = null;
+            scoutProbeTag = null; // probe died — assign a new one
         }
 
         Unit scout = workers.get(workers.size() - 1);
         scoutProbeTag = scout.tag();
-        Point2d target = estimatedEnemyBase(nexusPosition(buildings));
         intentQueue.add(new MoveIntent(scout.tag(), target));
         log.infof("[SCOUTING] Scout probe %s dispatched toward %s", scoutProbeTag, target);
     }
