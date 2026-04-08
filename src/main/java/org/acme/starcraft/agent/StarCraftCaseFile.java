@@ -22,6 +22,9 @@ public final class StarCraftCaseFile {
     public static final String CRISIS          = "agent.intent.crisis";
     public static final String ENEMY_ARMY_SIZE = "agent.intel.enemy.army.size";
     public static final String NEAREST_THREAT  = "agent.intel.enemy.nearest";
+    public static final String ENEMY_BUILD_ORDER       = "agent.intel.enemy.build";
+    public static final String TIMING_ATTACK_INCOMING  = "agent.intel.enemy.timing";
+    public static final String ENEMY_POSTURE           = "agent.intel.enemy.posture";
 
     private StarCraftCaseFile() {}
 }
