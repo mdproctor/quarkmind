@@ -40,7 +40,7 @@ then
 end
 
 rule "Group: out of range"
-    salience 190
+    salience 200
 when
     eval(strategyGoal.equals("ATTACK"))
     $u: /army[ (double) this.health() / this.maxHealth() >= 0.3 ]
