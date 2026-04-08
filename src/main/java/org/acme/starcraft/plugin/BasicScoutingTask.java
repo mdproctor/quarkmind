@@ -3,6 +3,7 @@ package org.acme.starcraft.plugin;
 import io.casehub.annotation.CaseType;
 import io.casehub.core.CaseFile;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import org.acme.starcraft.agent.StarCraftCaseFile;
 import org.acme.starcraft.agent.plugin.ScoutingTask;
@@ -28,7 +29,11 @@ import java.util.Set;
  * dispatches one Probe toward the estimated enemy base (derived from our Nexus position
  * on a typical symmetric 2-player map). The assigned probe is tracked by tag; if it dies,
  * a new one is assigned.
+ *
+ * <p>Deactivated in favour of {@link org.acme.starcraft.plugin.scouting.DroolsScoutingTask}.
+ * Marked {@code @Alternative} so Quarkus Arc does not register it as a CDI bean.
  */
+@Alternative
 @ApplicationScoped
 @CaseType("starcraft-game")
 public class BasicScoutingTask implements ScoutingTask {
