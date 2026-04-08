@@ -64,7 +64,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
 - Use `@Inject` to get beans; scheduler is disabled — call `orchestrator.gameTick()` directly
-- Tests: `QaEndpointsTest`, `FullMockPipelineIT`, `DroolsStrategyTaskTest`, `EconomicsFlowTest`
+- Tests: `QaEndpointsTest`, `FullMockPipelineIT`, `DroolsStrategyTaskTest`, `EconomicsFlowTest`, `DroolsTacticsRuleUnitTest`, `DroolsTacticsTaskIT`
 - Flow integration tests emit to a SmallRye channel and assert after `Thread.sleep(300)` — the flow processes asynchronously
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
@@ -95,7 +95,8 @@ src/main/java/org/acme/starcraft/
   sc2/mock/scenario/   ScenarioLibrary — living specification of SC2 behaviour
   agent/               CaseHub intelligence layer — StarCraftCaseFile keys, GameStateTranslator, AgentOrchestrator
   agent/plugin/        Plugin seam interfaces (StrategyTask, EconomicsTask, TacticsTask, ScoutingTask)
-  plugin/              Active plugin implementations (DroolsStrategyTask, FlowEconomicsTask, Basic*Task stubs)
+  plugin/              Active plugin implementations (DroolsStrategyTask, FlowEconomicsTask, DroolsTacticsTask)
+  plugin/tactics/      Pure-Java GOAP planning — WorldState, GoapAction, GoapPlanner (no framework deps)
   plugin/flow/         Quarkus Flow integration — EconomicsFlow, EconomicsDecisionService, EconomicsLifecycle
   qa/                  QA REST endpoints — dev/test only (@UnlessBuildProfile("prod"))
 ```
@@ -143,6 +144,7 @@ Run this when setting up a new environment or after any change to the `feature/s
 - **`SimulatedGame`** is the living specification of SC2 behaviour. When real SC2 surprises us, update `SimulatedGame` to replicate the quirk and write a test.
 - **`StarCraftCaseFile`** holds all CaseFile key constants. Never use raw string keys elsewhere.
 - **CaseFile key namespaces:** `game.*` for SC2 observation state, `agent.*` for plugin-written reasoning state.
+- **Commit attribution:** Do not add `Co-Authored-By` trailers to commits.
 
 ## Blog Resources
 

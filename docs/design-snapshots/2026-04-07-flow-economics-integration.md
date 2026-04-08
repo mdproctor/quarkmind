@@ -2,7 +2,7 @@
 **Date:** 2026-04-07
 **Topic:** Second R&D integration — Quarkus Flow as the EconomicsTask plugin
 **Supersedes:** *(none)*
-**Superseded by:** *(leave blank — filled in if this snapshot is later superseded)*
+**Superseded by:** [2026-04-08-drools-goap-tactics-integration](2026-04-08-drools-goap-tactics-integration.md)
 
 ---
 
