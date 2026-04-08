@@ -8,6 +8,11 @@ public record GoapAction(
     Map<String, Boolean> effects,
     int cost
 ) {
+    public GoapAction {
+        preconditions = Map.copyOf(preconditions);
+        effects       = Map.copyOf(effects);
+    }
+
     public boolean isApplicable(WorldState state) {
         return preconditions.entrySet().stream()
             .allMatch(e -> state.get(e.getKey()) == e.getValue());

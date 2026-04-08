@@ -5,6 +5,10 @@ import java.util.Map;
 
 public record WorldState(Map<String, Boolean> conditions) {
 
+    public WorldState {
+        conditions = Map.copyOf(conditions);  // defensive copy + makes unmodifiable
+    }
+
     public WorldState with(String key, boolean value) {
         Map<String, Boolean> copy = new HashMap<>(conditions);
         copy.put(key, value);

@@ -41,6 +41,15 @@ class GoapPlannerTest {
         assertThat(state.satisfies("unknown")).isFalse();
     }
 
+    @Test
+    void worldStateIsImmutableToExternalMapMutation() {
+        Map<String, Boolean> mutable = new HashMap<>();
+        mutable.put("inRange", false);
+        WorldState state = new WorldState(mutable);
+        mutable.put("inRange", true);  // mutate the original map
+        assertThat(state.get("inRange")).isFalse();  // WorldState must be unaffected
+    }
+
     // ---- GoapAction ----
 
     @Test
