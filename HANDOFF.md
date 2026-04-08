@@ -5,7 +5,7 @@
 ## What Changed This Session
 
 - **DroolsTacticsTask** — third R&D integration complete. Drools fires once/tick as action compiler (classifies units → groups, emits action names). Java A* (`GoapPlanner`) finds cheapest plan per group. 152 tests passing.
-- **Issue tracking live** — `mdproctor/starcraft` on GitHub. Epic #1 closed. All commits reference issues going forward.
+- **Issue tracking live** — `mdproctor/quarkmind` on GitHub. Epic #1 closed. All commits reference issues going forward.
 - **CLAUDE.md** — Co-Authored-By suppressed; `plugin/tactics/` added to code org; integration tests updated.
 - **Garden** — GE-0105 (Drools action compiler pattern), GE-0109 (DataStore inter-phase signalling).
 
@@ -34,7 +34,7 @@
 | Spec | `docs/superpowers/specs/2026-04-08-drools-goap-tactics-design.md` |
 | Plan | `docs/superpowers/plans/2026-04-08-drools-goap-tactics-task.md` |
 | Blog | `docs/blog/2026-04-08-mdp01-tactics-gets-a-brain.md` |
-| GitHub issues | mdproctor/starcraft — #1 (epic, closed), #2–5 (closed) |
+| GitHub issues | mdproctor/quarkmind — #1 (epic, closed), #2–5 (closed) |
 | Garden | `~/claude/knowledge-garden/GARDEN.md` |
 | Library research | `docs/library-research.md` |
 

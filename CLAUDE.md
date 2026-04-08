@@ -87,13 +87,13 @@ See `NATIVE.md` for the per-dependency compatibility tracker.
 ## Code Organisation
 
 ```
-src/main/java/org/acme/starcraft/
+src/main/java/io/quarkmind/
   domain/              Plain Java records — no framework deps, always native-safe
   sc2/                 CDI interfaces (SC2Client, GameObserver, CommandDispatcher, ScenarioRunner)
   sc2/intent/          Intent types (BuildIntent, TrainIntent, AttackIntent, MoveIntent)
   sc2/mock/            Mock SC2 implementation — SimulatedGame, MockGameObserver, MockCommandDispatcher
   sc2/mock/scenario/   ScenarioLibrary — living specification of SC2 behaviour
-  agent/               CaseHub intelligence layer — StarCraftCaseFile keys, GameStateTranslator, AgentOrchestrator
+  agent/               CaseHub intelligence layer — QuarkMindCaseFile keys, GameStateTranslator, AgentOrchestrator
   agent/plugin/        Plugin seam interfaces (StrategyTask, EconomicsTask, TacticsTask, ScoutingTask)
   plugin/              Active plugin implementations (DroolsStrategyTask, FlowEconomicsTask, DroolsTacticsTask)
   plugin/tactics/      Pure-Java GOAP planning — WorldState, GoapAction, GoapPlanner (no framework deps)
@@ -142,7 +142,7 @@ Run this when setting up a new environment or after any change to the `feature/s
 - **SC2 interfaces** (`sc2/`) are contracts only — no implementation logic.
 - **QA endpoints** (`qa/`) carry `@UnlessBuildProfile("prod")` — they must never appear in production.
 - **`SimulatedGame`** is the living specification of SC2 behaviour. When real SC2 surprises us, update `SimulatedGame` to replicate the quirk and write a test.
-- **`StarCraftCaseFile`** holds all CaseFile key constants. Never use raw string keys elsewhere.
+- **`QuarkMindCaseFile`** holds all CaseFile key constants. Never use raw string keys elsewhere.
 - **CaseFile key namespaces:** `game.*` for SC2 observation state, `agent.*` for plugin-written reasoning state.
 - **Commit attribution:** Do not add `Co-Authored-By` trailers to commits.
 
@@ -163,7 +163,7 @@ Run this when setting up a new environment or after any change to the `feature/s
 ## Work Tracking
 
 **Issue tracking:** enabled
-**GitHub repo:** mdproctor/starcraft
+**GitHub repo:** mdproctor/quarkmind
 **Changelog:** GitHub Releases (run `gh release create --generate-notes` at milestones)
 
 **Automatic behaviours (Claude follows these at all times in this project):**

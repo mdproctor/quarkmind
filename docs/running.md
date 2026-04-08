@@ -16,7 +16,7 @@ cd /path/to/casehub && mvn install -DskipTests
 cd /path/to/scelight && ./scripts/publish-replay-libs.sh
 
 # 3. Build
-cd /path/to/starcraft-agent && mvn compile
+cd /path/to/quarkmind && mvn compile
 ```
 
 ---

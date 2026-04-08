@@ -11,7 +11,7 @@
 Three of four plugin seams are now backed by real R&D implementations:
 `DroolsStrategyTask` (Drools rules), `FlowEconomicsTask` (Quarkus Flow),
 `DroolsTacticsTask` (Drools GOAP planner + Java A*). The fourth, `ScoutingTask`,
-remains a stub. 152 tests pass. GitHub issue tracking is active (`mdproctor/starcraft`).
+remains a stub. 152 tests pass. GitHub issue tracking is active (`mdproctor/quarkmind`).
 
 `DroolsTacticsTask` classifies army units into groups (low-health / in-range /
 out-of-range) via Drools rules each tick, emits an action library via a second
@@ -52,5 +52,5 @@ The first action in each plan is dispatched as an `AttackIntent` or `MoveIntent`
 
 - Design spec: `docs/superpowers/specs/2026-04-08-drools-goap-tactics-design.md`
 - Implementation plan: `docs/superpowers/plans/2026-04-08-drools-goap-tactics-task.md`
-- Active epic: [#1 TacticsTask R&D integration](https://github.com/mdproctor/starcraft/issues/1)
+- Active epic: [#1 TacticsTask R&D integration](https://github.com/mdproctor/quarkmind/issues/1)
 - Garden: GE-0105 (Drools action compiler pattern), GE-0109 (DataStore inter-phase signalling)

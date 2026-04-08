@@ -61,11 +61,11 @@ native-compatible.
 | `sc2/mock/` | Mock implementation: `SimulatedGame`, `MockGameObserver`, `MockCommandDispatcher` |
 | `sc2/mock/scenario/` | `ScenarioLibrary` — living specification of SC2 behaviour |
 | `sc2/real/` | Real SC2 implementation via ocraft-s2client (active on `%sc2` profile) |
-| `agent/` | `AgentOrchestrator`, `GameStateTranslator`, `StarCraftCaseFile` (key constants) |
+| `agent/` | `AgentOrchestrator`, `GameStateTranslator`, `QuarkMindCaseFile` (key constants) |
 | `agent/plugin/` | Plugin seam interfaces: `StrategyTask`, `EconomicsTask`, `TacticsTask`, `ScoutingTask` |
 | `plugin/` | Real plugin implementations: `BasicEconomicsTask`, `BasicScoutingTask`, `BasicTacticsTask`, `DroolsStrategyTask` |
 | `plugin/drools/` | Drools Rule Unit: `StrategyRuleUnit` (data context) + `StarCraftStrategy.drl` (rules) |
-| `agent/StarCraftTaskRegistrar` | Startup bean wiring all four plugin seams into `TaskDefinitionRegistry` |
+| `agent/QuarkMindTaskRegistrar` | Startup bean wiring all four plugin seams into `TaskDefinitionRegistry` |
 | `qa/` | QA REST endpoints — dev/test only (`@UnlessBuildProfile("prod")`) |
 
 ---
@@ -88,7 +88,7 @@ All four plugin seams have real implementations:
 
 `BasicStrategyTask` is retained as a plain (non-CDI) class: reference implementation and direct-instantiation test target for the Drools strategy logic.
 
-Plugins are registered with CaseHub at startup by `StarCraftTaskRegistrar` — injecting each seam interface keeps Arc from removing the beans as unused (Arc's dead-bean elimination previously silently kept the registry empty).
+Plugins are registered with CaseHub at startup by `QuarkMindTaskRegistrar` — injecting each seam interface keeps Arc from removing the beans as unused (Arc's dead-bean elimination previously silently kept the registry empty).
 
 Four plugin levels (outermost to innermost):
 1. **Frame** — per-tick wrapper

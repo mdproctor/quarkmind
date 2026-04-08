@@ -1,0 +1,85 @@
+package io.quarkmind.plugin.drools;
+unit TacticsRuleUnit;
+
+// ---------------------------------------------------------------------------
+// Phase 1 — Group Classification (salience 200+)
+//
+// Classifies each army unit into exactly one group based on health and enemy
+// proximity. Only fires for ATTACK strategy.
+//   - DEFEND: handled in Java (bypass GOAP), no rules fire
+//   - MACRO:  no rules fire; army holds position
+//
+// Output format for groupDecisions: "groupId:GOAL:unitTag"
+// activeGroups DataStore is also updated so Phase 2 rules fire correctly.
+//
+// Syntax notes:
+//   - No-constraint pattern: /army  (NOT /army[])
+//   - Record accessors: this.method() to avoid DRL keyword clashes
+//   - health/maxHealth cast to double avoids integer division
+// ---------------------------------------------------------------------------
+
+rule "Group: low health"
+    salience 210
+when
+    eval(strategyGoal.equals("ATTACK"))
+    $u: /army[ (double) this.health() / this.maxHealth() < 0.3 ]
+then
+    groupDecisions.add("low-health:UNIT_SAFE:" + $u.tag());
+    activeGroups.add("low-health");
+end
+
+rule "Group: in range"
+    salience 200
+when
+    eval(strategyGoal.equals("ATTACK"))
+    $u: /army[ (double) this.health() / this.maxHealth() >= 0.3 ]
+    /inRangeTags[ this == $u.tag() ]
+then
+    groupDecisions.add("in-range:ENEMY_ELIMINATED:" + $u.tag());
+    activeGroups.add("in-range");
+end
+
+rule "Group: out of range"
+    salience 200
+when
+    eval(strategyGoal.equals("ATTACK"))
+    $u: /army[ (double) this.health() / this.maxHealth() >= 0.3 ]
+    not /inRangeTags[ this == $u.tag() ]
+    /enemies
+then
+    groupDecisions.add("out-of-range:ENEMY_ELIMINATED:" + $u.tag());
+    activeGroups.add("out-of-range");
+end
+
+// ---------------------------------------------------------------------------
+// Phase 2 — Action Emission (salience 100+)
+//
+// Fires once per active group. Matches on activeGroups DataStore (not
+// groupDecisions List) to guarantee Drools re-evaluates after Phase 1.
+//
+// Output format for actionDecisions: "ACTION_NAME:cost"
+// ---------------------------------------------------------------------------
+
+rule "Action: Retreat available"
+    salience 110
+when
+    /activeGroups[ this == "low-health" ]
+then
+    actionDecisions.add("RETREAT:1");
+end
+
+rule "Action: Attack available"
+    salience 100
+when
+    /activeGroups[ this == "in-range" ]
+then
+    actionDecisions.add("ATTACK:2");
+end
+
+rule "Action: MoveToEngage available"
+    salience 100
+when
+    /activeGroups[ this == "out-of-range" ]
+then
+    actionDecisions.add("MOVE_TO_ENGAGE:1");
+end

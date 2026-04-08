@@ -1,6 +1,6 @@
 # Plugin Developer Guide
 
-This guide covers everything needed to write, test, and deploy a new plugin for the StarCraft II Quarkus Agent.
+This guide covers everything needed to write, test, and deploy a new plugin for the QuarkusMind StarCraft II agent.
 
 ---
 
@@ -35,18 +35,18 @@ public class MyStrategyTask implements StrategyTask {
 
     // When this task fires — READY is set by GameStateTranslator each tick
     @Override
-    public Set<String> entryCriteria() { return Set.of(StarCraftCaseFile.READY); }
+    public Set<String> entryCriteria() { return Set.of(QuarkMindCaseFile.READY); }
 
     // CaseFile keys this task writes (empty if you only queue intents)
     @Override
-    public Set<String> producedKeys() { return Set.of(StarCraftCaseFile.STRATEGY); }
+    public Set<String> producedKeys() { return Set.of(QuarkMindCaseFile.STRATEGY); }
 
     @Override
     @SuppressWarnings("unchecked")
     public void execute(CaseFile caseFile) {
         // 1. Read game state from the CaseFile
-        int minerals = caseFile.get(StarCraftCaseFile.MINERALS, Integer.class).orElse(0);
-        List<Unit> workers = (List<Unit>) caseFile.get(StarCraftCaseFile.WORKERS, List.class)
+        int minerals = caseFile.get(QuarkMindCaseFile.MINERALS, Integer.class).orElse(0);
+        List<Unit> workers = (List<Unit>) caseFile.get(QuarkMindCaseFile.WORKERS, List.class)
             .orElse(List.of());
 
         // 2. Make decisions and queue intents
@@ -55,7 +55,7 @@ public class MyStrategyTask implements StrategyTask {
         }
 
         // 3. Optionally write reasoning state back to the CaseFile
-        caseFile.put(StarCraftCaseFile.STRATEGY, "MACRO");
+        caseFile.put(QuarkMindCaseFile.STRATEGY, "MACRO");
     }
 }
 ```
@@ -64,7 +64,7 @@ public class MyStrategyTask implements StrategyTask {
 
 ## Reading Game State
 
-Game state is available in the `CaseFile` via typed `get()` calls. All keys are defined in `StarCraftCaseFile`.
+Game state is available in the `CaseFile` via typed `get()` calls. All keys are defined in `QuarkMindCaseFile`.
 
 ### Resource keys
 
@@ -96,7 +96,7 @@ Game state is available in the `CaseFile` via typed `get()` calls. All keys are 
 
 ```java
 @SuppressWarnings("unchecked")
-List<Unit> workers = (List<Unit>) caseFile.get(StarCraftCaseFile.WORKERS, List.class)
+List<Unit> workers = (List<Unit>) caseFile.get(QuarkMindCaseFile.WORKERS, List.class)
     .orElse(List.of());
 ```
 
@@ -162,10 +162,10 @@ class MyStrategyTaskTest {
     @Test
     void buildsGatewayWhenReady() {
         var cf = new DefaultCaseFile("test", "starcraft-game", null, null);
-        cf.put(StarCraftCaseFile.MINERALS,    200);
-        cf.put(StarCraftCaseFile.WORKERS,     List.of(probe("p-0")));
-        cf.put(StarCraftCaseFile.MY_BUILDINGS, List.of(nexus(), completePylon()));
-        cf.put(StarCraftCaseFile.READY,       Boolean.TRUE);
+        cf.put(QuarkMindCaseFile.MINERALS,    200);
+        cf.put(QuarkMindCaseFile.WORKERS,     List.of(probe("p-0")));
+        cf.put(QuarkMindCaseFile.MY_BUILDINGS, List.of(nexus(), completePylon()));
+        cf.put(QuarkMindCaseFile.READY,       Boolean.TRUE);
 
         task.execute(cf);
 
