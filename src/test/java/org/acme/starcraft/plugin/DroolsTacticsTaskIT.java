@@ -1,0 +1,169 @@
+package org.acme.starcraft.plugin;
+
+import io.casehub.annotation.CaseType;
+import io.casehub.core.DefaultCaseFile;
+import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
+import org.acme.starcraft.agent.StarCraftCaseFile;
+import org.acme.starcraft.agent.plugin.TacticsTask;
+import org.acme.starcraft.domain.*;
+import org.acme.starcraft.sc2.IntentQueue;
+import org.acme.starcraft.sc2.intent.AttackIntent;
+import org.acme.starcraft.sc2.intent.MoveIntent;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * End-to-end integration tests for DroolsTacticsTask.
+ *
+ * <p>Each test documents one complete pipeline scenario: CaseFile state → Drools
+ * group classification → A* planning → Intent emission.
+ */
+@QuarkusTest
+class DroolsTacticsTaskIT {
+
+    @Inject @CaseType("starcraft-game") TacticsTask tacticsTask;
+    @Inject IntentQueue intentQueue;
+
+    @BeforeEach @AfterEach
+    void drainQueue() { intentQueue.drainAll(); }
+
+    @Test
+    void attackAllUnitsInRangeEmitsAttackIntents() {
+        var cf = caseFile("ATTACK",
+            List.of(stalker("s-0", new Point2d(10, 10), 80, 80),
+                    stalker("s-1", new Point2d(11, 10), 80, 80)),
+            List.of(enemy(new Point2d(14, 10))),
+            new Point2d(14, 10));
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending())
+            .hasSize(2)
+            .allMatch(i -> i instanceof AttackIntent);
+    }
+
+    @Test
+    void attackAllUnitsOutOfRangeEmitsMoveIntents() {
+        var cf = caseFile("ATTACK",
+            List.of(stalker("s-0", new Point2d(10, 10), 80, 80)),
+            List.of(enemy(new Point2d(30, 30))),
+            new Point2d(30, 30));
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending())
+            .hasSize(1)
+            .allMatch(i -> i instanceof MoveIntent);
+        assertThat(((MoveIntent) intentQueue.pending().get(0)).targetLocation())
+            .isEqualTo(new Point2d(30, 30));
+    }
+
+    @Test
+    void attackLowHealthUnitsRetreatsToNexus() {
+        Point2d nexusPos = new Point2d(8, 8);
+        var cf = caseFile("ATTACK",
+            List.of(stalker("s-0", new Point2d(10, 10), 20, 100)),
+            List.of(enemy(new Point2d(30, 30))),
+            new Point2d(30, 30));
+        cf.put(StarCraftCaseFile.MY_BUILDINGS, List.of(nexus(nexusPos)));
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending())
+            .hasSize(1)
+            .allMatch(i -> i instanceof MoveIntent);
+        assertThat(((MoveIntent) intentQueue.pending().get(0)).targetLocation())
+            .isEqualTo(nexusPos);
+    }
+
+    @Test
+    void attackMixedArmyEmitsCorrectIntentPerGroup() {
+        // s-low: low health → retreat (MoveIntent)
+        // s-near: healthy + in range (distance ~4 ≤ 6) → attack (AttackIntent)
+        // s-far: healthy + out of range → move-to-engage (MoveIntent)
+        var cf = caseFile("ATTACK",
+            List.of(stalker("s-low",  new Point2d(10, 10), 20, 100),
+                    stalker("s-near", new Point2d(10, 10), 80, 80),
+                    stalker("s-far",  new Point2d(50, 50), 80, 80)),
+            List.of(enemy(new Point2d(14, 10))),
+            new Point2d(14, 10));
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending()).hasSize(3);
+        assertThat(intentQueue.pending().stream()
+            .filter(i -> i instanceof MoveIntent mi && mi.unitTag().equals("s-low")))
+            .hasSize(1);
+        assertThat(intentQueue.pending().stream()
+            .filter(i -> i instanceof AttackIntent ai && ai.unitTag().equals("s-near")))
+            .hasSize(1);
+        assertThat(intentQueue.pending().stream()
+            .filter(i -> i instanceof MoveIntent mi && mi.unitTag().equals("s-far")))
+            .hasSize(1);
+    }
+
+    @Test
+    void defendAllUnitsMovesToNexus() {
+        Point2d nexusPos = new Point2d(8, 8);
+        var cf = caseFile("DEFEND",
+            List.of(stalker("s-0", new Point2d(10, 10), 80, 80),
+                    stalker("s-1", new Point2d(20, 20), 80, 80)),
+            List.of(enemy(new Point2d(12, 12))),
+            new Point2d(12, 12));
+        cf.put(StarCraftCaseFile.MY_BUILDINGS, List.of(nexus(nexusPos)));
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending())
+            .hasSize(2)
+            .allMatch(i -> i instanceof MoveIntent mi && mi.targetLocation().equals(nexusPos));
+    }
+
+    @Test
+    void macroProducesNoIntents() {
+        var cf = caseFile("MACRO",
+            List.of(stalker("s-0", new Point2d(10, 10), 80, 80)),
+            List.of(enemy(new Point2d(12, 12))),
+            null);
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending()).isEmpty();
+    }
+
+    @Test
+    void noArmyProducesNoIntents() {
+        var cf = caseFile("ATTACK", List.of(), List.of(enemy(new Point2d(12, 12))), new Point2d(12, 12));
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending()).isEmpty();
+    }
+
+    @Test
+    void noEnemiesProducesNoIntents() {
+        var cf = caseFile("ATTACK",
+            List.of(stalker("s-0", new Point2d(10, 10), 80, 80)),
+            List.of(), null);
+        tacticsTask.execute(cf);
+        assertThat(intentQueue.pending()).isEmpty();
+    }
+
+    // ---- Helpers ----
+
+    private DefaultCaseFile caseFile(String strategy, List<Unit> army,
+                                     List<Unit> enemies, Point2d nearestThreat) {
+        var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
+        cf.put(StarCraftCaseFile.STRATEGY,      strategy);
+        cf.put(StarCraftCaseFile.ARMY,          army);
+        cf.put(StarCraftCaseFile.ENEMY_UNITS,   enemies);
+        cf.put(StarCraftCaseFile.MY_BUILDINGS,  List.of());
+        cf.put(StarCraftCaseFile.READY,         Boolean.TRUE);
+        if (nearestThreat != null) cf.put(StarCraftCaseFile.NEAREST_THREAT, nearestThreat);
+        return cf;
+    }
+
+    private Unit stalker(String tag, Point2d pos, int health, int maxHealth) {
+        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth);
+    }
+
+    private Unit enemy(Point2d pos) {
+        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100);
+    }
+
+    private Building nexus(Point2d pos) {
+        return new Building("n-0", BuildingType.NEXUS, pos, 1500, 1500, true);
+    }
+}

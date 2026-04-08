@@ -30,8 +30,6 @@ import java.util.Set;
  * <p>Attack target falls back to {@link #MAP_CENTER} when no enemy is visible.
  * This is a conservative approximation — future phases will use proper map data.
  */
-@ApplicationScoped
-@CaseType("starcraft-game")
 public class BasicTacticsTask implements TacticsTask {
 
     /** Generic attack target when no scouted enemy position is available. */
