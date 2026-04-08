@@ -41,7 +41,7 @@ public class DroolsScoutingTask implements ScoutingTask {
     static final double FRAMES_PER_SECOND = 22.4;
 
     /** Delay before sending a scout — let the economy stabilise first. */
-    static final int SCOUT_DELAY_TICKS = 20;
+    public static final int SCOUT_DELAY_TICKS = 20;
 
     private static final Logger log = Logger.getLogger(DroolsScoutingTask.class);
 
