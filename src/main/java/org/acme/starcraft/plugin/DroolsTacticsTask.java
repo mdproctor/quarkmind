@@ -39,6 +39,7 @@ import java.util.*;
 public class DroolsTacticsTask implements TacticsTask {
 
     static final Point2d MAP_CENTER   = new Point2d(64, 64);
+    /** Stalker effective attack range in tiles. TODO(R&D): parameterise per unit type. */
     static final double  STALKER_RANGE = 6.0;
 
     private static final Map<String, GoapAction> ACTION_TEMPLATES = Map.of(
@@ -155,7 +156,10 @@ public class DroolsTacticsTask implements TacticsTask {
         Map<String, GroupInfo> groups = new LinkedHashMap<>();
         for (String decision : groupDecisions) {
             String[] parts = decision.split(":", 3);
-            if (parts.length < 3) continue;
+            if (parts.length < 3) {
+                log.warnf("[DROOLS-GOAP] Malformed group decision ignored: %s", decision);
+                continue;
+            }
             String groupId = parts[0];
             String goalKey = goalConditionKey(parts[1]);
             String unitTag = parts[2];
