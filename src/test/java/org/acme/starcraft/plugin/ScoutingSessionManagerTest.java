@@ -50,6 +50,8 @@ class ScoutingSessionManagerTest {
         manager.reset();
         assertThat(manager.seenTagCount()).isEqualTo(0);
         assertThat(manager.unitBufferSize()).isEqualTo(0);
+        assertThat(manager.armyBufferSize()).isEqualTo(0);
+        assertThat(manager.expansionBufferSize()).isEqualTo(0);
     }
 
     @Test

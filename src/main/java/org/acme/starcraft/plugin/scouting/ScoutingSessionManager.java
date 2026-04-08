@@ -73,8 +73,7 @@ public class ScoutingSessionManager {
                 unitBuffer.add(new EnemyUnitFirstSeen(e.type(), gameTimeMs));
             }
 
-            float distToEnemyBase = (float) e.position().distanceTo(estimatedEnemyBase);
-            if (distToEnemyBase > EXPANSION_DISTANCE_THRESHOLD) {
+            if (e.position().distanceTo(estimatedEnemyBase) > EXPANSION_DISTANCE_THRESHOLD) {
                 String cell = (int) e.position().x() + ":" + (int) e.position().y();
                 if (seenExpansionCells.add(cell)) {
                     expansionBuffer.add(new EnemyExpansionSeen(e.position(), gameTimeMs));
