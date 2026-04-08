@@ -12,6 +12,7 @@ Status: JVM mode only (Phase 0)
 | casehub-core | 1.0.0-SNAPSHOT | 🔲 Not verified | Verify before native build |
 | ocraft-s2client-bot | 0.4.21 | 🔲 Not added yet | Added in Phase 1; uses RxJava + Protobuf |
 | drools-goap-tactics | — | ✅ Native-safe | Pure Java A* planner; no new dependency introduced. Drools tracked via casehub-core. |
+| drools-cep-scouting | — | ✅ Native-safe | Rule unit model with DataStore accumulation; no runtime bytecode gen. Drools Executable Model handles AOT compilation. |
 
 ## Rules (enforce these always)
 - No dynamic class loading or runtime code generation
