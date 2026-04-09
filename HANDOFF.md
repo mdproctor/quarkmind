@@ -1,51 +1,42 @@
-# Handover — 2026-04-09
+# Handover — 2026-04-09 (session 2)
 
-**Head commit:** `de1daf7` — docs: design snapshot 2026-04-09 — emulation E1 + visualizer complete
+**Head commit:** `587fc67` — docs: design snapshot 2026-04-09 — E3 combat complete + budget fix
 
 ## What Changed This Session
 
-- **Phase E1 emulation engine** — `EmulatedGame` + `EmulatedEngine` + `%emulated` profile. Probe-driven mineral harvesting. `SC2Data` extracted as shared constants. `applyIntent()` stub (E2 will wire it).
-- **QuarkMind Visualizer** — PixiJS 8 (bundled, no CDN) + WebSocket push (`GameStateBroadcaster` as frame listener) + Electron wrapper. Sprite proxy (`SpriteProxyResource`) solves WebGL CORS. `window.__test` API for testing.
-- **Integration tests** — `GameStateWebSocketTest` (5, uses `java.net.http.WebSocket`), `VisualizerRenderTest` (9 Playwright tests: sprite counts, positions, mask regression, pixel sampling). 210 tests total.
-- **Performance benchmark** — `GameLoopBenchmarkTest` (`@Tag("benchmark")`, `mvn test -Pbenchmark`). Per-phase `TickTimings` exposed via `AtomicReference` in `AgentOrchestrator`. Pre-E2 baseline: 2ms mean plugin time.
-- **E2 spec written** — movement, scripted enemy wave, full intent handling, `EmulatedConfig` (properties + live overrides), visualizer config panel.
-- **Garden** — GE-0144–0151 submitted (PixiJS 8 mask bug, Playwright Java arg order, Tyrus classloader, Java 11 WS `request()`, JAX-RS `@ApplicationScoped`, Surefire `combine.self`, `window.__test`, WS connectivity proof).
+- **#15 fixed** — `FlowEconomicsTask` budget arbitration: Quarkus Flow serialises `GameStateTick` between `consume()` steps, resetting `ResourceBudget` each time. Fix: collapsed four steps into `checkAll()`. Regression test: 110 minerals, conditions for two decisions → assert size=1.
+- **E3 combat** — shields/maxShields on `Unit` record (20-file compile-guided refactor), `resolveCombat()` two-pass simultaneous resolution, `SC2Data.damagePerTick`/`attackRange`/`maxShields`, unit death. 236 tests (unit + integration + Playwright E2E).
+- **Visualiser health tinting** — `healthTint()` applies yellow→red tint to sprites; tint written to both PixiJS Container and inner Sprite (dual-locus fix).
+- **Playwright E2E combat tests** — full-health no tint, low-health red tint, unit disappears on removal. Injects state via `SimulatedGame.setUnitHealth()`/`removeUnit()`.
+- **Blog** — `mdp03` (E3 combat), `mdp04` (E1/E2/visualiser); screenshots and SC2 unit portraits added.
+- **Garden** — GE-0068 revised (Flow consume fix), GE-0157 (macOS tmp ENOSPC), GE-0158 (Java record compiler refactoring).
 
 ## Immediate Next Step
 
-**Implement E2.** Spec at `docs/superpowers/specs/2026-04-09-sc2-emulation-e2-design.md`. Write the plan (writing-plans skill), then execute subagent-driven. Key components:
-1. `SC2Data` — add `mineralCost()`, `gasCost()`
-2. `EnemyWave` record
-3. `EmulatedConfig` CDI bean (`@ConfigProperty` defaults + volatile runtime fields)
-4. `EmulatedConfigResource` (`GET/PUT /qa/emulated/config`)
-5. `EmulatedGame` — movement, pendingCompletions, enemy waves, full `applyIntent()`
-6. `EmulatedEngine` — inject config, sync speed per tick
-7. `visualizer.html/js` — config panel sidebar (hidden in non-emulated profiles)
-
-After E2: run benchmark, record result in `docs/benchmarks/`.
+**E4: Enemy active AI.** Enemy needs its own economy (mineral harvesting, unit production) and attack logic — so the bot faces a real opponent. Before starting: brainstorm, create GitHub epic + child issues, then write plan. Run `mvn test -Pbenchmark` and record the post-E3 baseline before changing anything.
 
 ## Open Issues
 
-| # | What | Blocker |
+| # | What | Status |
 |---|---|---|
-| #13 | Live SC2 smoke test | SC2 binary needed |
+| #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image tracing | Blocked on #13 |
-| #15 | FlowEconomicsTask budget arbitration | None — worth fixing after E2 |
-| #16 | Scouting CEP threshold calibration | Replay data |
+| #16 | Scouting CEP threshold calibration | Needs replay data |
 
 ## Key Technical Notes
 
-- **PixiJS 8 mask bug** — `sprite.addChild(mask); sprite.mask = mask` makes anchored sprites invisible. Fix: no mask. Documented in garden GE-0144.
-- **WebSocket test isolation** — call `engine.observe()` directly (not `orchestrator.gameTick()`) to avoid triggering async Flow economics which pollutes `IntentQueue` across tests.
-- **Playwright tests** — Chromium must be installed: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`. Tests use `window.__test` API, not pixel comparison.
-- **Benchmark** — `mvn test -Pbenchmark`. Uses `combine.self="override"` in Maven profile to clear base `<excludedGroups>benchmark</excludedGroups>`.
+- **`attackingUnits` set** — populated by `AttackIntent`, never cleared by `MoveIntent`. Unit continues firing on retreat. E4 needs a cancel path.
+- **Two-pass combat** — collect damage into `Map<String, Integer>` first, then apply. Do NOT change to sequential.
+- **`moveFriendlyUnits()` and `moveEnemyUnits()`** — must carry `u.shields()` and `u.maxShields()` through the `Unit` replacement or shields silently reset to 0 every tick.
+- **Quarkus Flow + shared mutable state** — use one `consume()` step; separate steps serialize/deserialize input, resetting mutations.
 
 ## References
 
 | Context | Where |
 |---|---|
-| Design snapshot | `docs/design-snapshots/2026-04-09-emulation-e1-visualizer-complete.md` |
-| E2 spec | `docs/superpowers/specs/2026-04-09-sc2-emulation-e2-design.md` |
-| Visualizer spec | `docs/superpowers/specs/2026-04-09-quarkmind-visualizer-design.md` |
-| Benchmark baseline | `docs/benchmarks/2026-04-09-pre-e2-baseline.md` |
+| Design snapshot | `docs/design-snapshots/2026-04-09-emulation-e3-combat-complete.md` |
+| E3 spec | `docs/superpowers/specs/2026-04-09-sc2-emulation-e3-design.md` |
+| E4 roadmap entry | E2 spec phase table: `docs/superpowers/specs/2026-04-09-sc2-emulation-e2-design.md` |
+| Benchmark | `docs/benchmarks/2026-04-09-pre-e2-baseline.md` (pre-E3; run again before E4) |
+| Blog | `docs/blog/2026-04-09-mdp03-the-game-has-stakes.md`, `mdp04-watching-the-game.md` |
 | GitHub | mdproctor/quarkmind |
