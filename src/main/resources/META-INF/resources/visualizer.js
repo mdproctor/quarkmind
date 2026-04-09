@@ -167,15 +167,19 @@ function updateScene(state) {
         `   Frame: ${state.gameFrame}`;
 }
 
+let wsConnected = false;
+
 /** Open WebSocket; auto-reconnect on close. */
 function connect() {
     const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
+    ws.onopen    = () => { wsConnected = true; };
     ws.onmessage = e => {
         try { updateScene(JSON.parse(e.data)); }
         catch (err) { console.warn('Bad message', err); }
     };
     ws.onerror = () => ws.close();
     ws.onclose = () => {
+        wsConnected = false;
         hudText.text = 'Disconnected — reconnecting...';
         setTimeout(connect, RECONNECT_MS);
     };
@@ -207,6 +211,40 @@ async function init() {
     hudText.x = 8;
     hudText.y = 648;
     hud.addChild(hudText);
+
+    // ---------------------------------------------------------------------------
+    // Test hooks — used by VisualizerRenderTest (@QuarkusTest + Playwright).
+    // Set before loadAssets() so tests can access them without waiting for
+    // network fetches. Do not use in production code.
+    // ---------------------------------------------------------------------------
+    window.__pixiApp = app;
+    window.__test = {
+        /** Count sprites by entity type prefix ('unit', 'building', 'geyser', 'enemy'). */
+        spriteCount: (prefix) =>
+            [...activeSprites.keys()].filter(k => k.startsWith(prefix + ':')).length,
+
+        /** Serialisable metadata for a single sprite looked up by key ('building:nexus-0'). */
+        sprite: (key) => {
+            const s = activeSprites.get(key);
+            if (!s) return null;
+            return {
+                x:       s.x,
+                y:       s.y,
+                alpha:   s.alpha   ?? 1,
+                visible: s.visible !== false,
+                hasMask: s.mask != null,      // true → masked sprite (see mask-bug history)
+            };
+        },
+
+        /** Current HUD text — includes minerals, gas, supply, frame. */
+        hudText: () => hudText?.text ?? '',
+
+        /** True if the sprite texture was loaded successfully (not a fallback shape). */
+        assetLoaded: (alias) => PIXI.Assets.get(alias) !== undefined,
+
+        /** True once the WebSocket handshake completes. Use in waitForFunction before triggering observe(). */
+        wsConnected: () => wsConnected,
+    };
 
     await loadAssets();
     connect();
