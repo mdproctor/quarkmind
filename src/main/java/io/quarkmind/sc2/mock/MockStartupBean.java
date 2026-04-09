@@ -23,11 +23,11 @@ public class MockStartupBean {
     @Inject AgentOrchestrator orchestrator;
 
     void onStart(@Observes StartupEvent ev) {
-        log.info("[MOCK] Auto-starting mock game session on application startup...");
+        log.info("[STARTUP] Auto-starting game session on application startup...");
         try {
             orchestrator.startGame();
         } catch (Exception e) {
-            log.errorf("[MOCK] Auto-start failed: %s — use POST /sc2/start to retry", e.getMessage());
+            log.errorf("[STARTUP] Auto-start failed: %s — use POST /sc2/start to retry", e.getMessage());
         }
     }
 }

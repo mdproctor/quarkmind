@@ -140,7 +140,7 @@ Run this when setting up a new environment or after any change to the `feature/s
 
 ## Key Conventions
 
-- **Domain model** (`domain/`) must remain plain Java — no CDI, no Quarkus imports, no framework dependencies. Records and enums only.
+- **Domain model** (`domain/`) must remain plain Java — no CDI, no Quarkus imports, no framework dependencies. Records, enums, and static utility classes (e.g. `SC2Data`) are all acceptable; framework annotations are not.
 - **SC2 interfaces** (`sc2/`) are contracts only — no implementation logic.
 - **QA endpoints** (`qa/`) carry `@UnlessBuildProfile("prod")` — they must never appear in production.
 - **`SimulatedGame`** is the living specification of SC2 behaviour. When real SC2 surprises us, update `SimulatedGame` to replicate the quirk and write a test.
