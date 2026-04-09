@@ -41,6 +41,12 @@ mvn quarkus:dev -Dquarkus.profile=replay
 # Default replay: Nothing_4720936.SC2Replay — override with -Dstarcraft.replay.file=...
 ```
 
+**Run (emulated physics, no SC2 needed):**
+```bash
+mvn quarkus:dev -Dquarkus.profile=emulated
+# Opens visualizer at http://localhost:8080/visualizer.html
+```
+
 **Run (real SC2):**
 ```bash
 mvn quarkus:dev -Dquarkus.profile=sc2
@@ -51,6 +57,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 | Profile | SC2 needed | Purpose |
 |---|---|---|
 | `%mock` (default) | No | Development and unit testing against SimulatedGame |
+| `%emulated` | No | Physics simulation — EmulatedGame with real mechanics (movement, combat phases) |
 | `%replay` | No | Agent loop against a real `.SC2Replay` — observe-only |
 | `%sc2` | Yes | Real SC2 integration |
 | `%test` | No | @QuarkusTest — scheduler disabled |
@@ -66,6 +73,15 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - Use `@Inject` to get beans; scheduler is disabled — call `orchestrator.gameTick()` directly
 - Tests: `QaEndpointsTest`, `FullMockPipelineIT`, `DroolsStrategyTaskTest`, `EconomicsFlowTest`, `DroolsTacticsRuleUnitTest`, `DroolsTacticsTaskIT`, `DroolsScoutingRulesTest`, `DroolsScoutingTaskIT`
 - Flow integration tests emit to a SmallRye channel and assert after `Thread.sleep(300)` — the flow processes asynchronously
+
+**Playwright render tests** (`@QuarkusTest` + `@Tag("browser")`, excluded from default surefire run — need Chromium installed):
+- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, pixel sampling via `window.__test` API
+- Install Chromium once: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`
+- Run with: `mvn test -Pplaywright` (TODO: add playwright profile once Playwright tests are stable)
+- Currently excluded via `@Tag("benchmark")` exclusion (will get own tag/profile)
+
+**WebSocket integration tests** (`@QuarkusTest`, run in normal suite):
+- `GameStateWebSocketTest` — connects via `java.net.http.WebSocket`, calls `engine.observe()` directly (not `gameTick()`) to avoid triggering async Flow economics which pollutes IntentQueue across tests
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 
