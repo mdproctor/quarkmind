@@ -18,6 +18,10 @@ Use this before searching the web. Update it when new images are found or downlo
 | `sc2-zealot.jpg` | Liquipedia | 900×700 in-game render. Zealot mid-stance on dark floor tiles. Matches units in our `UnitType.ZEALOT`. |
 | `sc2-stalker.jpg` | Liquipedia | 900×700 in-game render. Stalker — blue glowing orbs, dark armour, distinctive silhouette. Used in Phase 1 header (spawned in `spawn-enemy-attack` debug scenario). Maps to `UnitType.STALKER`. |
 | `architecture-plugins.png` | Local screenshot | 1400×900 @2x. Our four-level plugin architecture diagram from the brainstorming session. |
+| `sc2-probe.jpg` | Liquipedia | 900×700 in-game render. Probe — compact worker unit, blue-green crystal highlights. Used in mdp03/mdp04 blog entries. Maps to `UnitType.PROBE`. |
+| `sc2-nexus.jpg` | Liquipedia | 900×700 in-game render. Nexus — Protoss main base, glowing blue crystal core. Used in mdp04 blog entry. Maps to `BuildingType.NEXUS`. |
+| `visualizer-e2-zealots.png` | Screenshot | 800×680 canvas capture. Four Zealots advancing from spawn toward the nexus at frame 22. |
+| `visualizer-e3-combat.png` | Screenshot | 800×680 canvas capture. Zealot at the base engaging probes at frame 48, supply dropped 15→13. |
 
 ---
 
