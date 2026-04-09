@@ -9,6 +9,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
  * Layer 1: read from application.properties with hardcoded defaults.
  * Layer 2: runtime-mutable via EmulatedConfigResource (PUT /qa/emulated/config).
  * Layer 3: visualizer config panel calls the REST endpoint.
+ *
+ * <p>No profile guard — this bean is instantiated in all profiles (including %mock and %prod).
+ * It is only actively read by EmulatedEngine (@IfBuildProfile("emulated")). All four
+ * @ConfigProperty fields must retain their defaultValue permanently to avoid resolution
+ * failures in profiles where the property is not configured.
  */
 @ApplicationScoped
 public class EmulatedConfig {
