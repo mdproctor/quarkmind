@@ -39,3 +39,7 @@ We added health tinting to the visualiser: full colour at high HP, yellow around
 The Playwright E2E tests close the loop. We inject a low-health probe via `SimulatedGame.setUnitHealth()`, push an observation, then assert on the sprite's `tint` property through `window.__test.sprite()`. No pixel sampling — the state is readable from the JS layer directly.
 
 236 tests pass. Units fight. Probes die red.
+
+![A Zealot at the base engaging probes at frame 48](assets/visualizer-e3-combat.png)
+
+*Frame 48: a Zealot has marched from (26,26) and reached the probe line. Supply dropped from 15 to 13 — two probes are already gone.*

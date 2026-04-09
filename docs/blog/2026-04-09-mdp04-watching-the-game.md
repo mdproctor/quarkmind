@@ -42,3 +42,7 @@ With a working foundation, we added movement, a scripted enemy wave, and real in
 Enemy Zealots spawn at tile (26,26) at frame 200 and march toward the nexus. The config panel on the right of the canvas lets you tune the wave timing, unit count, and movement speed without restarting — a `PUT /qa/emulated/config` call backed by `EmulatedConfig`, a CDI bean with `@ConfigProperty` defaults and volatile runtime overrides for live adjustment.
 
 The first time four red Zealot sprites started moving across the canvas toward the nexus, the emulation looked like something. Not StarCraft II, but something you could reason about.
+
+![Four Zealots advancing from spawn toward the nexus at frame 22](assets/visualizer-e2-zealots.png)
+
+*Four Zealots spawned at tile (26,26), advancing on the nexus. Probes clustered at their starting positions. Geysers marked in green. The HUD shows minerals accumulating.*
