@@ -44,6 +44,23 @@ public final class ActionTranslator {
     }
 
     static Abilities mapTrainAbility(UnitType type) {
-        throw new UnsupportedOperationException("not yet implemented");
+        return switch (type) {
+            case PROBE        -> Abilities.TRAIN_PROBE;
+            case ZEALOT       -> Abilities.TRAIN_ZEALOT;
+            case STALKER      -> Abilities.TRAIN_STALKER;
+            case IMMORTAL     -> Abilities.TRAIN_IMMORTAL;
+            case COLOSSUS     -> Abilities.TRAIN_COLOSSUS;
+            case CARRIER      -> Abilities.TRAIN_CARRIER;
+            case DARK_TEMPLAR -> Abilities.TRAIN_DARK_TEMPLAR;
+            case HIGH_TEMPLAR -> Abilities.TRAIN_HIGH_TEMPLAR;
+            case OBSERVER     -> Abilities.TRAIN_OBSERVER;
+            case VOID_RAY     -> Abilities.TRAIN_VOIDRAY; // ocraft: no underscore
+            // Archon requires two Templar — single-tag TrainIntent cannot express this
+            case ARCHON       -> null;
+            // Zerg and Terran types exist for scouting recognition, not Protoss training
+            case ZERGLING, ROACH, HYDRALISK,
+                 MARINE, MARAUDER, MEDIVAC,
+                 UNKNOWN      -> null;
+        };
     }
 }

@@ -43,4 +43,49 @@ class ActionTranslatorTest {
     void unknownBuildingTypeHasNullBuildAbility() {
         assertThat(ActionTranslator.mapBuildAbility(BuildingType.UNKNOWN)).isNull();
     }
+
+    @Test
+    void allProtossTrainAbilitiesMapCorrectly() {
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.PROBE))
+            .isEqualTo(Abilities.TRAIN_PROBE);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.ZEALOT))
+            .isEqualTo(Abilities.TRAIN_ZEALOT);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.STALKER))
+            .isEqualTo(Abilities.TRAIN_STALKER);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.IMMORTAL))
+            .isEqualTo(Abilities.TRAIN_IMMORTAL);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.COLOSSUS))
+            .isEqualTo(Abilities.TRAIN_COLOSSUS);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.CARRIER))
+            .isEqualTo(Abilities.TRAIN_CARRIER);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.DARK_TEMPLAR))
+            .isEqualTo(Abilities.TRAIN_DARK_TEMPLAR);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.HIGH_TEMPLAR))
+            .isEqualTo(Abilities.TRAIN_HIGH_TEMPLAR);
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.OBSERVER))
+            .isEqualTo(Abilities.TRAIN_OBSERVER);
+        // Note: ocraft spells this TRAIN_VOIDRAY (no underscore), not TRAIN_VOID_RAY
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.VOID_RAY))
+            .isEqualTo(Abilities.TRAIN_VOIDRAY);
+    }
+
+    @Test
+    void archonTrainAbilityIsNullBecauseItRequiresTwoTemplar() {
+        // ARCHON is formed by merging two High or Dark Templar — the single-tag
+        // TrainIntent model cannot express a two-unit merge. Log warn and skip.
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.ARCHON)).isNull();
+    }
+
+    @Test
+    void enemyAndUnknownUnitTypesHaveNullTrainAbility() {
+        // Zerg and Terran types exist in UnitType for scouting recognition only.
+        // They are not trainable by a Protoss player.
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.ZERGLING)).isNull();
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.ROACH)).isNull();
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.HYDRALISK)).isNull();
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.MARINE)).isNull();
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.MARAUDER)).isNull();
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.MEDIVAC)).isNull();
+        assertThat(ActionTranslator.mapTrainAbility(UnitType.UNKNOWN)).isNull();
+    }
 }
