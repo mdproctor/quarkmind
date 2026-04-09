@@ -15,6 +15,7 @@ let mainWindow     = null;
 function waitForQuarkus() {
     return new Promise((resolve, reject) => {
         const deadline = Date.now() + MAX_WAIT_MS;
+        let firstError = true;
         function poll() {
             if (Date.now() > deadline) {
                 return reject(new Error('Quarkus did not start within 30 seconds'));
@@ -22,7 +23,13 @@ function waitForQuarkus() {
             http.get(HEALTH_URL, res => {
                 if (res.statusCode === 200) resolve();
                 else setTimeout(poll, POLL_MS);
-            }).on('error', () => setTimeout(poll, POLL_MS));
+            }).on('error', err => {
+                if (firstError) {
+                    console.log(`[ELECTRON] Waiting for Quarkus (${err.code})...`);
+                    firstError = false;
+                }
+                setTimeout(poll, POLL_MS);
+            });
         }
         setTimeout(poll, POLL_MS);
     });
@@ -62,6 +69,9 @@ app.whenReady().then(async () => {
         createWindow();
     } catch (e) {
         console.error('[ELECTRON] Startup failed:', e.message);
+        if (quarkusProcess) {
+            quarkusProcess.kill();
+        }
         app.quit();
     }
 });
