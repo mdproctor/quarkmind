@@ -1,6 +1,7 @@
 package io.quarkmind.qa;
 
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -12,6 +13,7 @@ import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@ApplicationScoped
 @UnlessBuildProfile("prod")
 @Path("/qa/sprites")
 public class SpriteProxyResource {
