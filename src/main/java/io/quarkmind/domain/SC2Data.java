@@ -69,4 +69,39 @@ public final class SC2Data {
             default       -> 500;
         };
     }
+
+    public static int mineralCost(UnitType type) {
+        return switch (type) {
+            case PROBE    -> 50;
+            case ZEALOT   -> 100;
+            case STALKER  -> 125;
+            case IMMORTAL -> 250;
+            case OBSERVER -> 25;
+            default       -> 100;
+        };
+    }
+
+    public static int mineralCost(BuildingType type) {
+        return switch (type) {
+            case NEXUS             -> 400;
+            case PYLON             -> 100;
+            case GATEWAY           -> 150;
+            case CYBERNETICS_CORE  -> 150;
+            case ASSIMILATOR       -> 75;
+            case ROBOTICS_FACILITY -> 200;
+            case STARGATE          -> 150;
+            case FORGE             -> 150;
+            case TWILIGHT_COUNCIL  -> 150;
+            default                -> 100;
+        };
+    }
+
+    public static int gasCost(UnitType type) {
+        return switch (type) {
+            case STALKER  -> 50;
+            case IMMORTAL -> 100;
+            case OBSERVER -> 75;
+            default       -> 0;
+        };
+    }
 }
