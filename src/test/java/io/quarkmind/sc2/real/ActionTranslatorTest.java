@@ -145,4 +145,58 @@ class ActionTranslatorTest {
         assertThat(cmd.ability()).isEqualTo(Abilities.MOVE);
         assertThat(cmd.target()).contains(Point2d.of(10f, 20f));
     }
+
+    // ─── Group 3: Error and edge cases ───────────────────────────────────────
+
+    @Test
+    void archonTrainIntentProducesNoCommandAndDoesNotThrow() {
+        // ARCHON merge is not expressible as a single-tag TrainIntent.
+        // The translator logs a warning and returns an empty list — no crash.
+        var intent = new TrainIntent("333", UnitType.ARCHON);
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).isEmpty();
+    }
+
+    @Test
+    void unknownBuildingTypeProducesNoCommand() {
+        var intent = new BuildIntent("444", BuildingType.UNKNOWN,
+                                    new io.quarkmind.domain.Point2d(0f, 0f));
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).isEmpty();
+    }
+
+    @Test
+    void malformedTagProducesNoCommandAndDoesNotThrow() {
+        // Tags must be numeric (Long). A non-numeric tag is logged and skipped —
+        // one bad intent must not abort the rest of the frame's dispatch.
+        var intent = new BuildIntent("not-a-number", BuildingType.PYLON,
+                                     new io.quarkmind.domain.Point2d(0f, 0f));
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).isEmpty();
+    }
+
+    @Test
+    void validAndInvalidIntentsMixed_onlyValidOnesProduceCommands() {
+        var valid   = new BuildIntent("100", BuildingType.PYLON,
+                                     new io.quarkmind.domain.Point2d(15f, 25f));
+        var archon  = new TrainIntent("200", UnitType.ARCHON);         // null ability
+        var badTag  = new MoveIntent("oops", new io.quarkmind.domain.Point2d(0f, 0f)); // bad tag
+
+        var commands = ActionTranslator.translate(List.of(valid, archon, badTag));
+
+        assertThat(commands).hasSize(1);
+        assertThat(commands.get(0).ability()).isEqualTo(Abilities.BUILD_PYLON);
+        assertThat(commands.get(0).tag()).isEqualTo(Tag.of(100L));
+    }
+
+    @Test
+    void emptyIntentListProducesEmptyCommandList() {
+        assertThat(ActionTranslator.translate(List.of())).isEmpty();
+    }
 }
