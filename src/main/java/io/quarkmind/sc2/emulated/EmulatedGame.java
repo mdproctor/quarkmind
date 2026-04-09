@@ -18,6 +18,9 @@ public class EmulatedGame {
 
     private double mineralAccumulator;
     private int miningProbes;
+    private int vespene;
+    private int supply;
+    private int supplyUsed;
     private long gameFrame;
     private final List<Unit>     myUnits     = new ArrayList<>();
     private final List<Building> myBuildings = new ArrayList<>();
@@ -27,6 +30,9 @@ public class EmulatedGame {
     public void reset() {
         mineralAccumulator = SC2Data.INITIAL_MINERALS;
         miningProbes       = SC2Data.INITIAL_PROBES;
+        vespene            = SC2Data.INITIAL_VESPENE;
+        supply             = SC2Data.INITIAL_SUPPLY;
+        supplyUsed         = SC2Data.INITIAL_SUPPLY_USED;
         gameFrame          = 0;
         myUnits.clear();
         myBuildings.clear();
@@ -60,10 +66,10 @@ public class EmulatedGame {
 
     public GameState snapshot() {
         return new GameState(
-            (int) mineralAccumulator,
-            SC2Data.INITIAL_VESPENE,
-            SC2Data.INITIAL_SUPPLY,
-            SC2Data.INITIAL_SUPPLY_USED,
+            (int) mineralAccumulator,  // floor: fractional minerals accumulate silently
+            vespene,
+            supply,
+            supplyUsed,
             List.copyOf(myUnits),
             List.copyOf(myBuildings),
             List.copyOf(enemyUnits),
