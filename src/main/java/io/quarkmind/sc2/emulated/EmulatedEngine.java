@@ -1,6 +1,6 @@
-package io.quarkmind.sc2.mock;
+package io.quarkmind.sc2.emulated;
 
-import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.arc.profile.IfBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import io.quarkmind.domain.GameState;
@@ -13,42 +13,42 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Mock engine — drives the full agent loop against {@link SimulatedGame}.
- * Active in all profiles except {@code %sc2}.
+ * SC2Engine implementation backed by {@link EmulatedGame}.
+ * Active only in the {@code %emulated} profile.
+ * Mirrors {@link io.quarkmind.sc2.mock.MockEngine} in structure.
  */
-@UnlessBuildProfile(anyOf = {"sc2", "replay", "emulated"})
+@IfBuildProfile("emulated")
 @ApplicationScoped
-public class MockEngine implements SC2Engine {
+public class EmulatedEngine implements SC2Engine {
 
-    private static final Logger log = Logger.getLogger(MockEngine.class);
+    private static final Logger log = Logger.getLogger(EmulatedEngine.class);
 
-    private final SimulatedGame game;
+    private final EmulatedGame game = new EmulatedGame();
     private final IntentQueue intentQueue;
     private final List<Consumer<GameState>> frameListeners = new ArrayList<>();
     private boolean connected = false;
 
     @Inject
-    public MockEngine(SimulatedGame game, IntentQueue intentQueue) {
-        this.game = game;
+    public EmulatedEngine(IntentQueue intentQueue) {
         this.intentQueue = intentQueue;
     }
 
     @Override
     public void connect() {
         connected = true;
-        log.info("[MOCK] Engine connected");
+        log.info("[EMULATED] Engine connected");
     }
 
     @Override
     public void joinGame() {
         game.reset();
-        log.info("[MOCK] Joined game");
+        log.info("[EMULATED] Joined game — 12 probes harvesting, emulated physics active");
     }
 
     @Override
     public void leaveGame() {
         connected = false;
-        log.info("[MOCK] Left game");
+        log.info("[EMULATED] Left game");
     }
 
     @Override
@@ -70,10 +70,7 @@ public class MockEngine implements SC2Engine {
 
     @Override
     public void dispatch() {
-        intentQueue.drainAll().forEach(intent -> {
-            log.debugf("[MOCK] Dispatching: %s", intent);
-            game.applyIntent(intent);
-        });
+        intentQueue.drainAll().forEach(game::applyIntent);
     }
 
     @Override
