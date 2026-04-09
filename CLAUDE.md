@@ -83,6 +83,15 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 **WebSocket integration tests** (`@QuarkusTest`, run in normal suite):
 - `GameStateWebSocketTest` — connects via `java.net.http.WebSocket`, calls `engine.observe()` directly (not `gameTick()`) to avoid triggering async Flow economics which pollutes IntentQueue across tests
 
+**EmulatedGame test helpers** (package-private, for combat tests in `EmulatedGameTest`):
+- `spawnEnemyForTesting(UnitType, Point2d)` — places an enemy unit at a specific position
+- `setHealthForTesting(String tag, int health)` — sets a friendly unit's HP directly
+- `setShieldsForTesting(String tag, int shields)` — sets a friendly unit's shields directly
+
+**SimulatedGame test helpers** (public, usable from any test including `VisualizerRenderTest`):
+- `setUnitHealth(String tag, int health)` — inject low-health state for visualiser E2E tests
+- `removeUnit(String tag)` — simulate unit death for visualiser disappearance tests
+
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 
 ## Native Quarkus — Policy
