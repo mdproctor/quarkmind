@@ -14,7 +14,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import io.quarkmind.agent.AgentOrchestrator;
+import io.quarkmind.domain.SC2Data;
+import io.quarkmind.domain.UnitType;
 import io.quarkmind.sc2.SC2Engine;
+import io.quarkmind.sc2.mock.SimulatedGame;
 
 import javax.imageio.ImageIO;
 import java.awt.Color;
@@ -61,6 +64,7 @@ class VisualizerRenderTest {
 
     @Inject AgentOrchestrator orchestrator;
     @Inject SC2Engine engine;
+    @Inject SimulatedGame simulatedGame;
 
     static Playwright playwright;
     static Browser    browser;
@@ -134,6 +138,77 @@ class VisualizerRenderTest {
 
     /** Derive the expected canvas Y coordinate for a game tile Y (flipped). */
     private static int canvasY(float tileY) { return Math.round((VIEWPORT_H - tileY) * SCALE); }
+
+    /**
+     * Tint test: a full-health probe sprite must have no tint (0xffffff = white = no tint).
+     */
+    @Test
+    void fullHealthUnitHasNoTint() {
+        Page page = openPage();
+        observeAndWait(page, "unit", 12);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> sprite = (Map<String, Object>) page.evaluate(
+            "() => window.__test.sprite('unit:probe-0')");
+        assertThat(sprite).isNotNull();
+        // 0xffffff = 16777215 decimal
+        assertThat(((Number) sprite.get("tint")).intValue())
+            .as("Full-health probe must have no tint (0xffffff)")
+            .isEqualTo(0xffffff);
+
+        page.close();
+    }
+
+    /**
+     * Tint test: a critically low-health probe must receive a red tint.
+     * Uses SimulatedGame.setUnitHealth() to inject a low-health state.
+     */
+    @Test
+    void lowHealthUnitHasRedTint() {
+        Page page = openPage();
+
+        // Set probe-0 to 5 HP (11% of 45 max) → triggers red tint (ratio < 0.3)
+        simulatedGame.setUnitHealth("probe-0", 5);
+        engine.observe();
+
+        // Wait for browser to receive updated state with non-white tint
+        page.waitForFunction(
+            "() => { const s = window.__test.sprite('unit:probe-0'); return s && s.tint !== 0xffffff; }",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> sprite = (Map<String, Object>) page.evaluate(
+            "() => window.__test.sprite('unit:probe-0')");
+        assertThat(((Number) sprite.get("tint")).intValue())
+            .as("Low-health probe must have a non-white (red) tint")
+            .isNotEqualTo(0xffffff);
+
+        page.close();
+    }
+
+    /**
+     * Disappear test: a unit removed from game state must vanish from the visualizer.
+     * Uses SimulatedGame.removeUnit() to simulate death.
+     */
+    @Test
+    void unitDisappearsWhenRemovedFromGameState() {
+        Page page = openPage();
+        observeAndWait(page, "unit", 12);
+
+        // Remove probe-0 — simulates it dying in combat
+        simulatedGame.removeUnit("probe-0");
+        engine.observe();
+
+        // Wait for sprite count to drop
+        page.waitForFunction(
+            "() => window.__test.spriteCount('unit') < 12",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.spriteCount('unit')")).intValue();
+        assertThat(count).isEqualTo(11);
+
+        page.close();
+    }
 
     /** Extract minerals integer from "Minerals: 55   Gas: ..." HUD text. */
     private static int parseMinerals(String hud) {
