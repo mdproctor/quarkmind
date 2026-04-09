@@ -43,7 +43,11 @@ async function loadAssets() {
     }
 }
 
-/** Draw a static grid background on the given container. */
+/**
+ * Draw a static grid covering the 32×32 tile game area (640×640px).
+ * The canvas (800×680px) is wider/taller — the right strip and bottom strip
+ * outside the grid are intentionally empty (future sidebar; HUD below).
+ */
 function drawGrid(container) {
     const g = new PIXI.Graphics();
     for (let i = 0; i <= VIEWPORT_H; i++) {
