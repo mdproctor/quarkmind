@@ -11,7 +11,49 @@
 </head>
 <body>
     <h1>QUARKMIND</h1>
-    <div id="game"></div>
+    <div style="display:flex; align-items:flex-start; gap:8px;">
+        <div id="game"></div>
+        <div id="config-panel" style="display:none; width:180px; background:#0d0d20;
+             color:#ccccff; padding:12px; font-family:monospace; font-size:12px;
+             border:1px solid #2a2a4e; align-self:stretch;">
+
+            <div style="color:#8888ff; font-size:13px; margin-bottom:10px;">WAVE CONFIG</div>
+
+            <label style="display:block; margin-bottom:2px;">Spawn frame</label>
+            <input id="cfg-wave-frame" type="number" value="200" min="1" max="2000"
+                   style="width:100%; margin-bottom:8px; background:#1a1a3e; color:#ccc; border:1px solid #333; padding:2px;">
+
+            <label style="display:block; margin-bottom:2px;">Enemy count</label>
+            <input id="cfg-unit-count" type="number" value="4" min="1" max="12"
+                   style="width:100%; margin-bottom:8px; background:#1a1a3e; color:#ccc; border:1px solid #333; padding:2px;">
+
+            <label style="display:block; margin-bottom:2px;">Unit type</label>
+            <select id="cfg-unit-type"
+                    style="width:100%; margin-bottom:12px; background:#1a1a3e; color:#ccc; border:1px solid #333; padding:2px;">
+                <option value="ZEALOT">Zealot</option>
+                <option value="STALKER">Stalker</option>
+                <option value="ROACH">Roach</option>
+                <option value="MARINE">Marine</option>
+            </select>
+
+            <div style="color:#8888ff; font-size:13px; margin-bottom:8px;">PHYSICS</div>
+            <label style="display:block; margin-bottom:2px;">Speed: <span id="cfg-speed-val">0.5</span> t/tick</label>
+            <input id="cfg-speed" type="range" min="0.05" max="1.5" step="0.05" value="0.5"
+                   style="width:100%; margin-bottom:12px;">
+
+            <button id="cfg-apply"
+                    style="width:100%; margin-bottom:4px; background:#1a2a4e; color:#ccccff;
+                    border:1px solid #444; padding:4px; cursor:pointer; font-family:monospace;">
+                Apply Changes
+            </button>
+            <button id="cfg-restart"
+                    style="width:100%; background:#2a1a1e; color:#ffaaaa; border:1px solid #444;
+                    padding:4px; cursor:pointer; font-family:monospace;">
+                Restart Game
+            </button>
+            <div id="cfg-status" style="margin-top:8px; font-size:11px; color:#88ff88; min-height:14px;"></div>
+        </div>
+    </div>
     <script src="/pixi.min.js"></script>
     <script src="/visualizer.js"></script>
 </body>

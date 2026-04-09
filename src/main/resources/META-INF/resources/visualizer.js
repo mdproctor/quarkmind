@@ -185,6 +185,73 @@ function connect() {
     };
 }
 
+/**
+ * Initialise the config panel sidebar.
+ * Probes GET /qa/emulated/config — shows panel only in %emulated profile,
+ * hides silently in %mock, %sc2, etc. (endpoint returns 404 in those profiles).
+ */
+function initConfigPanel() {
+    const panel       = document.getElementById('config-panel');
+    const speedSlider = document.getElementById('cfg-speed');
+    const speedVal    = document.getElementById('cfg-speed-val');
+    const status      = document.getElementById('cfg-status');
+
+    // Probe the endpoint — show panel only if it exists (%emulated profile)
+    fetch('/qa/emulated/config')
+        .then(r => { if (!r.ok) return null; panel.style.display = 'block'; return r.json(); })
+        .then(cfg => {
+            if (!cfg) return;
+            document.getElementById('cfg-wave-frame').value = cfg.waveSpawnFrame;
+            document.getElementById('cfg-unit-count').value = cfg.waveUnitCount;
+            document.getElementById('cfg-unit-type').value  = cfg.waveUnitType;
+            speedSlider.value    = cfg.unitSpeed;
+            speedVal.textContent = cfg.unitSpeed;
+        })
+        .catch(() => {}); // not in %emulated — panel stays hidden
+
+    // Speed is live — sends immediately on slider move (no restart needed)
+    speedSlider.addEventListener('input', () => {
+        speedVal.textContent = speedSlider.value;
+        sendConfig({ unitSpeed: parseFloat(speedSlider.value) });
+    });
+
+    // Apply button — sends wave + speed config (wave takes effect on next restart)
+    document.getElementById('cfg-apply').addEventListener('click', () => {
+        sendConfig(currentConfig()).then(() => showStatus('Applied — restart to activate wave'));
+    });
+
+    // Restart — apply config then call /sc2/start
+    document.getElementById('cfg-restart').addEventListener('click', () => {
+        sendConfig(currentConfig())
+            .then(() => fetch('/sc2/start', { method: 'POST' }))
+            .then(() => showStatus('Game restarted'))
+            .catch(() => showStatus('Restart failed', true));
+    });
+
+    function currentConfig() {
+        return {
+            waveSpawnFrame: parseInt(document.getElementById('cfg-wave-frame').value),
+            waveUnitCount:  parseInt(document.getElementById('cfg-unit-count').value),
+            waveUnitType:   document.getElementById('cfg-unit-type').value,
+            unitSpeed:      parseFloat(speedSlider.value),
+        };
+    }
+
+    function sendConfig(partial) {
+        return fetch('/qa/emulated/config', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(partial),
+        }).then(r => r.json()).catch(() => showStatus('Update failed', true));
+    }
+
+    function showStatus(msg, isError = false) {
+        status.textContent = msg;
+        status.style.color = isError ? '#ff4444' : '#88ff88';
+        setTimeout(() => { status.textContent = ''; }, 2500);
+    }
+}
+
 /** Entry point — called once on page load. */
 async function init() {
     const app = new PIXI.Application();
@@ -248,6 +315,7 @@ async function init() {
 
     await loadAssets();
     connect();
+    initConfigPanel();
 }
 
 init();
