@@ -219,21 +219,29 @@ class VisualizerRenderTest {
     }
 
     /**
-     * Regression test for the PixiJS 8 mask bug (fixed in commit 6484a03):
-     * adding a Graphics mask as a child of an anchored Sprite made the Sprite
-     * invisible. All unit sprites must have hasMask === false.
+     * Circular masking test: unit sprites use the Container/mask approach (PixiJS 8 fix).
+     *
+     * With the correct fix (GE-0144), the Container has hasMask === true (the mask IS present
+     * and clips the sprite circular). The old workaround was to remove the mask entirely
+     * (hasMask === false), which produced rectangular portraits. The fix reinstates circular
+     * portraits by applying the mask to the Container rather than the Sprite directly.
+     *
+     * Note: a corner-pixel test (assert corner is background after clipping) is intentionally
+     * omitted — WebGL anti-aliasing at the mask edge produces sub-pixel bleeding that makes
+     * exact pixel assertions at the circle boundary brittle across different renderers.
+     * Visibility is covered by probePixelIsNotBackground; masking by hasMask === true.
      */
     @Test
-    void unitSpritesHaveNoMask() {
+    void unitSpritesAreCircularlyMasked() {
         Page page = openPage();
         observeAndWait(page, "unit", 12);
 
-        boolean noMasks = (boolean) page.evaluate(
+        // Container must have a mask applied (circular clipping is active)
+        boolean allMasked = (boolean) page.evaluate(
             "() => Array.from({length: 12}, (_, i) => window.__test.sprite('unit:probe-' + i))" +
-            "      .every(s => s !== null && !s.hasMask)");
-
-        assertThat(noMasks)
-            .as("No unit sprite should have a mask applied (PixiJS 8 mask bug regression)")
+            "      .every(s => s !== null && s.hasMask)");
+        assertThat(allMasked)
+            .as("All unit sprites must have a container mask applied (circular clipping)")
             .isTrue();
 
         page.close();

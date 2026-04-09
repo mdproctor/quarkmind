@@ -59,20 +59,39 @@ function drawGrid(container) {
 }
 
 /**
- * Create a unit portrait sprite. In PixiJS 8, Graphics-based masks added as children
- * of a masked Sprite make the sprite invisible — rectangular portraits are used instead.
- * If the texture is unavailable the fallback is a coloured circle.
+ * Create a circular-masked unit portrait using a PIXI.Container approach (PixiJS 8).
+ *
+ * PixiJS 8 gotcha (GE-0144): adding a Graphics mask as a child of an anchored Sprite
+ * and setting sprite.mask makes the Sprite invisible — the mask's coordinate space
+ * doesn't align with the anchor offset, clipping away all pixels.
+ *
+ * Fix: both the Sprite and the Graphics mask are children of a Container. The mask is
+ * applied to the Container (not the Sprite). The Container is then positioned by syncLayer.
+ *
+ * If the texture is unavailable the fallback is a coloured circle — no mask needed
+ * because Graphics shapes have no rectangular background to clip.
  */
 function makeUnitSprite(alias, radius, tintColor) {
     const texture = alias ? PIXI.Assets.get(alias) : null;
     if (texture) {
+        const container = new PIXI.Container();
+
         const sprite = new PIXI.Sprite(texture);
-        sprite.width = radius * 2;
+        sprite.width  = radius * 2;
         sprite.height = radius * 2;
         sprite.anchor.set(0.5);
         if (tintColor) sprite.tint = tintColor;
-        return sprite;
+
+        const mask = new PIXI.Graphics();
+        mask.circle(0, 0, radius).fill(0xffffff);
+
+        container.addChild(sprite);
+        container.addChild(mask);  // mask in same coordinate space as sprite
+        container.mask = mask;     // mask on Container, not on Sprite
+
+        return container;
     }
+    // Fallback: coloured circle — Graphics has no rectangular background, no mask needed
     const g = new PIXI.Graphics();
     g.circle(0, 0, radius).fill(tintColor ?? 0x4488ff);
     return g;
