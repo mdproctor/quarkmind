@@ -85,6 +85,8 @@ public class EmulatedGame {
             Point2d target = unitTargets.get(u.tag());
             if (target == null) return u;
             Point2d newPos = stepToward(u.position(), target, unitSpeed);
+            // Safe: remove from unitTargets (different collection from myUnits being iterated).
+            // If myUnits were ever parallelised this would race — keep single-threaded.
             if (distance(newPos, target) < 0.2) unitTargets.remove(u.tag());
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth());
         });
@@ -152,6 +154,8 @@ public class EmulatedGame {
         vespene -= gCost;
         long completesAt = gameFrame + SC2Data.trainTimeInTicks(t.unitType());
         pendingCompletions.add(new PendingCompletion(completesAt, () -> {
+            // TODO: reserve supplyUsed at queue time (not completion time) to prevent
+            // double-queuing when two TrainIntents arrive before either completes.
             supplyUsed += sCost;
             String tag = "unit-" + nextTag++;
             int hp = SC2Data.maxHealth(t.unitType());
