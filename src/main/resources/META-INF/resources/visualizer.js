@@ -58,7 +58,11 @@ function drawGrid(container) {
     container.addChild(g);
 }
 
-/** Create a unit portrait: circular-masked sprite if texture available, else coloured circle. */
+/**
+ * Create a unit portrait sprite. In PixiJS 8, Graphics-based masks added as children
+ * of a masked Sprite make the sprite invisible — rectangular portraits are used instead.
+ * If the texture is unavailable the fallback is a coloured circle.
+ */
 function makeUnitSprite(alias, radius, tintColor) {
     const texture = alias ? PIXI.Assets.get(alias) : null;
     if (texture) {
@@ -66,10 +70,6 @@ function makeUnitSprite(alias, radius, tintColor) {
         sprite.width = radius * 2;
         sprite.height = radius * 2;
         sprite.anchor.set(0.5);
-        const mask = new PIXI.Graphics();
-        mask.circle(0, 0, radius).fill(0xffffff);
-        sprite.addChild(mask);
-        sprite.mask = mask;
         if (tintColor) sprite.tint = tintColor;
         return sprite;
     }
