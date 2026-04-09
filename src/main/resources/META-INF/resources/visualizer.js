@@ -149,16 +149,22 @@ function syncLayer(layer, entities, keyPrefix, spriteFactory) {
             s.x = pos.x;
             s.y = pos.y;
             if (entity.health !== undefined && entity.maxHealth !== undefined) {
-                const tint = healthTint(entity.health, entity.maxHealth);
-                s.tint = tint ?? 0xffffff;
+                const tintVal = healthTint(entity.health, entity.maxHealth) ?? 0xffffff;
+                s.tint = tintVal;  // Keep on container for window.__test.sprite() readback
+                if (s.children && s.children.length > 0) {
+                    s.children[0].tint = tintVal;  // Also set on inner Sprite for consistent rendering
+                }
             }
         } else {
             const s = spriteFactory(entity);
             s.x = pos.x;
             s.y = pos.y;
             if (entity.health !== undefined && entity.maxHealth !== undefined) {
-                const tint = healthTint(entity.health, entity.maxHealth);
-                s.tint = tint ?? 0xffffff;
+                const tintVal = healthTint(entity.health, entity.maxHealth) ?? 0xffffff;
+                s.tint = tintVal;  // Keep on container for window.__test.sprite() readback
+                if (s.children && s.children.length > 0) {
+                    s.children[0].tint = tintVal;  // Also set on inner Sprite for consistent rendering
+                }
             }
             layer.addChild(s);
             activeSprites.set(key, s);
