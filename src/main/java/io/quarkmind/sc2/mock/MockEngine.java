@@ -8,8 +8,8 @@ import io.quarkmind.sc2.IntentQueue;
 import io.quarkmind.sc2.SC2Engine;
 import org.jboss.logging.Logger;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -24,7 +24,7 @@ public class MockEngine implements SC2Engine {
 
     private final SimulatedGame game;
     private final IntentQueue intentQueue;
-    private final List<Consumer<GameState>> frameListeners = new ArrayList<>();
+    private final List<Consumer<GameState>> frameListeners = new CopyOnWriteArrayList<>();
     private boolean connected = false;
 
     @Inject
