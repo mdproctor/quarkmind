@@ -152,7 +152,7 @@ A game loop benchmark (`@Tag("benchmark")`) measures per-phase tick timings acro
 
 **How to run:**
 ```bash
-mvn test -Dgroups=benchmark -Dquarkus.profile=emulated
+mvn test -Pbenchmark
 ```
 
 Output is a timing table (mean/p95/max per phase). Paste it into `docs/benchmarks/YYYY-MM-DD-<context>.md` when recording a snapshot. The assertion thresholds are generous guards against catastrophic regressions — the real signal is the table, not a passing test.
