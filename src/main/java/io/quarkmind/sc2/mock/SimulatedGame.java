@@ -27,10 +27,10 @@ public class SimulatedGame {
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
     public synchronized void reset() {
-        minerals = 50;
-        vespene = 0;
-        supply = 15;
-        supplyUsed = 12;
+        minerals = SC2Data.INITIAL_MINERALS;
+        vespene = SC2Data.INITIAL_VESPENE;
+        supply = SC2Data.INITIAL_SUPPLY;
+        supplyUsed = SC2Data.INITIAL_SUPPLY_USED;
         gameFrame.set(0);
         myUnits.clear();
         myBuildings.clear();
@@ -39,13 +39,10 @@ public class SimulatedGame {
         pendingCompletions.clear();
         nextTag = 200;
 
-        // 12 Probes
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
             myUnits.add(new Unit("probe-" + i, UnitType.PROBE, new Point2d(9 + i * 0.5f, 9), 45, 45));
         }
-        // 1 Nexus
         myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8), 1500, 1500, true));
-        // 2 Vespene geysers (typical positions relative to Nexus at 8,8)
         geysers.add(new Resource("geyser-0", new Point2d(5, 11), 2250));
         geysers.add(new Resource("geyser-1", new Point2d(11, 5), 2250));
     }
@@ -123,61 +120,10 @@ public class SimulatedGame {
 
     public List<Resource> getGeysers() { return List.copyOf(geysers); }
 
-    // Build times in ticks (22 loops/tick at SC2 Faster speed = 22.4 loops/sec)
-    private static int trainTimeInTicks(UnitType type) {
-        return switch (type) {
-            case PROBE    -> 12;  // 12s
-            case ZEALOT   -> 28;  // 27s
-            case STALKER  -> 31;  // 30s
-            case IMMORTAL -> 40;  // 39s
-            case OBSERVER -> 22;  // 21s
-            default       -> 30;
-        };
-    }
-
-    private static int buildTimeInTicks(BuildingType type) {
-        return switch (type) {
-            case PYLON             -> 18;  // 18s
-            case GATEWAY           -> 47;  // 46s
-            case CYBERNETICS_CORE  -> 37;  // 36s
-            case ASSIMILATOR       -> 21;  // 21s
-            case ROBOTICS_FACILITY -> 47;  // 46s
-            case STARGATE          -> 44;  // 43s
-            case FORGE             -> 30;  // 29s
-            case TWILIGHT_COUNCIL  -> 37;  // 36s
-            default                -> 40;
-        };
-    }
-
-    private int supplyCost(UnitType type) {
-        return switch (type) {
-            case PROBE -> 1;
-            case ZEALOT -> 2;
-            case STALKER -> 2;
-            case IMMORTAL -> 4;
-            default -> 2;
-        };
-    }
-
-    private int supplyBonus(BuildingType type) {
-        return type == BuildingType.PYLON ? 8 : 0;
-    }
-
-    private int maxHealth(UnitType type) {
-        return switch (type) {
-            case PROBE -> 45;
-            case ZEALOT -> 100;
-            case STALKER -> 80;
-            default -> 100;
-        };
-    }
-
-    private int maxBuildingHealth(BuildingType type) {
-        return switch (type) {
-            case NEXUS -> 1500;
-            case PYLON -> 200;
-            case GATEWAY -> 500;
-            default -> 500;
-        };
-    }
+    private static int trainTimeInTicks(UnitType type)     { return SC2Data.trainTimeInTicks(type); }
+    private static int buildTimeInTicks(BuildingType type)  { return SC2Data.buildTimeInTicks(type); }
+    private int supplyCost(UnitType type)                   { return SC2Data.supplyCost(type); }
+    private int supplyBonus(BuildingType type)              { return SC2Data.supplyBonus(type); }
+    private int maxHealth(UnitType type)                    { return SC2Data.maxHealth(type); }
+    private int maxBuildingHealth(BuildingType type)        { return SC2Data.maxBuildingHealth(type); }
 }
