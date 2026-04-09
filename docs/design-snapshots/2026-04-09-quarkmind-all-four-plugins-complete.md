@@ -1,7 +1,7 @@
 # QuarkusMind — Design Snapshot
 **Date:** 2026-04-09
 **Topic:** All four R&D plugin seams complete — project renamed QuarkusMind
-**Superseded by:** *(leave blank — filled in if this snapshot is later superseded)*
+**Superseded by:** [2026-04-09-sc2-command-dispatch-complete](2026-04-09-sc2-command-dispatch-complete.md)
 
 ---
 
