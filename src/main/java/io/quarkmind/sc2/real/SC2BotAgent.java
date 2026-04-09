@@ -4,6 +4,7 @@ import com.github.ocraft.s2client.bot.S2Agent;
 import io.quarkmind.domain.GameState;
 import io.quarkmind.sc2.IntentQueue;
 import org.jboss.logging.Logger;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -48,11 +49,16 @@ public class SC2BotAgent extends S2Agent {
             log.warnf("[SC2] Observation translation failed: %s", e.getMessage());
         }
 
-        // 2. Drain IntentQueue — commands MUST be sent within onStep().
-        //    Phase 1: dummy plugins produce no intents — queue is always empty.
-        //    Phase 3+: translate Intent types to ocraft actions here.
-        intentQueue.drainAll().forEach(intent ->
-            log.debugf("[SC2] Intent (Phase 1 no-op): %s", intent));
+        // 2. Drain IntentQueue and dispatch commands.
+        //    Commands MUST be issued within onStep() — ocraft enforces this.
+        //    ActionTranslator resolves each Intent to a Tag + Ability + optional Point2d.
+        List<ResolvedCommand> commands = ActionTranslator.translate(intentQueue.drainAll());
+        commands.forEach(cmd ->
+            cmd.target().ifPresentOrElse(
+                pos -> actions().unitCommand(cmd.tag(), cmd.ability(), pos, false),
+                ()  -> actions().unitCommand(cmd.tag(), cmd.ability(), false)
+            )
+        );
 
         // 3. Drain pending debug commands (queued by SC2DebugScenarioRunner).
         //    Debug API calls must be issued from onStep(); sendDebug() flushes them.
