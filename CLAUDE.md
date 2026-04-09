@@ -89,7 +89,8 @@ See `NATIVE.md` for the per-dependency compatibility tracker.
 ```
 src/main/java/io/quarkmind/
   domain/              Plain Java records — no framework deps, always native-safe
-  sc2/                 CDI interfaces (SC2Client, GameObserver, CommandDispatcher, ScenarioRunner)
+  sc2/                 SC2Engine seam — IntentQueue, GameStarted/GameStopped events, sealed Intent interface
+  sc2/real/            Live SC2 implementation — RealSC2Engine, SC2BotAgent, ObservationTranslator, ActionTranslator
   sc2/intent/          Intent types (BuildIntent, TrainIntent, AttackIntent, MoveIntent)
   sc2/mock/            Mock SC2 implementation — SimulatedGame, MockGameObserver, MockCommandDispatcher
   sc2/mock/scenario/   ScenarioLibrary — living specification of SC2 behaviour
@@ -110,13 +111,13 @@ Four plugin levels exist (Frame → CaseFile → PlanningStrategy → TaskDefini
 
 ## CaseHub Dependency
 
-CaseHub (`io.casehub:casehub-core:1.0.0-SNAPSHOT`) must be installed to the local Maven repo before building:
+CaseHub (`io.casehub:casehub-core:1.0.0-SNAPSHOT` + `casehub-persistence-memory`) must be installed to the local Maven repo before building:
 
 ```bash
 cd /Users/mdproctor/claude/casehub && mvn install -DskipTests -Dquarkus.build.skip=true
 ```
 
-CaseHub will move to GitHub Packages then Maven Central as it matures.
+Running from the parent installs all modules including `casehub-persistence-memory` (provides in-memory `TaskRepository` and `CaseFileRepository`). CaseHub will move to GitHub Packages then Maven Central as it matures.
 
 ## Replay Library Dependency
 
