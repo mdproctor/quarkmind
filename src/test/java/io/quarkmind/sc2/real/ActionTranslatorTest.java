@@ -1,6 +1,8 @@
 package io.quarkmind.sc2.real;
 
 import com.github.ocraft.s2client.protocol.data.Abilities;
+import com.github.ocraft.s2client.protocol.spatial.Point2d;
+import com.github.ocraft.s2client.protocol.unit.Tag;
 import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.UnitType;
 import io.quarkmind.sc2.intent.AttackIntent;
@@ -87,5 +89,60 @@ class ActionTranslatorTest {
         assertThat(ActionTranslator.mapTrainAbility(UnitType.MARAUDER)).isNull();
         assertThat(ActionTranslator.mapTrainAbility(UnitType.MEDIVAC)).isNull();
         assertThat(ActionTranslator.mapTrainAbility(UnitType.UNKNOWN)).isNull();
+    }
+
+    // ─── Group 2: Intent dispatch ─────────────────────────────────────────────
+
+    @Test
+    void buildIntentProducesPositionTargetedCommandWithCorrectTagAbilityAndLocation() {
+        var intent = new BuildIntent("456", BuildingType.GATEWAY,
+                                    new io.quarkmind.domain.Point2d(30f, 40f));
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).hasSize(1);
+        var cmd = commands.get(0);
+        assertThat(cmd.tag()).isEqualTo(Tag.of(456L));
+        assertThat(cmd.ability()).isEqualTo(Abilities.BUILD_GATEWAY);
+        assertThat(cmd.target()).contains(Point2d.of(30f, 40f));
+    }
+
+    @Test
+    void trainIntentProducesCommandWithCorrectTagAndAbilityAndNoPosition() {
+        var intent = new TrainIntent("789", UnitType.PROBE);
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).hasSize(1);
+        var cmd = commands.get(0);
+        assertThat(cmd.tag()).isEqualTo(Tag.of(789L));
+        assertThat(cmd.ability()).isEqualTo(Abilities.TRAIN_PROBE);
+        assertThat(cmd.target()).isEmpty();
+    }
+
+    @Test
+    void attackIntentProducesAttackCommandAtTargetLocation() {
+        var intent = new AttackIntent("111", new io.quarkmind.domain.Point2d(50f, 60f));
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).hasSize(1);
+        var cmd = commands.get(0);
+        assertThat(cmd.tag()).isEqualTo(Tag.of(111L));
+        assertThat(cmd.ability()).isEqualTo(Abilities.ATTACK);
+        assertThat(cmd.target()).contains(Point2d.of(50f, 60f));
+    }
+
+    @Test
+    void moveIntentProducesMoveCommandAtTargetLocation() {
+        var intent = new MoveIntent("222", new io.quarkmind.domain.Point2d(10f, 20f));
+
+        var commands = ActionTranslator.translate(List.of(intent));
+
+        assertThat(commands).hasSize(1);
+        var cmd = commands.get(0);
+        assertThat(cmd.tag()).isEqualTo(Tag.of(222L));
+        assertThat(cmd.ability()).isEqualTo(Abilities.MOVE);
+        assertThat(cmd.target()).contains(Point2d.of(10f, 20f));
     }
 }

@@ -1,12 +1,19 @@
 package io.quarkmind.sc2.real;
 
 import com.github.ocraft.s2client.protocol.data.Abilities;
+import com.github.ocraft.s2client.protocol.unit.Tag;
 import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.UnitType;
+import io.quarkmind.sc2.intent.AttackIntent;
+import io.quarkmind.sc2.intent.BuildIntent;
 import io.quarkmind.sc2.intent.Intent;
+import io.quarkmind.sc2.intent.MoveIntent;
+import io.quarkmind.sc2.intent.TrainIntent;
 import org.jboss.logging.Logger;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Translates domain Intent objects into ResolvedCommands for dispatch via ActionInterface.
@@ -25,7 +32,79 @@ public final class ActionTranslator {
     private ActionTranslator() {}
 
     public static List<ResolvedCommand> translate(List<Intent> intents) {
-        throw new UnsupportedOperationException("not yet implemented");
+        List<ResolvedCommand> commands = new ArrayList<>();
+        for (Intent intent : intents) {
+            try {
+                ResolvedCommand cmd = switch (intent) {
+                    case BuildIntent  b -> build(b);
+                    case TrainIntent  t -> train(t);
+                    case AttackIntent a -> attack(a);
+                    case MoveIntent   m -> move(m);
+                    default -> {
+                        log.warnf("[SC2] Unknown intent type: %s — skipped",
+                                  intent.getClass().getSimpleName());
+                        yield null;
+                    }
+                };
+                if (cmd != null) commands.add(cmd);
+            } catch (Exception e) {
+                log.warnf("[SC2] Failed to translate intent %s: %s", intent, e.getMessage());
+            }
+        }
+        return commands;
+    }
+
+    private static ResolvedCommand build(BuildIntent intent) {
+        Abilities ability = mapBuildAbility(intent.buildingType());
+        if (ability == null) {
+            log.warnf("[SC2] No build ability for BuildingType.%s — intent skipped",
+                      intent.buildingType());
+            return null;
+        }
+        return new ResolvedCommand(
+            toTag(intent.unitTag()),
+            ability,
+            Optional.of(toOcraft(intent.location()))
+        );
+    }
+
+    private static ResolvedCommand train(TrainIntent intent) {
+        Abilities ability = mapTrainAbility(intent.unitType());
+        if (ability == null) {
+            log.warnf("[SC2] No train ability for UnitType.%s — intent skipped",
+                      intent.unitType());
+            return null;
+        }
+        return new ResolvedCommand(
+            toTag(intent.unitTag()),
+            ability,
+            Optional.empty()
+        );
+    }
+
+    private static ResolvedCommand attack(AttackIntent intent) {
+        return new ResolvedCommand(
+            toTag(intent.unitTag()),
+            Abilities.ATTACK,
+            Optional.of(toOcraft(intent.targetLocation()))
+        );
+    }
+
+    private static ResolvedCommand move(MoveIntent intent) {
+        return new ResolvedCommand(
+            toTag(intent.unitTag()),
+            Abilities.MOVE,
+            Optional.of(toOcraft(intent.targetLocation()))
+        );
+    }
+
+    private static Tag toTag(String tagStr) {
+        return Tag.of(Long.parseLong(tagStr));
+    }
+
+    private static com.github.ocraft.s2client.protocol.spatial.Point2d toOcraft(
+            io.quarkmind.domain.Point2d p) {
+        return com.github.ocraft.s2client.protocol.spatial.Point2d.of(p.x(), p.y());
     }
 
     static Abilities mapBuildAbility(BuildingType type) {
