@@ -138,6 +138,25 @@ Run this when setting up a new environment or after any change to the `feature/s
 `docs/adr/` holds ADRs for significant architectural choices. Reference ADR-0001
 (Quarkus Flow placement) when deciding where new framework integrations belong.
 
+## Performance Benchmarking
+
+A game loop benchmark (`@Tag("benchmark")`) measures per-phase tick timings across the full plugin chain. Run it **before and after** any change that could affect game loop latency, then paste the result into `docs/benchmarks/` with a date and commit reference.
+
+**When to run:**
+- Adding or modifying a plugin (`StrategyTask`, `EconomicsTask`, `TacticsTask`, `ScoutingTask`)
+- Changing `AgentOrchestrator.gameTick()` or `caseEngine.createAndSolve()` timeout
+- Adding new Drools rules or growing the fact base significantly
+- Any change to `EmulatedGame.tick()` physics (new movement, combat, wave logic)
+- After a dependency upgrade (Drools, Quarkus Flow, CaseHub)
+- Whenever a tick feels sluggish in the visualizer
+
+**How to run:**
+```bash
+mvn test -Dgroups=benchmark -Dquarkus.profile=emulated
+```
+
+Output is a timing table (mean/p95/max per phase). Paste it into `docs/benchmarks/YYYY-MM-DD-<context>.md` when recording a snapshot. The assertion thresholds are generous guards against catastrophic regressions — the real signal is the table, not a passing test.
+
 ## Key Conventions
 
 - **Domain model** (`domain/`) must remain plain Java — no CDI, no Quarkus imports, no framework dependencies. Records, enums, and static utility classes (e.g. `SC2Data`) are all acceptable; framework annotations are not.
