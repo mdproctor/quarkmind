@@ -13,8 +13,9 @@ import java.util.function.Consumer;
  *   <li>{@code RealSC2Engine} — ocraft-s2client; clock owned by ocraft (tick is no-op)</li>
  * </ul>
  *
- * <p>Future implementations: {@code ReplayEngine}, {@code HttpSC2Engine}, {@code EmulationEngine}.
+ * <p>Future implementations: {@code ReplayEngine}, {@code HttpSC2Engine}, or others.
  * See {@code docs/roadmap-sc2-engine.md}.
+ * Existing implementations also include {@code EmulatedEngine}.
  */
 public interface SC2Engine {
 

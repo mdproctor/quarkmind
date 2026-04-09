@@ -70,7 +70,10 @@ public class EmulatedEngine implements SC2Engine {
 
     @Override
     public void dispatch() {
-        intentQueue.drainAll().forEach(game::applyIntent);
+        intentQueue.drainAll().forEach(intent -> {
+            log.debugf("[EMULATED] Dispatching: %s", intent);
+            game.applyIntent(intent);
+        });
     }
 
     @Override
