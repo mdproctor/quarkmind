@@ -33,6 +33,7 @@ public class EmulatedGame {
     private double unitSpeed = 0.5;
     private final Map<String, Point2d> unitTargets  = new HashMap<>();
     private final Map<String, Point2d> enemyTargets = new HashMap<>();
+    private final Set<String>          attackingUnits = new HashSet<>(); // E3: units with active AttackIntent
     private final List<EnemyWave>         pendingWaves       = new ArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new ArrayList<>();
     private int nextTag = 200;
@@ -52,6 +53,7 @@ public class EmulatedGame {
         geysers.clear();
         unitTargets.clear();
         enemyTargets.clear();
+        attackingUnits.clear();
         pendingCompletions.clear();
         nextTag = 200;
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
@@ -76,6 +78,7 @@ public class EmulatedGame {
         mineralAccumulator += miningProbes * SC2Data.MINERALS_PER_PROBE_PER_TICK;
         moveFriendlyUnits();
         moveEnemyUnits();
+        resolveCombat();
         fireCompletions();
         spawnEnemyWaves();
     }
@@ -131,16 +134,17 @@ public class EmulatedGame {
 
     public void applyIntent(Intent intent) {
         switch (intent) {
-            case MoveIntent   m -> setTarget(m.unitTag(), m.targetLocation());
-            case AttackIntent a -> setTarget(a.unitTag(), a.targetLocation());
+            case MoveIntent   m -> setTarget(m.unitTag(), m.targetLocation(), false);
+            case AttackIntent a -> setTarget(a.unitTag(), a.targetLocation(), true);
             case TrainIntent  t -> handleTrain(t);
             case BuildIntent  b -> handleBuild(b);
         }
     }
 
-    private void setTarget(String tag, Point2d target) {
+    private void setTarget(String tag, Point2d target, boolean isAttack) {
         if (myUnits.stream().anyMatch(u -> u.tag().equals(tag))) {
             unitTargets.put(tag, target);
+            if (isAttack) attackingUnits.add(tag);
             log.debugf("[EMULATED] %s → (%.1f,%.1f)", tag, target.x(), target.y());
         }
     }
@@ -194,6 +198,53 @@ public class EmulatedGame {
         myBuildings.replaceAll(b -> b.tag().equals(tag)
             ? new Building(b.tag(), b.type(), b.position(), b.health(), b.maxHealth(), true)
             : b);
+    }
+
+    private void resolveCombat() {
+        Map<String, Integer> pending = new HashMap<>();
+
+        // Friendly units attack only if they have an active AttackIntent
+        for (Unit attacker : myUnits) {
+            if (!attackingUnits.contains(attacker.tag())) continue;
+            nearestInRange(attacker.position(), enemyUnits, SC2Data.attackRange(attacker.type()))
+                .ifPresent(target ->
+                    pending.merge(target.tag(), SC2Data.damagePerTick(attacker.type()), Integer::sum));
+        }
+
+        // Enemy units always attack nearest friendly in range
+        for (Unit attacker : enemyUnits) {
+            nearestInRange(attacker.position(), myUnits, SC2Data.attackRange(attacker.type()))
+                .ifPresent(target ->
+                    pending.merge(target.tag(), SC2Data.damagePerTick(attacker.type()), Integer::sum));
+        }
+
+        // Apply damage and remove dead units (two-pass simultaneous resolution)
+        myUnits.replaceAll(u -> applyDamage(u, pending.getOrDefault(u.tag(), 0)));
+        myUnits.removeIf(u -> {
+            if (u.health() <= 0) { unitTargets.remove(u.tag()); attackingUnits.remove(u.tag()); return true; }
+            return false;
+        });
+        enemyUnits.replaceAll(u -> applyDamage(u, pending.getOrDefault(u.tag(), 0)));
+        enemyUnits.removeIf(u -> {
+            if (u.health() <= 0) { enemyTargets.remove(u.tag()); return true; }
+            return false;
+        });
+    }
+
+    private static Optional<Unit> nearestInRange(Point2d from, List<Unit> candidates, float range) {
+        return candidates.stream()
+            .filter(u -> distance(from, u.position()) <= range)
+            .min(Comparator.comparingDouble(u ->
+                distance(from, u.position()) * 1000 + u.health() + u.shields()));
+    }
+
+    private static Unit applyDamage(Unit u, int damage) {
+        if (damage <= 0) return u;
+        int shieldsLeft = Math.max(0, u.shields() - damage);
+        int overflow    = Math.max(0, damage - u.shields());
+        int hpLeft      = Math.max(0, u.health() - overflow);
+        return new Unit(u.tag(), u.type(), u.position(), hpLeft, u.maxHealth(),
+                        shieldsLeft, u.maxShields());
     }
 
     /** Package-private for testing — linear interpolation toward target. */
