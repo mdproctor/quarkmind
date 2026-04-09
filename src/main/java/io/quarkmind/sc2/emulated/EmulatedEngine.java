@@ -4,6 +4,8 @@ import io.quarkus.arc.profile.IfBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import io.quarkmind.domain.GameState;
+import io.quarkmind.domain.UnitType;
+import io.quarkmind.qa.EmulatedConfig;
 import io.quarkmind.sc2.IntentQueue;
 import io.quarkmind.sc2.SC2Engine;
 import org.jboss.logging.Logger;
@@ -25,12 +27,14 @@ public class EmulatedEngine implements SC2Engine {
 
     private final EmulatedGame game = new EmulatedGame();
     private final IntentQueue intentQueue;
+    private final EmulatedConfig config;
     private final List<Consumer<GameState>> frameListeners = new CopyOnWriteArrayList<>();
     private boolean connected = false;
 
     @Inject
-    public EmulatedEngine(IntentQueue intentQueue) {
+    public EmulatedEngine(IntentQueue intentQueue, EmulatedConfig config) {
         this.intentQueue = intentQueue;
+        this.config      = config;
     }
 
     @Override
@@ -41,8 +45,15 @@ public class EmulatedEngine implements SC2Engine {
 
     @Override
     public void joinGame() {
+        // Apply wave config from EmulatedConfig before reset() so pendingWaves is populated
+        game.configureWave(
+            config.getWaveSpawnFrame(),
+            config.getWaveUnitCount(),
+            UnitType.valueOf(config.getWaveUnitType()));
         game.reset();
-        log.info("[EMULATED] Joined game — 12 probes harvesting, emulated physics active");
+        log.infof("[EMULATED] Joined game — wave at frame %d (%dx%s), speed=%.2f",
+            config.getWaveSpawnFrame(), config.getWaveUnitCount(),
+            config.getWaveUnitType(), config.getUnitSpeed());
     }
 
     @Override
@@ -58,6 +69,7 @@ public class EmulatedEngine implements SC2Engine {
 
     @Override
     public void tick() {
+        game.setUnitSpeed(config.getUnitSpeed()); // live speed — reads config each tick
         game.tick();
     }
 
