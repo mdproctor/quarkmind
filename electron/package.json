@@ -1,0 +1,13 @@
+{
+  "name": "quarkmind-visualizer",
+  "version": "1.0.0",
+  "description": "QuarkMind live game visualizer",
+  "main": "main.js",
+  "scripts": {
+    "start": "DEV_MODE=1 electron .",
+    "start:app": "electron ."
+  },
+  "dependencies": {
+    "electron": "^34.0.0"
+  }
+}
