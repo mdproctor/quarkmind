@@ -102,6 +102,24 @@ public class EconomicsDecisionService {
     }
 
     /**
+     * Runs all four decision checks in one sequential pass against the same budget.
+     *
+     * <p>Called by {@link EconomicsFlow} as a single workflow step instead of four
+     * separate {@code consume()} steps. Quarkus Flow serialises the {@link GameStateTick}
+     * between {@code consume()} steps, resetting {@link ResourceBudget} to its original
+     * values on each deserialisation — making multi-step budget arbitration impossible.
+     * Running all checks in one step avoids that serialisation boundary.
+     *
+     * @see <a href="https://github.com/mdproctor/quarkmind/issues/15">#15 — budget arbitration bug</a>
+     */
+    public void checkAll(GameStateTick tick) {
+        checkSupply(tick);
+        checkProbes(tick);
+        checkGas(tick);
+        checkExpansion(tick);
+    }
+
+    /**
      * Queues a Nexus at the natural expansion when saturated (22 workers, 1 active Nexus).
      * Expansion position is hardcoded — Phase 3+ will use SC2MapAnalysis sidecar.
      */

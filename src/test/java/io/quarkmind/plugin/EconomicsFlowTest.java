@@ -91,6 +91,41 @@ class EconomicsFlowTest {
             .anyMatch(i -> i instanceof BuildIntent bi && bi.buildingType() == BuildingType.NEXUS);
     }
 
+    /**
+     * Regression test for #15 — budget arbitration bug.
+     *
+     * Budget of 110 minerals: enough for a Pylon (100) but not Pylon + Probe (150).
+     * Supply is low (headroom = 2) → Pylon decision triggers.
+     * Workers are under cap (6 < 22) → Probe decision triggers.
+     *
+     * With the bug (each step sees original budget):
+     *   checkSupply sees 110 ≥ 100 → queues Pylon, "spends" 100
+     *   checkProbes sees 110 ≥ 50  → queues Probe, "spends" 50
+     *   Result: 2 intents, 150 minerals "spent" — overcommit by 40.
+     *
+     * With the fix (sequential spend within one step):
+     *   checkSupply sees 110 ≥ 100 → queues Pylon, spends 100 → budget now 10
+     *   checkProbes sees 10 < 50   → skipped
+     *   Result: 1 intent, 100 minerals spent — correct.
+     */
+    @Test
+    void budgetNotOvercommittedWhenMultipleTriggersFire() throws Exception {
+        // 110 minerals: supply low (headroom=2 triggers pylon@100), workers under cap (triggers probe@50)
+        // After pylon spend, only 10 left — probe must NOT fire
+        GameStateTick tick = tick(110, 13, 15, workers(6), List.of(nexus()), List.of());
+        emitter.sendAndAwait(tick);
+        Thread.sleep(300);
+
+        List<io.quarkmind.sc2.intent.Intent> intents = intentQueue.pending();
+        assertThat(intents)
+            .as("Only the Pylon should be queued — Probe must not fire after budget is spent")
+            .hasSize(1);
+        assertThat(intents.get(0))
+            .as("The one intent must be a Pylon")
+            .isInstanceOf(BuildIntent.class)
+            .satisfies(i -> assertThat(((BuildIntent) i).buildingType()).isEqualTo(BuildingType.PYLON));
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     /** tick with gasReady=false */

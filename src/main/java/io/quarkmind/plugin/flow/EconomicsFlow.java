@@ -37,17 +37,20 @@ public class EconomicsFlow extends Flow {
     }
 
     /**
-     * Defines the workflow: four sequential consume steps, one per economics decision.
-     * Each step receives the {@link GameStateTick} passed as the instance input.
+     * Defines the workflow: one consume step that runs all four economics decisions
+     * sequentially in a single serialisation boundary.
+     *
+     * <p>Previously used four separate {@code consume()} steps. Quarkus Flow serialises
+     * the {@link io.quarkmind.domain.GameStateTick} between steps, resetting the
+     * {@link io.quarkmind.agent.ResourceBudget} to its original values on deserialisation.
+     * This caused every step to see the unspent budget, overcommitting intents
+     * (issue #15). One step eliminates the boundary.
      */
     @Override
     public Workflow descriptor() {
         return workflow("starcraft-economics")
             .tasks(
-                consume(decisions::checkSupply,    GameStateTick.class),
-                consume(decisions::checkProbes,    GameStateTick.class),
-                consume(decisions::checkGas,       GameStateTick.class),
-                consume(decisions::checkExpansion, GameStateTick.class)
+                consume(decisions::checkAll, GameStateTick.class)
             )
             .build();
     }
