@@ -113,7 +113,7 @@ Four plugin levels exist (Frame → CaseFile → PlanningStrategy → TaskDefini
 CaseHub (`io.casehub:casehub-core:1.0.0-SNAPSHOT`) must be installed to the local Maven repo before building:
 
 ```bash
-cd /Users/mdproctor/claude/alpha && mvn install -DskipTests
+cd /Users/mdproctor/claude/casehub && mvn install -DskipTests -Dquarkus.build.skip=true
 ```
 
 CaseHub will move to GitHub Packages then Maven Central as it matures.
