@@ -1,5 +1,5 @@
 package io.quarkmind.sc2.intent;
 
-public interface Intent {
+public sealed interface Intent permits BuildIntent, TrainIntent, AttackIntent, MoveIntent {
     String unitTag();
 }

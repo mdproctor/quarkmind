@@ -40,11 +40,6 @@ public final class ActionTranslator {
                     case TrainIntent  t -> train(t);
                     case AttackIntent a -> attack(a);
                     case MoveIntent   m -> move(m);
-                    default -> {
-                        log.warnf("[SC2] Unknown intent type: %s — skipped",
-                                  intent.getClass().getSimpleName());
-                        yield null;
-                    }
                 };
                 if (cmd != null) commands.add(cmd);
             } catch (Exception e) {
