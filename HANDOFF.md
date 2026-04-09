@@ -1,45 +1,48 @@
-# Handover — 2026-04-08
+# Handover — 2026-04-09
 
-**Head commit:** `598d5d6` — docs: session wrap 2026-04-08 — Drools GOAP TacticsTask
+**Head commit:** `c9d76e8` — docs: session wrap 2026-04-09 — QuarkusMind rename + all four plugins
 
 ## What Changed This Session
 
-- **DroolsTacticsTask** — third R&D integration complete. Drools fires once/tick as action compiler (classifies units → groups, emits action names). Java A* (`GoapPlanner`) finds cheapest plan per group. 152 tests passing.
-- **Issue tracking live** — `mdproctor/quarkmind` on GitHub. Epic #1 closed. All commits reference issues going forward.
-- **CLAUDE.md** — Co-Authored-By suppressed; `plugin/tactics/` added to code org; integration tests updated.
-- **Garden** — GE-0105 (Drools action compiler pattern), GE-0109 (DataStore inter-phase signalling).
+- **DroolsScoutingTask** — fourth and final R&D plugin integration complete. Drools rule units + Java-managed temporal buffers (3-min build-order window, 10-sec army alert). Detects ZERG_ROACH_RUSH, TERRAN_3RAX, PROTOSS_4GATE, timing attacks, expansion posture. 173 tests passing.
+- **Project renamed to QuarkusMind** — `org.acme.starcraft` → `io.quarkmind`, `StarCraftCaseFile` → `QuarkMindCaseFile`, GitHub `mdproctor/starcraft` → `mdproctor/quarkmind`, local folder → `/Users/mdproctor/claude/quarkmind`. SC2-specific code deliberately kept SC2 references.
+- **Design snapshot** — first snapshot created: `docs/design-snapshots/2026-04-09-quarkmind-all-four-plugins-complete.md`
+- **Blog** — first entry: `docs/blog/2026-04-09-mdp01-scouting-gets-a-mind.md`
+- **Garden** — GE-0121 (folder rename breaks shell cwd), GE-0122 (Java sub-package scope), GE-0123 (Drools CEP via Java buffers)
 
-## Key Technical Findings (Drools Rule Units)
+## Key Technical Findings (DroolsScoutingTask)
 
-- Phase 2 rules silently don't fire if they depend on a `List<String>` mutated by Phase 1 — Drools has no hook into plain Java collections. Fix: Phase 1 inserts into a `DataStore<String>`; Phase 2 pattern-matches on that. (GE-0109)
-- Drools as action compiler: fire once, produce `GoapAction` records, run A* in pure Java. Decoupled at `GoapAction` boundary. (GE-0105)
-- `WorldState` record needs compact constructor (`Map.copyOf`) — external map mutation otherwise corrupts internals silently.
+- `drools-quarkus` STREAM mode + `window:time()` operators conflict with the rule unit model's KieBase compilation — cannot use Drools Fusion temporal operators with Quarkus rule units. Fix: Java-managed `Deque<Event>` buffers with explicit eviction; fresh `RuleUnitInstance` per tick.
+- `ENEMY_BUILD_ORDER` must always be written to CaseFile (use "UNKNOWN" fallback) to match `producedKeys()` contract — conditional write omits it when no build detected, inconsistent with `ENEMY_POSTURE` pattern.
+- Folder rename (`mv`) breaks the Bash tool's shell cwd silently — do renames last and use absolute paths afterward.
 
 ## Immediate Next Step
 
-**ScoutingTask** — fourth and final plugin seam. Currently a stub. Before starting: create GitHub issue + epic, then brainstorm. See `docs/library-research.md` for any evaluated scouting libraries.
+**Phase 1 — Real SC2 connection.** All four plugin seams are done. Before starting: create GitHub epic + child issues, then brainstorm. Key concerns: ocraft-s2client integration, GraalVM native image tracing agent, SmallRye Fault Tolerance on connection path.
 
 ## Open Questions / Blockers
 
-- Flow per-tick instance overhead — needs profiling against real SC2 at 500ms/tick
-- Budget arbitration in `FlowEconomicsTask` — each consume step sees original budget (not decremented); SC2 rejects unaffordable commands so no breakage, but design assumption was wrong
-- SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays — open since Phase 1
-- GOAP goal assignment policy hot-reload — not yet exercised in practice; DRL enables it
+- FlowEconomicsTask budget arbitration — each consume step sees original budget (not decremented); design assumption was wrong, real fix requires per-step tracking
+- Quarkus Flow per-tick instance overhead — needs profiling against real SC2 at 500ms/tick
+- Scouting CEP thresholds (≥6 ROACH, ≥12 MARINE, ≥8 STALKER/ZEALOT) — R&D estimates, need calibration against replay data
+- Expansion detection heuristic (enemy unit > 50 tiles from estimated main) — accuracy against real SC2 unknown
+- SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays — open since Phase 0
+- GOAP goal assignment hot-reload — never exercised in practice
 
 ## References
 
 | Context | Where |
 |---|---|
-| Design snapshot | `docs/design-snapshots/2026-04-08-drools-goap-tactics-integration.md` |
-| Spec | `docs/superpowers/specs/2026-04-08-drools-goap-tactics-design.md` |
-| Plan | `docs/superpowers/plans/2026-04-08-drools-goap-tactics-task.md` |
-| Blog | `docs/blog/2026-04-08-mdp01-tactics-gets-a-brain.md` |
-| GitHub issues | mdproctor/quarkmind — #1 (epic, closed), #2–5 (closed) |
-| Garden | `~/claude/knowledge-garden/GARDEN.md` |
+| Design snapshot | `docs/design-snapshots/2026-04-09-quarkmind-all-four-plugins-complete.md` |
+| Scouting spec | `docs/superpowers/specs/2026-04-08-drools-cep-scouting-design.md` |
+| Blog | `docs/blog/2026-04-09-mdp01-scouting-gets-a-mind.md` |
+| GitHub | mdproctor/quarkmind |
 | Library research | `docs/library-research.md` |
+| Garden | `~/claude/knowledge-garden/` (GE-0121, GE-0122, GE-0123 submitted) |
 
 ## Environment
 
-- **Build:** `mvn test` — 152 tests, all pass
+- **Project root:** `/Users/mdproctor/claude/quarkmind` (renamed from `starcraft` this session)
+- **Build:** `mvn test` — 173 tests, all pass
 - **CaseHub:** install from `/Users/mdproctor/claude/alpha` before building
 - **Replay libs:** `cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh`
