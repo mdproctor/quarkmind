@@ -1,48 +1,51 @@
 # Handover — 2026-04-09
 
-**Head commit:** `c9d76e8` — docs: session wrap 2026-04-09 — QuarkusMind rename + all four plugins
+**Head commit:** `de1daf7` — docs: design snapshot 2026-04-09 — emulation E1 + visualizer complete
 
 ## What Changed This Session
 
-- **DroolsScoutingTask** — fourth and final R&D plugin integration complete. Drools rule units + Java-managed temporal buffers (3-min build-order window, 10-sec army alert). Detects ZERG_ROACH_RUSH, TERRAN_3RAX, PROTOSS_4GATE, timing attacks, expansion posture. 173 tests passing.
-- **Project renamed to QuarkusMind** — `org.acme.starcraft` → `io.quarkmind`, `StarCraftCaseFile` → `QuarkMindCaseFile`, GitHub `mdproctor/starcraft` → `mdproctor/quarkmind`, local folder → `/Users/mdproctor/claude/quarkmind`. SC2-specific code deliberately kept SC2 references.
-- **Design snapshot** — first snapshot created: `docs/design-snapshots/2026-04-09-quarkmind-all-four-plugins-complete.md`
-- **Blog** — first entry: `docs/blog/2026-04-09-mdp01-scouting-gets-a-mind.md`
-- **Garden** — GE-0121 (folder rename breaks shell cwd), GE-0122 (Java sub-package scope), GE-0123 (Drools CEP via Java buffers)
-
-## Key Technical Findings (DroolsScoutingTask)
-
-- `drools-quarkus` STREAM mode + `window:time()` operators conflict with the rule unit model's KieBase compilation — cannot use Drools Fusion temporal operators with Quarkus rule units. Fix: Java-managed `Deque<Event>` buffers with explicit eviction; fresh `RuleUnitInstance` per tick.
-- `ENEMY_BUILD_ORDER` must always be written to CaseFile (use "UNKNOWN" fallback) to match `producedKeys()` contract — conditional write omits it when no build detected, inconsistent with `ENEMY_POSTURE` pattern.
-- Folder rename (`mv`) breaks the Bash tool's shell cwd silently — do renames last and use absolute paths afterward.
+- **Phase E1 emulation engine** — `EmulatedGame` + `EmulatedEngine` + `%emulated` profile. Probe-driven mineral harvesting. `SC2Data` extracted as shared constants. `applyIntent()` stub (E2 will wire it).
+- **QuarkMind Visualizer** — PixiJS 8 (bundled, no CDN) + WebSocket push (`GameStateBroadcaster` as frame listener) + Electron wrapper. Sprite proxy (`SpriteProxyResource`) solves WebGL CORS. `window.__test` API for testing.
+- **Integration tests** — `GameStateWebSocketTest` (5, uses `java.net.http.WebSocket`), `VisualizerRenderTest` (9 Playwright tests: sprite counts, positions, mask regression, pixel sampling). 210 tests total.
+- **Performance benchmark** — `GameLoopBenchmarkTest` (`@Tag("benchmark")`, `mvn test -Pbenchmark`). Per-phase `TickTimings` exposed via `AtomicReference` in `AgentOrchestrator`. Pre-E2 baseline: 2ms mean plugin time.
+- **E2 spec written** — movement, scripted enemy wave, full intent handling, `EmulatedConfig` (properties + live overrides), visualizer config panel.
+- **Garden** — GE-0144–0151 submitted (PixiJS 8 mask bug, Playwright Java arg order, Tyrus classloader, Java 11 WS `request()`, JAX-RS `@ApplicationScoped`, Surefire `combine.self`, `window.__test`, WS connectivity proof).
 
 ## Immediate Next Step
 
-**Phase 1 — Real SC2 connection.** All four plugin seams are done. Before starting: create GitHub epic + child issues, then brainstorm. Key concerns: ocraft-s2client integration, GraalVM native image tracing agent, SmallRye Fault Tolerance on connection path.
+**Implement E2.** Spec at `docs/superpowers/specs/2026-04-09-sc2-emulation-e2-design.md`. Write the plan (writing-plans skill), then execute subagent-driven. Key components:
+1. `SC2Data` — add `mineralCost()`, `gasCost()`
+2. `EnemyWave` record
+3. `EmulatedConfig` CDI bean (`@ConfigProperty` defaults + volatile runtime fields)
+4. `EmulatedConfigResource` (`GET/PUT /qa/emulated/config`)
+5. `EmulatedGame` — movement, pendingCompletions, enemy waves, full `applyIntent()`
+6. `EmulatedEngine` — inject config, sync speed per tick
+7. `visualizer.html/js` — config panel sidebar (hidden in non-emulated profiles)
 
-## Open Questions / Blockers
+After E2: run benchmark, record result in `docs/benchmarks/`.
 
-- FlowEconomicsTask budget arbitration — each consume step sees original budget (not decremented); design assumption was wrong, real fix requires per-step tracking
-- Quarkus Flow per-tick instance overhead — needs profiling against real SC2 at 500ms/tick
-- Scouting CEP thresholds (≥6 ROACH, ≥12 MARINE, ≥8 STALKER/ZEALOT) — R&D estimates, need calibration against replay data
-- Expansion detection heuristic (enemy unit > 50 tiles from estimated main) — accuracy against real SC2 unknown
-- SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays — open since Phase 0
-- GOAP goal assignment hot-reload — never exercised in practice
+## Open Issues
+
+| # | What | Blocker |
+|---|---|---|
+| #13 | Live SC2 smoke test | SC2 binary needed |
+| #14 | GraalVM native image tracing | Blocked on #13 |
+| #15 | FlowEconomicsTask budget arbitration | None — worth fixing after E2 |
+| #16 | Scouting CEP threshold calibration | Replay data |
+
+## Key Technical Notes
+
+- **PixiJS 8 mask bug** — `sprite.addChild(mask); sprite.mask = mask` makes anchored sprites invisible. Fix: no mask. Documented in garden GE-0144.
+- **WebSocket test isolation** — call `engine.observe()` directly (not `orchestrator.gameTick()`) to avoid triggering async Flow economics which pollutes `IntentQueue` across tests.
+- **Playwright tests** — Chromium must be installed: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`. Tests use `window.__test` API, not pixel comparison.
+- **Benchmark** — `mvn test -Pbenchmark`. Uses `combine.self="override"` in Maven profile to clear base `<excludedGroups>benchmark</excludedGroups>`.
 
 ## References
 
 | Context | Where |
 |---|---|
-| Design snapshot | `docs/design-snapshots/2026-04-09-quarkmind-all-four-plugins-complete.md` |
-| Scouting spec | `docs/superpowers/specs/2026-04-08-drools-cep-scouting-design.md` |
-| Blog | `docs/blog/2026-04-09-mdp01-scouting-gets-a-mind.md` |
+| Design snapshot | `docs/design-snapshots/2026-04-09-emulation-e1-visualizer-complete.md` |
+| E2 spec | `docs/superpowers/specs/2026-04-09-sc2-emulation-e2-design.md` |
+| Visualizer spec | `docs/superpowers/specs/2026-04-09-quarkmind-visualizer-design.md` |
+| Benchmark baseline | `docs/benchmarks/2026-04-09-pre-e2-baseline.md` |
 | GitHub | mdproctor/quarkmind |
-| Library research | `docs/library-research.md` |
-| Garden | `~/claude/knowledge-garden/` (GE-0121, GE-0122, GE-0123 submitted) |
-
-## Environment
-
-- **Project root:** `/Users/mdproctor/claude/quarkmind` (renamed from `starcraft` this session)
-- **Build:** `mvn test` — 173 tests, all pass
-- **CaseHub:** install from `/Users/mdproctor/claude/alpha` before building
-- **Replay libs:** `cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh`
