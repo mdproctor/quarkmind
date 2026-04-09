@@ -1,6 +1,7 @@
 package io.quarkmind.plugin;
 
 import io.casehub.annotation.CaseType;
+import io.casehub.coordination.PropagationContext;
 import io.casehub.core.DefaultCaseFile;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -145,7 +147,7 @@ class DroolsTacticsTaskIT {
 
     private DefaultCaseFile caseFile(String strategy, List<Unit> army,
                                      List<Unit> enemies, Point2d nearestThreat) {
-        var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
+        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.STRATEGY,      strategy);
         cf.put(QuarkMindCaseFile.ARMY,          army);
         cf.put(QuarkMindCaseFile.ENEMY_UNITS,   enemies);

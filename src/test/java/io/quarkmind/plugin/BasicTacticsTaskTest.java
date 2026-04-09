@@ -1,5 +1,6 @@
 package io.quarkmind.plugin;
 
+import io.casehub.coordination.PropagationContext;
 import io.casehub.core.DefaultCaseFile;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.domain.*;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -98,7 +100,7 @@ class BasicTacticsTaskTest {
 
     @Test
     void noStrategyDefaultsToMacro() {
-        var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
+        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.ARMY,         List.of(stalker("s-0")));
         cf.put(QuarkMindCaseFile.MY_BUILDINGS, List.of(nexus()));
         cf.put(QuarkMindCaseFile.READY,        Boolean.TRUE);
@@ -110,7 +112,7 @@ class BasicTacticsTaskTest {
 
     private DefaultCaseFile caseFile(String strategy, List<Unit> army,
                                      List<Building> buildings, Point2d nearestThreat) {
-        var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
+        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.STRATEGY,     strategy);
         cf.put(QuarkMindCaseFile.ARMY,         army);
         cf.put(QuarkMindCaseFile.MY_BUILDINGS, buildings);

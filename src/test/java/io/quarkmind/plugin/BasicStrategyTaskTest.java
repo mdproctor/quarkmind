@@ -1,5 +1,6 @@
 package io.quarkmind.plugin;
 
+import io.casehub.coordination.PropagationContext;
 import io.casehub.core.DefaultCaseFile;
 import io.quarkmind.agent.ResourceBudget;
 import io.quarkmind.agent.QuarkMindCaseFile;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -160,7 +162,7 @@ class BasicStrategyTaskTest {
     private DefaultCaseFile caseFile(int minerals, int vespene,
                                      List<Unit> workers, List<Building> buildings,
                                      List<Unit> enemies) {
-        var cf = new DefaultCaseFile("test-" + System.nanoTime(), "starcraft-game", null, null);
+        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.MINERALS,        minerals);
         cf.put(QuarkMindCaseFile.VESPENE,         vespene);
         cf.put(QuarkMindCaseFile.WORKERS,         workers);
