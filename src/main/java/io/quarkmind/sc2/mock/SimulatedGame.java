@@ -40,9 +40,11 @@ public class SimulatedGame {
         nextTag = 200;
 
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
-            myUnits.add(new Unit("probe-" + i, UnitType.PROBE, new Point2d(9 + i * 0.5f, 9), 45, 45));
+            myUnits.add(new Unit("probe-" + i, UnitType.PROBE, new Point2d(9 + i * 0.5f, 9),
+                SC2Data.maxHealth(UnitType.PROBE), SC2Data.maxHealth(UnitType.PROBE)));
         }
-        myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8), 1500, 1500, true));
+        myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8),
+            SC2Data.maxBuildingHealth(BuildingType.NEXUS), SC2Data.maxBuildingHealth(BuildingType.NEXUS), true));
         geysers.add(new Resource("geyser-0", new Point2d(5, 11), 2250));
         geysers.add(new Resource("geyser-1", new Point2d(11, 5), 2250));
     }
@@ -61,22 +63,22 @@ public class SimulatedGame {
 
     public synchronized void applyIntent(Intent intent) {
         if (intent instanceof TrainIntent t) {
-            long completesAt = gameFrame.get() + trainTimeInTicks(t.unitType());
+            long completesAt = gameFrame.get() + SC2Data.trainTimeInTicks(t.unitType());
             pendingCompletions.add(new PendingCompletion(completesAt, () -> {
-                supplyUsed += supplyCost(t.unitType());
+                supplyUsed += SC2Data.supplyCost(t.unitType());
                 myUnits.add(new Unit("unit-" + nextTag++, t.unitType(), new Point2d(9, 9),
-                    maxHealth(t.unitType()), maxHealth(t.unitType())));
+                    SC2Data.maxHealth(t.unitType()), SC2Data.maxHealth(t.unitType())));
             }));
         } else if (intent instanceof BuildIntent b) {
             String bldgTag = "bldg-" + nextTag++;
             BuildingType bt = b.buildingType();
             // Add immediately as incomplete — visible to plugins during construction
             myBuildings.add(new Building(bldgTag, bt, b.location(),
-                maxBuildingHealth(bt), maxBuildingHealth(bt), false));
-            long completesAt = gameFrame.get() + buildTimeInTicks(bt);
+                SC2Data.maxBuildingHealth(bt), SC2Data.maxBuildingHealth(bt), false));
+            long completesAt = gameFrame.get() + SC2Data.buildTimeInTicks(bt);
             pendingCompletions.add(new PendingCompletion(completesAt, () -> {
                 markBuildingComplete(bldgTag);
-                supply += supplyBonus(bt); // supply granted only when complete
+                supply += SC2Data.supplyBonus(bt); // supply granted only when complete
             }));
         }
         // AttackIntent and MoveIntent: unit positions updated in future phases
@@ -89,7 +91,7 @@ public class SimulatedGame {
     }
 
     public synchronized void spawnEnemyUnit(UnitType type, Point2d position) {
-        enemyUnits.add(new Unit("enemy-" + nextTag++, type, position, maxHealth(type), maxHealth(type)));
+        enemyUnits.add(new Unit("enemy-" + nextTag++, type, position, SC2Data.maxHealth(type), SC2Data.maxHealth(type)));
     }
 
     public void setMinerals(int amount) { this.minerals = amount; }
@@ -119,11 +121,4 @@ public class SimulatedGame {
     }
 
     public List<Resource> getGeysers() { return List.copyOf(geysers); }
-
-    private static int trainTimeInTicks(UnitType type)     { return SC2Data.trainTimeInTicks(type); }
-    private static int buildTimeInTicks(BuildingType type)  { return SC2Data.buildTimeInTicks(type); }
-    private int supplyCost(UnitType type)                   { return SC2Data.supplyCost(type); }
-    private int supplyBonus(BuildingType type)              { return SC2Data.supplyBonus(type); }
-    private int maxHealth(UnitType type)                    { return SC2Data.maxHealth(type); }
-    private int maxBuildingHealth(BuildingType type)        { return SC2Data.maxBuildingHealth(type); }
 }
