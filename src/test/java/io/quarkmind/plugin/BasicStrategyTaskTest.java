@@ -150,7 +150,7 @@ class BasicStrategyTaskTest {
     @Test
     void strategyIsAttackWhenEnoughStalkers() {
         List<Unit> stalkers = java.util.stream.IntStream.range(0, BasicStrategyTask.ATTACK_THRESHOLD)
-            .mapToObj(i -> new Unit("s-" + i, UnitType.STALKER, new Point2d(10, 10), 80, 80))
+            .mapToObj(i -> new Unit("s-" + i, UnitType.STALKER, new Point2d(10, 10), 80, 80, 80, 80))
             .toList();
         var cf = caseFile(50, 0, workers(12), List.of(nexus()), List.of());
         cf.put(QuarkMindCaseFile.ARMY, stalkers);
@@ -178,7 +178,7 @@ class BasicStrategyTaskTest {
 
     private List<Unit> workers(int count) {
         return java.util.stream.IntStream.range(0, count)
-            .mapToObj(i -> new Unit("p-" + i, UnitType.PROBE, new Point2d(9, 9), 45, 45))
+            .mapToObj(i -> new Unit("p-" + i, UnitType.PROBE, new Point2d(9, 9), 45, 45, 20, 20))
             .toList();
     }
 
@@ -193,6 +193,6 @@ class BasicStrategyTaskTest {
     }
 
     private Unit enemyZealot() {
-        return new Unit("ez-0", UnitType.ZEALOT, new Point2d(20, 20), 100, 100);
+        return new Unit("ez-0", UnitType.ZEALOT, new Point2d(20, 20), 100, 100, 50, 50);
     }
 }

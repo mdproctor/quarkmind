@@ -86,7 +86,7 @@ class DroolsScoutingTaskIT {
         // Execute 6 ticks with unique ROACH tags — accumulates in buffer
         for (int i = 0; i < 6; i++) {
             var cf = caseFile(
-                List.of(new Unit("r-" + i, UnitType.ROACH, new Point2d(200, 200), 100, 100)),
+                List.of(new Unit("r-" + i, UnitType.ROACH, new Point2d(200, 200), 100, 100, 0, 0)),
                 List.of(),
                 (long)(i + 1) * 500);
             scoutingTask.execute(cf);
@@ -120,11 +120,11 @@ class DroolsScoutingTaskIT {
     }
 
     private Unit enemy(float x, float y) {
-        return new Unit("e-" + System.nanoTime(), UnitType.ZEALOT, new Point2d(x, y), 100, 100);
+        return new Unit("e-" + System.nanoTime(), UnitType.ZEALOT, new Point2d(x, y), 100, 100, 50, 50);
     }
 
     private Unit probe(String tag) {
-        return new Unit(tag, UnitType.PROBE, new Point2d(9, 9), 45, 45);
+        return new Unit(tag, UnitType.PROBE, new Point2d(9, 9), 45, 45, 20, 20);
     }
 
     private Building nexus() {

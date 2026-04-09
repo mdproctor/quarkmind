@@ -59,8 +59,8 @@ public class EmulatedGame {
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
             myUnits.add(new Unit("probe-" + i, UnitType.PROBE,
                 new Point2d(9 + i * 0.5f, 9),
-                SC2Data.maxHealth(UnitType.PROBE),
-                SC2Data.maxHealth(UnitType.PROBE)));
+                SC2Data.maxHealth(UnitType.PROBE), SC2Data.maxHealth(UnitType.PROBE),
+                SC2Data.maxShields(UnitType.PROBE), SC2Data.maxShields(UnitType.PROBE)));
         }
         myBuildings.add(new Building("nexus-0", BuildingType.NEXUS,
             new Point2d(8, 8),
@@ -88,7 +88,8 @@ public class EmulatedGame {
             // Safe: remove from unitTargets (different collection from myUnits being iterated).
             // If myUnits were ever parallelised this would race — keep single-threaded.
             if (distance(newPos, target) < 0.2) unitTargets.remove(u.tag());
-            return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth());
+            return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
+                u.shields(), u.maxShields());
         });
     }
 
@@ -96,7 +97,8 @@ public class EmulatedGame {
         enemyUnits.replaceAll(u -> {
             Point2d target = enemyTargets.getOrDefault(u.tag(), NEXUS_POS);
             Point2d newPos = stepToward(u.position(), target, unitSpeed);
-            return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth());
+            return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
+                u.shields(), u.maxShields());
         });
     }
 
@@ -117,7 +119,8 @@ public class EmulatedGame {
                                           wave.spawnPosition().y());
                 String tag = "enemy-" + nextTag++;
                 int hp = SC2Data.maxHealth(type);
-                enemyUnits.add(new Unit(tag, type, pos, hp, hp));
+                enemyUnits.add(new Unit(tag, type, pos, hp, hp,
+                    SC2Data.maxShields(type), SC2Data.maxShields(type)));
                 enemyTargets.put(tag, wave.targetPosition());
             }
             log.infof("[EMULATED] Enemy wave spawned: %dx%s at frame %d",
@@ -162,7 +165,8 @@ public class EmulatedGame {
             supplyUsed += sCost;
             String tag = "unit-" + nextTag++;
             int hp = SC2Data.maxHealth(t.unitType());
-            myUnits.add(new Unit(tag, t.unitType(), new Point2d(9, 9), hp, hp));
+            myUnits.add(new Unit(tag, t.unitType(), new Point2d(9, 9), hp, hp,
+                SC2Data.maxShields(t.unitType()), SC2Data.maxShields(t.unitType())));
             log.debugf("[EMULATED] Trained %s (tag=%s)", t.unitType(), tag);
         }));
     }
@@ -240,4 +244,27 @@ public class EmulatedGame {
 
     /** Direct mineral override for tests — avoids tick-based accumulation. */
     void setMineralsForTesting(int amount) { this.mineralAccumulator = amount; }
+
+    /** Positions an enemy near the base for combat tests. */
+    void spawnEnemyForTesting(UnitType type, Point2d position) {
+        int hp = SC2Data.maxHealth(type);
+        String tag = "test-enemy-" + nextTag++;
+        enemyUnits.add(new Unit(tag, type, position, hp, hp,
+            SC2Data.maxShields(type), SC2Data.maxShields(type)));
+        enemyTargets.put(tag, NEXUS_POS);
+    }
+
+    /** Sets a friendly unit's health for combat threshold tests. */
+    void setHealthForTesting(String tag, int health) {
+        myUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(), u.shields(), u.maxShields())
+            : u);
+    }
+
+    /** Sets a friendly unit's shields for shield absorption tests. */
+    void setShieldsForTesting(String tag, int shields) {
+        myUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(), shields, u.maxShields())
+            : u);
+    }
 }

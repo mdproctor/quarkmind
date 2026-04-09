@@ -112,7 +112,9 @@ public final class ObservationTranslator {
             mapUnitType(toUnitsEnum(uip)),
             new Point2d(pos.getX(), pos.getY()),
             u.getHealth().map(Float::intValue).orElse(0),
-            u.getHealthMax().map(Float::intValue).orElse(0)
+            u.getHealthMax().map(Float::intValue).orElse(0),
+            u.getShield().map(Float::intValue).orElse(0),
+            u.getShieldMax().map(Float::intValue).orElse(0)
         );
     }
 

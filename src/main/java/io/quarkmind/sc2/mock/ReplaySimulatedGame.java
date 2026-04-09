@@ -152,7 +152,7 @@ public class ReplaySimulatedGame extends SimulatedGame {
             if (ut == UnitType.UNKNOWN) return;
             if (ctrlId != null && ctrlId == watchedPlayerId) {
                 Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
-                addUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut)));
+                addUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut), 0, 0));
             } else if (ctrlId != null && ctrlId != 0) {
                 // Enemy unit — visible on map
                 Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());

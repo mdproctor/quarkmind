@@ -61,6 +61,18 @@ public final class SC2Data {
         };
     }
 
+    public static int maxShields(UnitType type) {
+        return switch (type) {
+            case PROBE    -> 20;
+            case ZEALOT   -> 50;
+            case STALKER  -> 80;
+            case IMMORTAL -> 100;
+            case OBSERVER -> 20;
+            case VOID_RAY -> 100;
+            default       -> 0;   // Terran/Zerg have no shields
+        };
+    }
+
     public static int maxBuildingHealth(BuildingType type) {
         return switch (type) {
             case NEXUS    -> 1500;

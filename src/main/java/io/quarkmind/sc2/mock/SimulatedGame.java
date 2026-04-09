@@ -41,7 +41,8 @@ public class SimulatedGame {
 
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
             myUnits.add(new Unit("probe-" + i, UnitType.PROBE, new Point2d(9 + i * 0.5f, 9),
-                SC2Data.maxHealth(UnitType.PROBE), SC2Data.maxHealth(UnitType.PROBE)));
+                SC2Data.maxHealth(UnitType.PROBE), SC2Data.maxHealth(UnitType.PROBE),
+                SC2Data.maxShields(UnitType.PROBE), SC2Data.maxShields(UnitType.PROBE)));
         }
         myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8),
             SC2Data.maxBuildingHealth(BuildingType.NEXUS), SC2Data.maxBuildingHealth(BuildingType.NEXUS), true));
@@ -67,7 +68,8 @@ public class SimulatedGame {
             pendingCompletions.add(new PendingCompletion(completesAt, () -> {
                 supplyUsed += SC2Data.supplyCost(t.unitType());
                 myUnits.add(new Unit("unit-" + nextTag++, t.unitType(), new Point2d(9, 9),
-                    SC2Data.maxHealth(t.unitType()), SC2Data.maxHealth(t.unitType())));
+                    SC2Data.maxHealth(t.unitType()), SC2Data.maxHealth(t.unitType()),
+                    SC2Data.maxShields(t.unitType()), SC2Data.maxShields(t.unitType())));
             }));
         } else if (intent instanceof BuildIntent b) {
             String bldgTag = "bldg-" + nextTag++;
@@ -91,13 +93,27 @@ public class SimulatedGame {
     }
 
     public synchronized void spawnEnemyUnit(UnitType type, Point2d position) {
-        enemyUnits.add(new Unit("enemy-" + nextTag++, type, position, SC2Data.maxHealth(type), SC2Data.maxHealth(type)));
+        enemyUnits.add(new Unit("enemy-" + nextTag++, type, position,
+            SC2Data.maxHealth(type), SC2Data.maxHealth(type),
+            SC2Data.maxShields(type), SC2Data.maxShields(type)));
     }
 
     public void setMinerals(int amount) { this.minerals = amount; }
     public void setVespene(int amount) { this.vespene = amount; }
     public void setSupply(int cap) { this.supply = cap; }
     public void setSupplyUsed(int used) { this.supplyUsed = used; }
+
+    /** Sets a friendly unit's health — used by VisualizerRenderTest. */
+    public void setUnitHealth(String tag, int health) {
+        myUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(), u.shields(), u.maxShields())
+            : u);
+    }
+
+    /** Removes a friendly unit — used by VisualizerRenderTest to test unit disappearance. */
+    public void removeUnit(String tag) {
+        myUnits.removeIf(u -> u.tag().equals(tag));
+    }
 
     // --- Protected mutation helpers for subclasses ---
 

@@ -171,10 +171,10 @@ class BasicScoutingTaskTest {
     }
 
     private Unit enemy(float x, float y) {
-        return new Unit("e-" + (int) x, UnitType.ZEALOT, new Point2d(x, y), 100, 100);
+        return new Unit("e-" + (int) x, UnitType.ZEALOT, new Point2d(x, y), 100, 100, 50, 50);
     }
 
     private Unit probe(String tag) {
-        return new Unit(tag, UnitType.PROBE, new Point2d(9, 9), 45, 45);
+        return new Unit(tag, UnitType.PROBE, new Point2d(9, 9), 45, 45, 20, 20);
     }
 }
