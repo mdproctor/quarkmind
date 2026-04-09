@@ -180,6 +180,25 @@ class GameStateWebSocketTest {
         ws.abort();
     }
 
+    @Test
+    void jsonContainsShieldsAndMaxShields() throws Exception {
+        var received = new LinkedBlockingQueue<String>(10);
+        WebSocket ws = connect(received);
+        ws.request(1);
+
+        engine.observe();
+        String json = poll(received);
+        assertThat(json).isNotNull();
+
+        // Every Unit in the JSON must carry shields and maxShields fields.
+        // MockEngine's probes are Protoss — maxShields=20 for PROBE.
+        assertThat(json).contains("\"shields\"");
+        assertThat(json).contains("\"maxShields\"");
+        assertThat(json).contains("\"maxShields\":20");
+
+        ws.abort();
+    }
+
     private static int extractInt(String json, String key) {
         int idx = json.indexOf(key);
         assertThat(idx).as("Key %s not found in JSON", key).isGreaterThanOrEqualTo(0);
