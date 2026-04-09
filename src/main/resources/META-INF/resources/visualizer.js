@@ -122,6 +122,18 @@ function makeGeyserSprite() {
 }
 
 /**
+ * Returns a tint colour based on HP ratio, or null for full health (no tint).
+ * Applied to both friendly and enemy unit sprites.
+ */
+function healthTint(health, maxHealth) {
+    if (maxHealth <= 0 || health >= maxHealth) return null;
+    const ratio = health / maxHealth;
+    if (ratio > 0.6) return null;       // full colour — no tint
+    if (ratio > 0.3) return 0xffcc44;  // yellow — wounded
+    return 0xff3333;                    // red — critical
+}
+
+/**
  * Reconcile a layer's sprites against the received entity list.
  * Creates sprites for new entities, updates positions of existing ones,
  * destroys sprites for removed entities.
@@ -136,10 +148,18 @@ function syncLayer(layer, entities, keyPrefix, spriteFactory) {
             const s = activeSprites.get(key);
             s.x = pos.x;
             s.y = pos.y;
+            if (entity.health !== undefined && entity.maxHealth !== undefined) {
+                const tint = healthTint(entity.health, entity.maxHealth);
+                s.tint = tint ?? 0xffffff;
+            }
         } else {
             const s = spriteFactory(entity);
             s.x = pos.x;
             s.y = pos.y;
+            if (entity.health !== undefined && entity.maxHealth !== undefined) {
+                const tint = healthTint(entity.health, entity.maxHealth);
+                s.tint = tint ?? 0xffffff;
+            }
             layer.addChild(s);
             activeSprites.set(key, s);
         }
@@ -319,6 +339,7 @@ async function init() {
                 alpha:   s.alpha   ?? 1,
                 visible: s.visible !== false,
                 hasMask: s.mask != null,      // true → masked sprite (see mask-bug history)
+                tint:    s.tint    ?? 0xffffff,   // 0xffffff = no tint (full health)
             };
         },
 
