@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,8 +50,13 @@ public class SpriteProxyResource {
     }
 
     private byte[] fetch(String name) {
-        try (InputStream in = new URL(BASE + PATHS.get(name)).openStream()) {
-            return in.readAllBytes();
+        try {
+            var connection = (HttpURLConnection) new URL(BASE + PATHS.get(name)).openConnection();
+            connection.setConnectTimeout(5_000);
+            connection.setReadTimeout(10_000);
+            try (InputStream in = connection.getInputStream()) {
+                return in.readAllBytes();
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to fetch " + name, e);
         }

@@ -11,8 +11,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -49,7 +49,7 @@ public class ReplayEngine implements SC2Engine {
 
     private ReplaySimulatedGame game;
     private boolean connected = false;
-    private final List<Consumer<GameState>> frameListeners = new ArrayList<>();
+    private final List<Consumer<GameState>> frameListeners = new CopyOnWriteArrayList<>();
 
     @Override
     public void connect() {
