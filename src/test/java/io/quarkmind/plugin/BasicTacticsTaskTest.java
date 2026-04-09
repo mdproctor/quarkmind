@@ -1,7 +1,8 @@
 package io.quarkmind.plugin;
 
 import io.casehub.coordination.PropagationContext;
-import io.casehub.core.DefaultCaseFile;
+import io.casehub.core.CaseFile;
+import io.casehub.persistence.memory.InMemoryCaseFileRepository;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.domain.*;
 import io.quarkmind.sc2.IntentQueue;
@@ -100,7 +101,7 @@ class BasicTacticsTaskTest {
 
     @Test
     void noStrategyDefaultsToMacro() {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.ARMY,         List.of(stalker("s-0")));
         cf.put(QuarkMindCaseFile.MY_BUILDINGS, List.of(nexus()));
         cf.put(QuarkMindCaseFile.READY,        Boolean.TRUE);
@@ -110,9 +111,9 @@ class BasicTacticsTaskTest {
 
     // --- Helpers ---
 
-    private DefaultCaseFile caseFile(String strategy, List<Unit> army,
+    private CaseFile caseFile(String strategy, List<Unit> army,
                                      List<Building> buildings, Point2d nearestThreat) {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.STRATEGY,     strategy);
         cf.put(QuarkMindCaseFile.ARMY,         army);
         cf.put(QuarkMindCaseFile.MY_BUILDINGS, buildings);

@@ -2,7 +2,8 @@ package io.quarkmind.plugin;
 
 import io.casehub.annotation.CaseType;
 import io.casehub.coordination.PropagationContext;
-import io.casehub.core.DefaultCaseFile;
+import io.casehub.core.CaseFile;
+import io.casehub.persistence.memory.InMemoryCaseFileRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import io.quarkmind.agent.ResourceBudget;
@@ -28,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Requires {@code @QuarkusTest} — {@link DroolsStrategyTask} uses {@code drools-quarkus}
  * whose {@code DataSource.createStore()} factory is initialised at Quarkus build time and is
  * unavailable in plain JUnit (see GE-0053). Tests call {@link StrategyTask#execute(io.casehub.core.CaseFile)}
- * directly with a populated {@link DefaultCaseFile}.
+ * directly with a populated {@link InMemoryCaseFile}.
  *
  * <p>Logic coverage for the same rules is also exercised by {@link BasicStrategyTaskTest}
  * (plain JUnit, no Quarkus boot) since both implementations share identical decisions.
@@ -174,10 +175,10 @@ class DroolsStrategyTaskTest {
 
     // --- Helpers ---
 
-    private DefaultCaseFile caseFile(int minerals, int vespene,
+    private CaseFile caseFile(int minerals, int vespene,
                                      List<Unit> workers, List<Building> buildings,
                                      List<Unit> enemies) {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.MINERALS,        minerals);
         cf.put(QuarkMindCaseFile.VESPENE,         vespene);
         cf.put(QuarkMindCaseFile.WORKERS,         workers);

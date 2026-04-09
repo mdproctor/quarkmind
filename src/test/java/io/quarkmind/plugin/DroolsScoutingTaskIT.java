@@ -2,7 +2,8 @@ package io.quarkmind.plugin;
 
 import io.casehub.annotation.CaseType;
 import io.casehub.coordination.PropagationContext;
-import io.casehub.core.DefaultCaseFile;
+import io.casehub.core.CaseFile;
+import io.casehub.persistence.memory.InMemoryCaseFileRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import io.quarkmind.agent.QuarkMindCaseFile;
@@ -108,8 +109,8 @@ class DroolsScoutingTaskIT {
 
     // ---- Helpers ----
 
-    private DefaultCaseFile caseFile(List<Unit> enemies, List<Unit> workers, long frame) {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+    private CaseFile caseFile(List<Unit> enemies, List<Unit> workers, long frame) {
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.ENEMY_UNITS,  enemies);
         cf.put(QuarkMindCaseFile.WORKERS,      workers);
         cf.put(QuarkMindCaseFile.MY_BUILDINGS, List.of(nexus()));

@@ -1,7 +1,8 @@
 package io.quarkmind.plugin;
 
 import io.casehub.coordination.PropagationContext;
-import io.casehub.core.DefaultCaseFile;
+import io.casehub.core.CaseFile;
+import io.casehub.persistence.memory.InMemoryCaseFileRepository;
 import io.quarkmind.agent.ResourceBudget;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.domain.*;
@@ -159,10 +160,10 @@ class BasicStrategyTaskTest {
 
     // --- Helpers ---
 
-    private DefaultCaseFile caseFile(int minerals, int vespene,
+    private CaseFile caseFile(int minerals, int vespene,
                                      List<Unit> workers, List<Building> buildings,
                                      List<Unit> enemies) {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.MINERALS,        minerals);
         cf.put(QuarkMindCaseFile.VESPENE,         vespene);
         cf.put(QuarkMindCaseFile.WORKERS,         workers);

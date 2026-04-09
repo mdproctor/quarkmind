@@ -1,7 +1,8 @@
 package io.quarkmind.plugin;
 
 import io.casehub.coordination.PropagationContext;
-import io.casehub.core.DefaultCaseFile;
+import io.casehub.core.CaseFile;
+import io.casehub.persistence.memory.InMemoryCaseFileRepository;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.domain.*;
 import io.quarkmind.sc2.IntentQueue;
@@ -154,9 +155,9 @@ class BasicScoutingTaskTest {
 
     // --- Helpers ---
 
-    private DefaultCaseFile caseFile(List<Unit> enemies, List<Building> buildings,
+    private CaseFile caseFile(List<Unit> enemies, List<Building> buildings,
                                      List<Unit> workers, long frame) {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.ENEMY_UNITS,  enemies);
         cf.put(QuarkMindCaseFile.MY_BUILDINGS, buildings);
         cf.put(QuarkMindCaseFile.WORKERS,      workers);

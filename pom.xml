@@ -66,6 +66,12 @@
             <artifactId>casehub-core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
+        <!-- In-memory TaskRepository + CaseFileRepository — required by CaseEngine/TaskBroker -->
+        <dependency>
+            <groupId>io.casehub</groupId>
+            <artifactId>casehub-persistence-memory</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
 
         <!-- SC2 Replay parsing — extracted from Scelight (Apache 2.0) -->
         <!-- Source: /Users/mdproctor/claude/scelight, branch: feature/standalone-modules -->

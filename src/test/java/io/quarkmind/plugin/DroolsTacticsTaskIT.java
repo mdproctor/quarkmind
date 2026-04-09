@@ -2,7 +2,8 @@ package io.quarkmind.plugin;
 
 import io.casehub.annotation.CaseType;
 import io.casehub.coordination.PropagationContext;
-import io.casehub.core.DefaultCaseFile;
+import io.casehub.core.CaseFile;
+import io.casehub.persistence.memory.InMemoryCaseFileRepository;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import io.quarkmind.agent.QuarkMindCaseFile;
@@ -145,9 +146,9 @@ class DroolsTacticsTaskIT {
 
     // ---- Helpers ----
 
-    private DefaultCaseFile caseFile(String strategy, List<Unit> army,
+    private CaseFile caseFile(String strategy, List<Unit> army,
                                      List<Unit> enemies, Point2d nearestThreat) {
-        var cf = new DefaultCaseFile("starcraft-game", Map.of(), PropagationContext.createRoot());
+        var cf = new InMemoryCaseFileRepository().create("starcraft-game", Map.of(), PropagationContext.createRoot());
         cf.put(QuarkMindCaseFile.STRATEGY,      strategy);
         cf.put(QuarkMindCaseFile.ARMY,          army);
         cf.put(QuarkMindCaseFile.ENEMY_UNITS,   enemies);
