@@ -205,6 +205,10 @@ public class EmulatedGame {
 
         // Friendly units attack only if they have an active AttackIntent
         for (Unit attacker : myUnits) {
+            // Only units given an AttackIntent fire back. MoveIntent units do not auto-attack
+            // (SC2 semantic: move-only commands don't enable auto-attack mode).
+            // attackingUnits is intentionally NOT cleared on target arrival — a unit continues
+            // firing from position after closing distance.
             if (!attackingUnits.contains(attacker.tag())) continue;
             nearestInRange(attacker.position(), enemyUnits, SC2Data.attackRange(attacker.type()))
                 .ifPresent(target ->

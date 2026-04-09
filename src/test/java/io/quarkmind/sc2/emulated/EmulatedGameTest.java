@@ -238,8 +238,8 @@ class EmulatedGameTest {
     void unitInsideAttackRangeReceivesDamage() {
         // Stalker range = 5 tiles. Place at 3 tiles away from probe-0 → in range.
         // probe-0 at (9,9). Stalker placed at (6,9) → distance=3 ≤ 5 → attacks.
-        // No other probe is at distance ≤ 5 from (6,9) (probe-1 is at (9.5,9), distance 3.5 — also in range,
-        // but probe-0 is nearer so it gets hit first).
+        // Stalker range = 5 tiles. Stalker at (6,9). Probes 0–4 are in range (distances 3.0–5.0),
+        // but probe-0 at distance 3.0 is the nearest so it is the sole target.
         // Stalker deals 5 dmg → probe-0 shields: 20→15.
         game.spawnEnemyForTesting(UnitType.STALKER, new Point2d(6f, 9));
         game.tick();
