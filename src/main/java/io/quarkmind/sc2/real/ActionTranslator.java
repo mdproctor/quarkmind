@@ -1,14 +1,12 @@
 package io.quarkmind.sc2.real;
 
 import com.github.ocraft.s2client.protocol.data.Abilities;
-import com.github.ocraft.s2client.protocol.unit.Tag;
 import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.UnitType;
 import io.quarkmind.sc2.intent.Intent;
 import org.jboss.logging.Logger;
 
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Translates domain Intent objects into ResolvedCommands for dispatch via ActionInterface.
