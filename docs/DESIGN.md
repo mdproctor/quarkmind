@@ -95,8 +95,8 @@ Each plugin seam (`StrategyTask`, `EconomicsTask`, `TacticsTask`, `ScoutingTask`
 | Task | Class | R&D Framework | Approach |
 |---|---|---|---|
 | `StrategyTask` | `DroolsStrategyTask` | Drools 10.1.0 Rule Units | Forward-chaining DRL rules write `STRATEGY` key to CaseFile; Java dispatches intents. Hot-reloadable. Native-safe via Executable Model. |
-| `EconomicsTask` | `FlowEconomicsTask` | Quarkus Flow | Per-tick Flow instance via `@Incoming` + `startInstance(tick)`. Single `consume()` step calls all four decisions sequentially (see budget fix below). |
-| `TacticsTask` | `DroolsTacticsTask` | Drools + custom Java GOAP | Drools classifies unit groups (Phase 1); Java A* finds cheapest action plan per group (Phase 2). First action dispatched as `AttackIntent`/`MoveIntent`. |
+| `EconomicsTask` | `FlowEconomicsTask` | Quarkus Flow | Per-tick Flow instance via `@Incoming` + `startInstance(tick)`. Single `consume()` step calls all four decisions sequentially — required to prevent `ResourceBudget` reset between steps (GE-0059). |
+| `TacticsTask` | `DroolsTacticsTask` | Drools + custom Java GOAP | Drools classifies unit groups (rule phase 1); Java A* finds cheapest action plan per group (rule phase 2). First action dispatched as `AttackIntent`/`MoveIntent`. |
 | `ScoutingTask` | `BasicScoutingTask` | Drools CEP + Java-managed buffers | Fresh `RuleUnitInstance` per tick from Java `Deque` buffers. Avoids Drools Fusion STREAM mode incompatibility with drools-quarkus extension. |
 
 `BasicStrategyTask` is retained as a plain (non-CDI) class: reference implementation and direct-instantiation test target.
@@ -134,7 +134,15 @@ Plugins are registered at startup by `QuarkMindTaskRegistrar` — injecting each
 | `EmulatedGame` | Physics simulation engine: mineral harvesting, build times, movement, combat (E1-E3 complete); CDI bean in `%emulated` profile |
 | `EmulatedEngine` | `SC2Engine` wrapping `EmulatedGame`; active on `@IfBuildProfile("emulated")` |
 | `ScenarioLibrary` | Named test scenarios (set-resources, spawn-enemy-attack, etc.) |
-| `SC2Data` | Shared constants: `damagePerTick(UnitType)`, `attackRange(UnitType)`, `supplyCost(UnitType)`, `maxShields(UnitType)` |
+| `SC2Data` | Shared constants — see §Domain Model |
+
+### Emulation Engine Key Decisions
+
+| Decision | Chosen | Why | Alternatives Rejected |
+|---|---|---|---|
+| `EmulatedGame` separate from `SimulatedGame` | `EmulatedGame` in `sc2/emulated/` | `SimulatedGame` is the scripted test oracle; mixing physics corrupts its determinism | Evolve SimulatedGame in-place |
+| `SC2Data` in `domain/` | Shared constants for both engines | Eliminates drift between SimulatedGame and EmulatedGame data tables | Duplicate tables in each engine |
+| `@IfBuildProfile("emulated")` on `EmulatedEngine` | Positive guard — active only in `%emulated` | Prevents CDI ambiguity without growing other engines' exclusion lists | Add "emulated" to all other `@UnlessBuildProfile` lists |
 
 ### Emulation Engine Progress
 
@@ -180,8 +188,6 @@ A PixiJS 8 live visualizer renders game state each tick, served by Quarkus over 
 | Sprite source | Liquipedia via `SpriteProxyResource` | No binary bloat in git; CORS enforcement prevents direct browser fetch | Download sprites to git |
 | PixiJS bundled locally | `pixi.min.js` in `META-INF/resources/` | No CDN dependency; works offline | CDN link in HTML |
 | Electron wraps Quarkus | `main.js` with health poll | Single native window; Quarkus lifecycle managed by Electron | Separate terminal windows |
-| EmulatedGame separate from SimulatedGame | `EmulatedGame` in `sc2/emulated/` | `SimulatedGame` is the test oracle; mixing physics corrupts determinism | Evolve SimulatedGame in-place |
-| `@IfBuildProfile("emulated")` on EmulatedEngine | Positive guard | Prevents CDI ambiguity without growing other engines' exclusion lists | Add "emulated" to all other `@UnlessBuildProfile` lists |
 
 ---
 
@@ -271,6 +277,9 @@ E3 complete. QuarkMind:
 - **#13 Live SC2 smoke test** — blocked on SC2 availability
 - **#14 GraalVM native image tracing** — blocked on #13
 - **#16 Scouting CEP threshold calibration** — ROACH_RUSH ≥6, 3RAX ≥12, 4GATE ≥8/8 are R&D estimates; need replay data
+- **Deferred visualizer work** — probe overlap fix, HTML mineral display, geyser sprite, time-based UI tests
+- **LangChain4j experimental StrategyTask** — LLM-guided strategy as a fifth R&D integration (Phase 4+, Ollama local model); deferred until core emulation is stable
+- **Intent dispatch quality** — no guard against dead unit tags or incomplete buildings; bot commands whatever tag the plugin supplies
 
 ---
 
@@ -293,3 +302,14 @@ E3 complete. QuarkMind:
 | ADR | Decision |
 |---|---|
 | [ADR-0001 — Quarkus Flow placement](adr/0001-quarkus-flow-placement.md) | Per-tick stateful plugin (Option A) — exercises Flow's stateful workflow model; Drools/Flow signal boundary clean |
+
+**ADR candidates (not yet written):**
+- Two-pass simultaneous combat resolution vs sequential
+- `attackingUnits` Set vs `unitTargets` semantics
+- Quarkus Flow single-step pattern for shared mutable budget state
+- `SC2Data` placement in `domain/` as shared engine constants
+- `EmulatedGame`/`SimulatedGame` separation
+
+**Deferred (not yet designed):**
+- `HttpSC2Engine` — network bridge; SC2 on one machine, agent on another (Phase 4)
+- Mineral collection model — worker-saturation curve replacing flat +5/tick trickle
