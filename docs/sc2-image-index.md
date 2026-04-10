@@ -22,6 +22,8 @@ Use this before searching the web. Update it when new images are found or downlo
 | `sc2-nexus.jpg` | Liquipedia | 900×700 in-game render. Nexus — Protoss main base, glowing blue crystal core. Used in mdp04 blog entry. Maps to `BuildingType.NEXUS`. |
 | `visualizer-e2-zealots.png` | Screenshot | 800×680 canvas capture. Four Zealots advancing from spawn toward the nexus at frame 22. |
 | `visualizer-e3-combat.png` | Screenshot | 800×680 canvas capture. Zealot at the base engaging probes at frame 48, supply dropped 15→13. |
+| `sc2-marine.jpg` | Liquipedia | 900×700 in-game render. Marine — armoured Terran infantry, C-14 Gauss Rifle. Used in mdp05. Maps to `UnitType.MARINE`. |
+| `sc2-command-center.jpg` | Liquipedia | 900×700 in-game render. Command Center — Terran main base structure. Used in mdp05. Maps to `BuildingType.COMMAND_CENTER`. |
 
 ---
 
@@ -79,7 +81,10 @@ Consistent style: isometric renders, gold/blue Protoss aesthetic, dark floor.
 | Asset | URL | Notes |
 |---|---|---|
 | **Protoss Icon** | `https://liquipedia.net/commons/images/e/e4/ProtossIcon.png` ✅ downloaded | 493×493 PNG, transparent. The gold Khaydarin crystal crest. Used in Day Zero header. |
-| **Terran Icon** | `https://liquipedia.net/commons/images/3/33/TerranIcon.png` | For comparison posts, multi-race context. |
+| **Terran Icon** | 404 — not found | Listed URL returns 404. Skip until a working URL is found. |
+| **Marine** | `https://liquipedia.net/commons/images/d/d8/SC2Marine.jpg` | ✅ downloaded. 900×700 in-game render. |
+| **Command Center** | `https://liquipedia.net/commons/images/b/b6/SC2CommandCenter.jpg` | ✅ downloaded. |
+| **Barracks** | `https://liquipedia.net/commons/images/0/04/SC2Barracks.jpg` | Not yet downloaded. Terran infantry production building. |
 | **Zerg Icon** | `https://liquipedia.net/commons/images/5/5e/ZergIcon.png` | Same. |
 | **SC2 Logo** | Look up on Liquipedia | Full SC2 Wings of Liberty / LotV logo variants. |
 
