@@ -1,3 +1,8 @@
+---
+layout: post
+title: "StarCraft II Quarkus Agent — Day Two: No More Stubs"
+date: 2026-04-07
+---
 # StarCraft II Quarkus Agent — Day Two: No More Stubs
 
 **Date:** 2026-04-07

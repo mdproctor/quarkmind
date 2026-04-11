@@ -1,3 +1,8 @@
+---
+layout: post
+title: "The Enemy Gets a Brief"
+date: 2026-04-10
+---
 # The Enemy Gets a Brief
 
 **Date:** 2026-04-10
@@ -18,7 +23,7 @@ Total gameTick()      0ms      1ms      1ms
 
 Identical to the pre-E2 baseline. E3's two-pass combat resolution added zero measurable latency. E4 can add an enemy economic loop without any historical pressure to keep it thin.
 
-![SC2 Marine — the enemy's combat output](assets/sc2-marine.jpg)
+![SC2 Marine — the enemy's combat output](/quarkmind/blog/assets/sc2-marine.jpg)
 
 ## The design question: how real?
 
@@ -26,7 +31,7 @@ The first question was how realistic the enemy economy should be. I brought Clau
 
 Claude proposed a middle option: run the full economic loop internally, but keep enemy buildings out of `GameState` until a future scouting phase needed to see them. A sensible hedge. I pushed back. The `GameState` domain change — adding `List<Building> enemyBuildings` — cascades through about nine callsites, but the compiler catches every one. Given we'd write tests anyway, there was no good reason to phase it. We committed to the full version: enemy workers and buildings visible in `GameState` from day one.
 
-![SC2 Command Center — the enemy's starting building](assets/sc2-command-center.jpg)
+![SC2 Command Center — the enemy's starting building](/quarkmind/blog/assets/sc2-command-center.jpg)
 
 The race choice was Terran. SC2Data already has Marine and Marauder damage/range data from E3, and Terran's supply model maps cleanly onto what Pylon already does for the player side. It's not a hard constraint — `EnemyRace` is an enum designed to swap in Zerg or Protoss mirror later.
 

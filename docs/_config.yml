@@ -1,0 +1,33 @@
+title: QuarkMind
+description: "A Quarkus-based StarCraft II agent platform — a living testbed for Drools, Quarkus Flow, and CaseHub."
+baseurl: "/quarkmind"
+url: "https://mdproctor.github.io"
+author: Mark Proctor
+
+markdown: kramdown
+kramdown:
+  input: GFM
+
+plugins:
+  - jekyll-feed
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - superpowers/
+  - adr/
+  - benchmarks/
+  - DESIGN.md
+  - library-research.md
+  - plugin-guide.md
+  - roadmap-sc2-engine.md
+  - running.md
+  - sc2-image-index.md
+
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: post
+      permalink: /blog/:year/:month/:day/:title/

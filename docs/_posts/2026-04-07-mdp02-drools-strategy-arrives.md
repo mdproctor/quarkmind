@@ -1,3 +1,8 @@
+---
+layout: post
+title: "StarCraft II Quarkus Agent — Drools Strategy Arrives"
+date: 2026-04-07
+---
 # StarCraft II Quarkus Agent — Drools Strategy Arrives
 
 **Date:** 2026-04-07

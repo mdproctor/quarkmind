@@ -1,3 +1,8 @@
+---
+layout: post
+title: "StarCraft Agent — Tactics Gets a Brain"
+date: 2026-04-08
+---
 # StarCraft Agent — Tactics Gets a Brain
 
 **Date:** 2026-04-08

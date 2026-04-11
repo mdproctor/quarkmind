@@ -154,6 +154,12 @@ cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh
 
 Run this when setting up a new environment or after any change to the `feature/standalone-modules` branch. Takes ~10 seconds.
 
+## Blog
+
+**Blog directory:** `docs/_posts/`
+
+Blog posts are Jekyll posts published at `mdproctor.github.io/quarkmind/blog/`. Each post needs frontmatter: `layout: post`, `title`, `date`. Images go in `docs/blog/assets/` and are referenced as `/quarkmind/blog/assets/filename`.
+
 ## Writing Style Guide
 
 **The writing style guide at `~/claude-workspace/writing-styles/blog-technical.md` is mandatory for all blog and diary entries.** Load it in full before drafting. Complete the pre-draft voice classification (I / we / Claude-named) before generating any prose. Do not show a draft without verifying it against the style guide.

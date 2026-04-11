@@ -1,9 +1,14 @@
+---
+layout: post
+title: "StarCraft II Quarkus Agent — Getting Replays the Long Way Round"
+date: 2026-04-06
+---
 # StarCraft II Quarkus Agent — Getting Replays the Long Way Round
 
 **Date:** 2026-04-06
 **Type:** phase-update
 
-![SC2 Zealot](assets/sc2-zealot.jpg)
+![SC2 Zealot](/quarkmind/blog/assets/sc2-zealot.jpg)
 
 ---
 

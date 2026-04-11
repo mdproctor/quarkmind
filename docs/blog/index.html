@@ -1,0 +1,21 @@
+---
+layout: default
+title: Diary
+permalink: /blog/
+---
+<div class="blog-header">
+  <h1>The Diary</h1>
+  <p>{{ site.posts.size }} entries — building a StarCraft II agent, decision by decision.</p>
+</div>
+
+<div class="blog-list">
+  {% for post in site.posts %}
+  <a class="post-item" href="{{ post.url | relative_url }}">
+    <div class="post-date">{{ post.date | date: "%Y-%m-%d" }}</div>
+    <div>
+      <div class="post-title">{{ post.title }}</div>
+      {% if post.excerpt %}<p class="post-excerpt">{{ post.excerpt | strip_html | truncate: 160 }}</p>{% endif %}
+    </div>
+  </a>
+  {% endfor %}
+</div>

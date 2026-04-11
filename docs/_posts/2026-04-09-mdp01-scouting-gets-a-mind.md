@@ -1,3 +1,8 @@
+---
+layout: post
+title: "QuarkusMind — Scouting Gets a Mind"
+date: 2026-04-09
+---
 # QuarkusMind — Scouting Gets a Mind
 
 **Date:** 2026-04-09

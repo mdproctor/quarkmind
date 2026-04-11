@@ -1,3 +1,8 @@
+---
+layout: post
+title: "QuarkusMind — Making the Bot Play"
+date: 2026-04-09
+---
 # QuarkusMind — Making the Bot Play
 
 **Date:** 2026-04-09

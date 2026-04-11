@@ -1,3 +1,8 @@
+---
+layout: post
+title: "StarCraft II Quarkus Agent — Flow Economics Arrives"
+date: 2026-04-07
+---
 # StarCraft II Quarkus Agent — Flow Economics Arrives
 
 **Date:** 2026-04-07

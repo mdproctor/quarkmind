@@ -1,3 +1,8 @@
+---
+layout: post
+title: "Watching the Game Without Playing It"
+date: 2026-04-09
+---
 # Watching the Game Without Playing It
 
 **Date:** 2026-04-09
@@ -15,7 +20,7 @@ E1 was just mineral harvesting. Probes at their starting positions, +0.0372 mine
 
 ## The visualiser
 
-![SC2 Nexus](assets/sc2-nexus.jpg)
+![SC2 Nexus](/quarkmind/blog/assets/sc2-nexus.jpg)
 
 The emulator is invisible without something to look at. We built a PixiJS 8 visualiser — served as a static file by Quarkus, pushed via WebSocket on every game tick, wrapped in an Electron window. SC2 unit portraits come from a proxy endpoint that fetches them from Liquipedia server-side, resolving the WebGL CORS restriction:
 
@@ -31,7 +36,7 @@ When I first opened the visualiser, I saw the nexus at tile (8,8), two green gey
 
 ## The mask bug
 
-![SC2 Probe](assets/sc2-probe.jpg)
+![SC2 Probe](/quarkmind/blog/assets/sc2-probe.jpg)
 
 The probes existed — `window.__test.spriteCount('unit')` returned twelve. They were invisible.
 
@@ -47,6 +52,6 @@ Enemy Zealots spawn at tile (26,26) at frame 200 and march toward the nexus. The
 
 The first time four red Zealot sprites started moving across the canvas toward the nexus, the emulation looked like something. Not StarCraft II, but something you could reason about.
 
-![Four Zealots advancing from spawn toward the nexus at frame 22](assets/visualizer-e2-zealots.png)
+![Four Zealots advancing from spawn toward the nexus at frame 22](/quarkmind/blog/assets/visualizer-e2-zealots.png)
 
 *Four Zealots spawned at tile (26,26), advancing on the nexus. Probes clustered at their starting positions. Geysers marked in green. The HUD shows minerals accumulating.*

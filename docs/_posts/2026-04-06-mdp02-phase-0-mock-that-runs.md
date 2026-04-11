@@ -1,3 +1,8 @@
+---
+layout: post
+title: "StarCraft II Quarkus Agent — Phase 0: The Mock That Runs"
+date: 2026-04-06
+---
 # StarCraft II Quarkus Agent — Phase 0: The Mock That Runs
 
 **Date:** 2026-04-06
@@ -13,7 +18,7 @@ We built it using subagent-driven development — each task dispatched to a fres
 
 ## The mock that became a specification: SimulatedGame
 
-![SC2 Zealot](assets/sc2-zealot.jpg)
+![SC2 Zealot](/quarkmind/blog/assets/sc2-zealot.jpg)
 
 `SimulatedGame` sits at the centre of it all. It's a stateful, thread-safe Protoss game: 12 Probes, 1 Nexus, 50 minerals, 15/12 supply. It receives typed intents — `TrainIntent`, `BuildIntent`, `AttackIntent` — and mutates its own state. A `tick()` advances the game clock and completes one queued build action.
 
@@ -66,7 +71,7 @@ public class PassThroughStrategyTask implements StrategyTask {
 
 ## Four plugin levels — the architecture that runs
 
-![Plugin Architecture](assets/architecture-plugins.png)
+![Plugin Architecture](/quarkmind/blog/assets/architecture-plugins.png)
 
 *The four plugin levels and their hook points — all share CaseFile and IntentQueue as passive shared substrate.*
 

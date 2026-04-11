@@ -1,3 +1,8 @@
+---
+layout: post
+title: "The Game Has Stakes Now"
+date: 2026-04-09
+---
 # The Game Has Stakes Now
 
 **Date:** 2026-04-09
@@ -15,7 +20,7 @@ The fix was one method: collapse all four decisions into `checkAll()`, a single 
 
 ## The combat design: flat damage, Protoss shields, twenty files
 
-![SC2 Zealot](assets/sc2-zealot.jpg)
+![SC2 Zealot](/quarkmind/blog/assets/sc2-zealot.jpg)
 
 I brought Claude in for E3. The design I settled on: flat damage per scheduler tick, simultaneous two-pass resolution, and shields. No attack cooldowns — at 500ms ticks they're hard to perceive and easy to get wrong. E4 can swap `damagePerTick` for per-attack events when fidelity matters.
 
@@ -23,7 +28,7 @@ Shields were worth adding from the start. Protoss units have them, and leaving t
 
 ## The fairness problem in resolveCombat()
 
-![SC2 Probe](assets/sc2-probe.jpg)
+![SC2 Probe](/quarkmind/blog/assets/sc2-probe.jpg)
 
 The interesting design decision in combat resolution is the two-pass approach. A naive sequential implementation lets unit A kill unit B before B gets to attack. SC2 doesn't work that way.
 
@@ -44,6 +49,6 @@ The Playwright E2E tests close the loop. We inject a low-health probe via `Simul
 
 236 tests pass. Units fight. Probes die red.
 
-![A Zealot at the base engaging probes at frame 48](assets/visualizer-e3-combat.png)
+![A Zealot at the base engaging probes at frame 48](/quarkmind/blog/assets/visualizer-e3-combat.png)
 
 *Frame 48: a Zealot has marched from (26,26) and reached the probe line. Supply dropped from 15 to 13 — two probes are already gone.*

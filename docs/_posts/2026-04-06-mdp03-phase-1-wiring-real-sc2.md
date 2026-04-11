@@ -1,9 +1,14 @@
+---
+layout: post
+title: "StarCraft II Quarkus Agent — Phase 1: Wiring Real SC2"
+date: 2026-04-06
+---
 # StarCraft II Quarkus Agent — Phase 1: Wiring Real SC2
 
 **Date:** 2026-04-06
 **Type:** phase-update
 
-![Protoss Stalker](assets/sc2-stalker.jpg)
+![Protoss Stalker](/quarkmind/blog/assets/sc2-stalker.jpg)
 
 ---
 

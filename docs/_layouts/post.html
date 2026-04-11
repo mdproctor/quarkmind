@@ -1,0 +1,12 @@
+---
+layout: default
+---
+<div class="post-wrap">
+  <a class="post-back" href="{{ '/blog/' | relative_url }}">← All entries</a>
+  <div class="post-meta">
+    <time>{{ page.date | date: "%B %-d, %Y" }}</time>
+  </div>
+  <div class="post-body">
+    {{ content }}
+  </div>
+</div>
