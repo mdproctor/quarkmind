@@ -44,7 +44,7 @@ The error pointed at `DefaultCaseFile`. CaseHub had been refactored: the constru
 
 The fix was three parts. Update eight test files to use `InMemoryCaseFile`. Add `casehub-persistence-memory` as a dependency. And add this to `application.properties`:
 
-```
+```properties
 quarkus.index-dependency.casehub-persistence-memory.group-id=io.casehub
 quarkus.index-dependency.casehub-persistence-memory.artifact-id=casehub-persistence-memory
 ```
