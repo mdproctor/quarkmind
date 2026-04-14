@@ -42,7 +42,7 @@ public class EmulatedConfigResource {
 
     @PUT
     @Path("/enemy-strategy")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Consumes({MediaType.APPLICATION_JSON, "application/yaml"})
     public Response setEnemyStrategy(EnemyStrategy strategy) {
         config.setEnemyStrategy(strategy);
         return Response.ok(strategy).build();

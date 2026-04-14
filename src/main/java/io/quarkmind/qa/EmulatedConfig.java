@@ -1,6 +1,7 @@
 package io.quarkmind.qa;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import io.quarkmind.domain.EnemyStrategy;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -8,6 +9,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -59,13 +61,17 @@ public class EmulatedConfig {
         waveUnitType   = defaultWaveUnitType;
         unitSpeed      = defaultUnitSpeed;
         // Load enemy strategy from file if configured
-        strategyFile.filter(f -> !f.isBlank()).ifPresent(f -> {
+        strategyFile.filter(f -> !f.isBlank()).ifPresent(path -> {
             try {
-                enemyStrategy = objectMapper.readValue(Path.of(f).toFile(), EnemyStrategy.class);
-                log.infof("[CONFIG] Loaded enemy strategy from %s", f);
+                File file = Path.of(path).toFile();
+                ObjectMapper mapper = path.endsWith(".yaml") || path.endsWith(".yml")
+                    ? new YAMLMapper()
+                    : objectMapper;
+                enemyStrategy = mapper.readValue(file, EnemyStrategy.class);
+                log.infof("[CONFIG] Loaded enemy strategy from %s", path);
             } catch (Exception e) {
                 log.warnf("[CONFIG] Could not load strategy file %s — using default. Error: %s",
-                    f, e.getMessage());
+                    path, e.getMessage());
             }
         });
     }
