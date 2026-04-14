@@ -163,6 +163,11 @@ public final class SC2Data {
     /**
      * Damage dealt per attack event (replaces damagePerTick from E3).
      * Phase E4: units fire at cooldown intervals, not every tick.
+     *
+     * <p><b>Note: these are simplified/balanced values, not exact SC2 numbers.</b>
+     * Real SC2 stats (e.g. Immortal: 50+100 vs Armored, Stalker: 13+5 vs Armored)
+     * are scaled down to keep simulation legible at 500ms/tick. Values are tuned
+     * for realistic fight outcomes, not stat-sheet accuracy.
      */
     public static int damagePerAttack(UnitType type) {
         return switch (type) {

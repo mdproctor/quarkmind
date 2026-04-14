@@ -21,7 +21,7 @@ class SC2DataTest {
     @Test void roachAttributes() {
         assertThat(SC2Data.unitAttributes(UnitType.ROACH)).containsExactlyInAnyOrder(ARMORED, BIOLOGICAL);
     }
-    @Test void hydralisksAttributes() {
+    @Test void hydraliskAttributes() {
         assertThat(SC2Data.unitAttributes(UnitType.HYDRALISK)).containsExactlyInAnyOrder(LIGHT, BIOLOGICAL);
     }
     @Test void probeAttributes() {
@@ -45,10 +45,11 @@ class SC2DataTest {
     @Test void roachArmour()   { assertThat(SC2Data.armour(UnitType.ROACH)).isEqualTo(1); }
     @Test void marineArmour()  { assertThat(SC2Data.armour(UnitType.MARINE)).isEqualTo(0); }
     @Test void probeArmour()   { assertThat(SC2Data.armour(UnitType.PROBE)).isEqualTo(0); }
-    @Test void hydralisksArmour() { assertThat(SC2Data.armour(UnitType.HYDRALISK)).isEqualTo(0); }
+    @Test void hydraliskArmour() { assertThat(SC2Data.armour(UnitType.HYDRALISK)).isEqualTo(0); }
 
     @Test void stalkerBonusVsArmored()  { assertThat(SC2Data.bonusDamageVs(UnitType.STALKER,  ARMORED)).isEqualTo(4); }
     @Test void stalkerBonusVsLight()    { assertThat(SC2Data.bonusDamageVs(UnitType.STALKER,  LIGHT)).isEqualTo(0); }
+    @Test void marauderBonusVsLight()   { assertThat(SC2Data.bonusDamageVs(UnitType.MARAUDER, LIGHT)).isEqualTo(0); }
     @Test void marauderBonusVsArmored() { assertThat(SC2Data.bonusDamageVs(UnitType.MARAUDER, ARMORED)).isEqualTo(10); }
     @Test void immortalBonusVsArmored() { assertThat(SC2Data.bonusDamageVs(UnitType.IMMORTAL, ARMORED)).isEqualTo(3); }
     @Test void probeBonusVsArmored()    { assertThat(SC2Data.bonusDamageVs(UnitType.PROBE,    ARMORED)).isEqualTo(0); }
