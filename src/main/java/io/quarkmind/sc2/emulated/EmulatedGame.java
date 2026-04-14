@@ -273,7 +273,9 @@ public class EmulatedGame {
             (int) mineralAccumulator,  // floor: fractional minerals accumulate silently
             vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings),
-            List.copyOf(enemyUnits), List.copyOf(geysers),
+            List.copyOf(enemyUnits),
+            List.of(),                  // enemyStagingArea — wired in Task 5
+            List.copyOf(geysers),
             gameFrame);
     }
 

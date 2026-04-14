@@ -74,4 +74,16 @@ class EnemyStrategyTest {
         assertThat(s.buildOrder().get(0).unitType()).isEqualTo(UnitType.STALKER);
         assertThat(s.loop()).isFalse();
     }
+
+    @Test
+    void gameStateIncludesEnemyStagingArea() {
+        Unit staged = new Unit("s-1", UnitType.ZEALOT, new Point2d(26, 26),
+            100, 100, 50, 50);
+        GameState state = new GameState(50, 0, 15, 12,
+            List.of(), List.of(), List.of(),
+            List.of(staged),   // enemyStagingArea
+            List.of(), 0L);
+        assertThat(state.enemyStagingArea()).hasSize(1);
+        assertThat(state.enemyStagingArea().get(0).tag()).isEqualTo("s-1");
+    }
 }

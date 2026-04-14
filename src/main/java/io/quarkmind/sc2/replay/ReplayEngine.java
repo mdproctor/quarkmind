@@ -90,7 +90,7 @@ public class ReplayEngine implements SC2Engine {
     }
 
     private static GameState emptyState() {
-        return new GameState(0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), 0L);
+        return new GameState(0, 0, 0, 0, List.of(), List.of(), List.of(), List.of(), List.of(), 0L);
     }
 
     /**

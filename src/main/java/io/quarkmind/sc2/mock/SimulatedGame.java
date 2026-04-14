@@ -22,6 +22,8 @@ public class SimulatedGame {
     private final List<Unit> enemyUnits = new CopyOnWriteArrayList<>();
     private final List<Resource> geysers = new CopyOnWriteArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new CopyOnWriteArrayList<>();
+    // E4: staging test helper — lets VisualizerRenderTest inject staged units
+    private final List<Unit> testStagingArea = new CopyOnWriteArrayList<>();
     private int nextTag = 200;
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
@@ -37,6 +39,7 @@ public class SimulatedGame {
         enemyUnits.clear();
         geysers.clear();
         pendingCompletions.clear();
+        testStagingArea.clear();
         nextTag = 200;
 
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
@@ -89,7 +92,20 @@ public class SimulatedGame {
     public synchronized GameState snapshot() {
         return new GameState(minerals, vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits),
+            List.copyOf(testStagingArea),   // enemyStagingArea — populated by test helpers
             List.copyOf(geysers), gameFrame.get());
+    }
+
+    /** Test helper: adds a unit to the staging area returned by snapshot(). */
+    public synchronized void addStagedUnitForTesting(UnitType type, Point2d position) {
+        testStagingArea.add(new Unit("staging-" + nextTag++, type, position,
+            SC2Data.maxHealth(type), SC2Data.maxHealth(type),
+            SC2Data.maxShields(type), SC2Data.maxShields(type)));
+    }
+
+    /** Test helper: clears the staging area. */
+    public synchronized void clearStagedUnitsForTesting() {
+        testStagingArea.clear();
     }
 
     public synchronized void spawnEnemyUnit(UnitType type, Point2d position) {

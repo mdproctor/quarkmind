@@ -20,6 +20,7 @@ class GameStateBroadcasterTest {
             List.of(new Unit("probe-0", UnitType.PROBE, new Point2d(9f, 9f), 45, 45, 20, 20)),
             List.of(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8f, 8f), 1500, 1500, true)),
             List.of(),
+            List.of(),   // enemyStagingArea
             List.of(new Resource("geyser-0", new Point2d(5f, 11f), 2250)),
             42L
         );

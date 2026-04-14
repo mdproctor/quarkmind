@@ -10,13 +10,15 @@ public record GameState(
     List<Unit> myUnits,
     List<Building> myBuildings,
     List<Unit> enemyUnits,
+    List<Unit> enemyStagingArea,
     List<Resource> geysers,
     long gameFrame
 ) {
     public GameState {
-        myUnits    = List.copyOf(myUnits);
-        myBuildings = List.copyOf(myBuildings);
-        enemyUnits = List.copyOf(enemyUnits);
-        geysers    = List.copyOf(geysers);
+        myUnits          = List.copyOf(myUnits);
+        myBuildings      = List.copyOf(myBuildings);
+        enemyUnits       = List.copyOf(enemyUnits);
+        enemyStagingArea = List.copyOf(enemyStagingArea);
+        geysers          = List.copyOf(geysers);
     }
 }
