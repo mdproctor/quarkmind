@@ -257,7 +257,7 @@ class EmulatedGameTest {
     void combatIsSimultaneous() {
         // probe-0 gets AttackIntent toward enemy → probe attacks enemy too.
         // probe-0 at 5 HP, 0 shields → Zealot's 8 dmg kills it.
-        // Zealot has 50 shields; probe deals 5 dmg → shields drop 50→45 (simultaneous resolution).
+        // Zealot has 50 shields; probe deals 4 dmg (5 raw - 1 armour) → shields drop 50→46 (simultaneous resolution).
         // Both damage computations happen before either is applied (simultaneous).
         game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
@@ -269,7 +269,7 @@ class EmulatedGameTest {
         // probe-0 should be dead (5 HP - 8 dmg → health ≤ 0)
         assertThat(game.snapshot().myUnits().stream()
             .anyMatch(u -> u.tag().equals("probe-0"))).isFalse();
-        // Enemy should still be alive but damaged (shields 50→45 from probe's 5 dmg)
+        // Enemy should still be alive but damaged (shields 50→46 from probe's 4 effective dmg)
         assertThat(game.snapshot().enemyUnits()).hasSize(1);
         assertThat(game.snapshot().enemyUnits().get(0).shields())
             .isLessThan(SC2Data.maxShields(UnitType.ZEALOT));
@@ -300,7 +300,7 @@ class EmulatedGameTest {
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
 
         game.tick(); // tick 1: probe fires, cooldown → 2
-        int shieldsAfterTick1 = game.snapshot().enemyUnits().get(0).shields(); // 45
+        int shieldsAfterTick1 = game.snapshot().enemyUnits().get(0).shields(); // 46
 
         game.tick(); // tick 2: cooldown = 1, probe does NOT fire
         int shieldsAfterTick2 = game.snapshot().enemyUnits().get(0).shields();
