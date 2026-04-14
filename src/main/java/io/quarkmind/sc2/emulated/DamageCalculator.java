@@ -26,6 +26,9 @@ class DamageCalculator {
     }
 
     private int bonusVsTarget(UnitType attackerType, UnitType targetType) {
+        // max() not sum(): no current attacker bonuses two of the same target's attributes,
+        // so max and sum are equivalent here. If that changes, revisit this choice —
+        // real SC2 applies each matching bonus once (effectively sum).
         return SC2Data.unitAttributes(targetType).stream()
             .mapToInt(attr -> SC2Data.bonusDamageVs(attackerType, attr))
             .max()

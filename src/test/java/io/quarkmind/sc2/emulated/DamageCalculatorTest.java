@@ -1,6 +1,9 @@
 package io.quarkmind.sc2.emulated;
 
-import io.quarkmind.domain.*;
+import io.quarkmind.domain.Point2d;
+import io.quarkmind.domain.SC2Data;
+import io.quarkmind.domain.Unit;
+import io.quarkmind.domain.UnitType;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
