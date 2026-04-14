@@ -1,13 +1,12 @@
 package io.quarkmind.domain;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record EnemyStrategy(
-    @JsonProperty("buildOrder")      List<EnemyBuildStep>  buildOrder,
-    @JsonProperty("loop")            boolean               loop,
-    @JsonProperty("mineralsPerTick") int                   mineralsPerTick,
-    @JsonProperty("attackConfig")    EnemyAttackConfig     attackConfig
+    List<EnemyBuildStep> buildOrder,
+    boolean              loop,
+    int                  mineralsPerTick,
+    EnemyAttackConfig    attackConfig
 ) {
     public static EnemyStrategy defaultProtoss() {
         return new EnemyStrategy(
