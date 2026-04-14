@@ -1,5 +1,8 @@
 package io.quarkmind.domain;
 
+import java.util.Set;
+import static io.quarkmind.domain.UnitAttribute.*;
+
 public final class SC2Data {
 
     private SC2Data() {}
@@ -54,11 +57,51 @@ public final class SC2Data {
 
     public static int maxHealth(UnitType type) {
         return switch (type) {
-            case PROBE   -> 45;
-            case ZEALOT  -> 100;
-            case STALKER -> 80;
-            default      -> 100;
+            case PROBE     ->  45;
+            case ZEALOT    -> 100;
+            case STALKER   ->  80;
+            case IMMORTAL  -> 200;
+            case MARINE    ->  45;
+            case MARAUDER  -> 125;
+            case ROACH     -> 145;
+            case HYDRALISK ->  90;
+            default        -> 100;
         };
+    }
+
+    public static Set<UnitAttribute> unitAttributes(UnitType type) {
+        return switch (type) {
+            case PROBE     -> Set.of(LIGHT, MECHANICAL);
+            case ZEALOT    -> Set.of(LIGHT, BIOLOGICAL);
+            case STALKER   -> Set.of(ARMORED, MECHANICAL);
+            case IMMORTAL  -> Set.of(ARMORED, MECHANICAL, MASSIVE);
+            case OBSERVER  -> Set.of(ARMORED, MECHANICAL);
+            case MARINE    -> Set.of(LIGHT, BIOLOGICAL);
+            case MARAUDER  -> Set.of(BIOLOGICAL, ARMORED);
+            case ROACH     -> Set.of(ARMORED, BIOLOGICAL);
+            case HYDRALISK -> Set.of(LIGHT, BIOLOGICAL);
+            default        -> Set.of();
+        };
+    }
+
+    public static int armour(UnitType type) {
+        return switch (type) {
+            case ZEALOT, STALKER, IMMORTAL, MARAUDER, ROACH -> 1;
+            default -> 0;
+        };
+    }
+
+    public static int bonusDamageVs(UnitType attackerType, UnitAttribute targetAttribute) {
+        return switch (attackerType) {
+            case STALKER  -> targetAttribute == ARMORED ? 4  : 0;
+            case IMMORTAL -> targetAttribute == ARMORED ? 3  : 0;
+            case MARAUDER -> targetAttribute == ARMORED ? 10 : 0;
+            default       -> 0;
+        };
+    }
+
+    public static boolean hasHardenedShield(UnitType type) {
+        return type == UnitType.IMMORTAL;
     }
 
     public static int maxShields(UnitType type) {
