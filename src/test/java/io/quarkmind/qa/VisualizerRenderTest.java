@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import io.quarkmind.agent.AgentOrchestrator;
+import io.quarkmind.domain.Point2d;
 import io.quarkmind.domain.SC2Data;
 import io.quarkmind.domain.UnitType;
 import io.quarkmind.sc2.SC2Engine;
@@ -206,6 +207,80 @@ class VisualizerRenderTest {
 
         int count = ((Number) page.evaluate("() => window.__test.spriteCount('unit')")).intValue();
         assertThat(count).isEqualTo(11);
+
+        page.close();
+    }
+
+    /**
+     * Staging layer test: units in enemyStagingArea must render as blue-tinted sprites.
+     * Uses SimulatedGame.addStagedUnitForTesting() to inject a staged enemy without
+     * needing the %emulated profile — same pattern as setUnitHealth for combat tests.
+     */
+    @Test
+    void enemyStagedUnitsRenderAtSpawn() {
+        Page page = openPage();
+
+        simulatedGame.addStagedUnitForTesting(UnitType.ZEALOT, new Point2d(26, 26));
+        engine.observe();
+
+        page.waitForFunction(
+            "() => window.__test.spriteCount('staging') >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate(
+            "() => window.__test.spriteCount('staging')")).intValue();
+        assertThat(count).as("staging layer must have 1 sprite").isEqualTo(1);
+
+        page.close();
+    }
+
+    /**
+     * Staging count matches game state: two different unit types staged → two sprites.
+     */
+    @Test
+    void stagedUnitCountMatchesGameState() {
+        Page page = openPage();
+
+        simulatedGame.addStagedUnitForTesting(UnitType.ZEALOT,  new Point2d(26,    26));
+        simulatedGame.addStagedUnitForTesting(UnitType.STALKER, new Point2d(26.5f, 26));
+        engine.observe();
+
+        page.waitForFunction(
+            "() => window.__test.spriteCount('staging') >= 2",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate(
+            "() => window.__test.spriteCount('staging')")).intValue();
+        assertThat(count).as("two staged units → two staging sprites").isEqualTo(2);
+
+        page.close();
+    }
+
+    /**
+     * Staging sprites disappear when the game state clears the staging area.
+     * Simulates an attack being sent (staging → enemy).
+     */
+    @Test
+    void stagedUnitsDisappearWhenStagingClears() {
+        Page page = openPage();
+
+        simulatedGame.addStagedUnitForTesting(UnitType.ZEALOT, new Point2d(26, 26));
+        engine.observe();
+
+        page.waitForFunction(
+            "() => window.__test.spriteCount('staging') >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        simulatedGame.clearStagedUnitsForTesting(); // simulates attack sent
+        engine.observe();
+
+        page.waitForFunction(
+            "() => window.__test.spriteCount('staging') === 0",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate(
+            "() => window.__test.spriteCount('staging')")).intValue();
+        assertThat(count).as("staging layer must be empty after clear").isEqualTo(0);
 
         page.close();
     }

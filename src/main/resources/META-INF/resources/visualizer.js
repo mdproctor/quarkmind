@@ -205,6 +205,12 @@ function updateScene(state) {
         'enemy',
         e => makeUnitSprite(UNIT_ALIAS[e.type] ?? null, UNIT_RADIUS, 0xff4444)
     );
+    syncLayer(
+        window._layers.staging,
+        state.enemyStagingArea ?? [],
+        'staging',
+        e => makeUnitSprite(UNIT_ALIAS[e.type] ?? null, UNIT_RADIUS, 0x4488ff)
+    );
 
     hudText.text =
         `Minerals: ${state.minerals}   Gas: ${state.vespene}` +
@@ -309,9 +315,10 @@ async function init() {
     const building   = new PIXI.Container();
     const unit       = new PIXI.Container();
     const enemy      = new PIXI.Container();
+    const staging    = new PIXI.Container();
     const hud        = new PIXI.Container();
-    app.stage.addChild(background, resource, building, unit, enemy, hud);
-    window._layers = { resource, building, unit, enemy };
+    app.stage.addChild(background, resource, building, unit, enemy, staging, hud);
+    window._layers = { resource, building, unit, enemy, staging };
 
     drawGrid(background);
 
