@@ -69,7 +69,8 @@ public class EmulatedEngine implements SC2Engine {
 
     @Override
     public void tick() {
-        game.setUnitSpeed(config.getUnitSpeed()); // live speed — reads config each tick
+        game.setUnitSpeed(config.getUnitSpeed());           // existing
+        game.setEnemyStrategy(config.getEnemyStrategy());   // new E4: live strategy updates
         game.tick();
     }
 
