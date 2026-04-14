@@ -135,6 +135,34 @@ public final class SC2Data {
         };
     }
 
+    /**
+     * Damage dealt per attack event (replaces damagePerTick from E3).
+     * Phase E4: units fire at cooldown intervals, not every tick.
+     */
+    public static int damagePerAttack(UnitType type) {
+        return switch (type) {
+            case PROBE     ->  5;
+            case ZEALOT    ->  8;
+            case STALKER   -> 13;
+            case IMMORTAL  -> 20;
+            case MARINE    ->  6;
+            case MARAUDER  -> 10;
+            case ROACH     ->  9;
+            case HYDRALISK -> 12;
+            default        ->  5;
+        };
+    }
+
+    /** Ticks between attacks (cooldown reset after firing). 1 tick = 500ms at Faster speed. */
+    public static int attackCooldownInTicks(UnitType type) {
+        return switch (type) {
+            case MARINE, HYDRALISK                         -> 1;
+            case PROBE, ZEALOT, IMMORTAL, MARAUDER, ROACH  -> 2;
+            case STALKER                                   -> 3;
+            default                                        -> 2;
+        };
+    }
+
     /** Attack range in tiles. Zealots are melee (0.5 tiles). */
     public static float attackRange(UnitType type) {
         return switch (type) {
