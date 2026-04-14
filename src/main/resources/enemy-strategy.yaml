@@ -1,0 +1,10 @@
+# Sample enemy build order — copy to a path and set emulated.enemy.strategy-file=<path>
+buildOrder:
+  - unitType: ZEALOT
+  - unitType: ZEALOT
+  - unitType: STALKER
+loop: true
+mineralsPerTick: 2
+attackConfig:
+  armyThreshold: 3
+  attackIntervalFrames: 200
