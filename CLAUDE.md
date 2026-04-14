@@ -57,7 +57,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 | Profile | SC2 needed | Purpose |
 |---|---|---|
 | `%mock` (default) | No | Development and unit testing against SimulatedGame |
-| `%emulated` | No | Physics simulation — EmulatedGame with real mechanics (movement, combat phases) |
+| `%emulated` | No | Physics simulation — EmulatedGame with real mechanics (movement, combat, enemy active AI) |
 | `%replay` | No | Agent loop against a real `.SC2Replay` — observe-only |
 | `%sc2` | Yes | Real SC2 integration |
 | `%test` | No | @QuarkusTest — scheduler disabled |
@@ -87,10 +87,15 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - `spawnEnemyForTesting(UnitType, Point2d)` — places an enemy unit at a specific position
 - `setHealthForTesting(String tag, int health)` — sets a friendly unit's HP directly
 - `setShieldsForTesting(String tag, int shields)` — sets a friendly unit's shields directly
+- `setEnemyStrategy(EnemyStrategy)` — sets the active enemy AI strategy for economy/attack tests
+- `enemyMinerals()` — returns current enemy mineral accumulator (int) for economy assertions
+- `enemyStagingSize()` — returns count of staged enemy units waiting to attack
 
 **SimulatedGame test helpers** (public, usable from any test including `VisualizerRenderTest`):
 - `setUnitHealth(String tag, int health)` — inject low-health state for visualiser E2E tests
 - `removeUnit(String tag)` — simulate unit death for visualiser disappearance tests
+- `addStagedUnitForTesting(UnitType, Point2d)` — inject a staged enemy unit into `enemyStagingArea` snapshot (for VisualizerRenderTest)
+- `clearStagedUnitsForTesting()` — clear the staging area; also called by `reset()`
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 

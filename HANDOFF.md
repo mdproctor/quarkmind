@@ -1,19 +1,22 @@
-# Handover — 2026-04-09 (session 2)
+# Handover — 2026-04-14
 
-**Head commit:** `587fc67` — docs: design snapshot 2026-04-09 — E3 combat complete + budget fix
+**Head commit:** `b193fdc` — feat(e4): add YAML file loading support for EnemyStrategy config
 
 ## What Changed This Session
 
-- **#15 fixed** — `FlowEconomicsTask` budget arbitration: Quarkus Flow serialises `GameStateTick` between `consume()` steps, resetting `ResourceBudget` each time. Fix: collapsed four steps into `checkAll()`. Regression test: 110 minerals, conditions for two decisions → assert size=1.
-- **E3 combat** — shields/maxShields on `Unit` record (20-file compile-guided refactor), `resolveCombat()` two-pass simultaneous resolution, `SC2Data.damagePerTick`/`attackRange`/`maxShields`, unit death. 236 tests (unit + integration + Playwright E2E).
-- **Visualiser health tinting** — `healthTint()` applies yellow→red tint to sprites; tint written to both PixiJS Container and inner Sprite (dual-locus fix).
-- **Playwright E2E combat tests** — full-health no tint, low-health red tint, unit disappears on removal. Injects state via `SimulatedGame.setUnitHealth()`/`removeUnit()`.
-- **Blog** — `mdp03` (E3 combat), `mdp04` (E1/E2/visualiser); screenshots and SC2 unit portraits added.
-- **Garden** — GE-0068 revised (Flow consume fix), GE-0157 (macOS tmp ENOSPC), GE-0158 (Java record compiler refactoring).
+- **E4 complete** — enemy active AI + attack cooldowns merged to main. 272 tests (unit + integration + E2E Playwright).
+- **EnemyStrategy** — pure domain record (loop, mineralsPerTick, buildOrder, attackConfig). Staged units wait at spawn until threshold OR timer fires. Swappable at runtime via `PUT /qa/emulated/config/enemy-strategy` or YAML file at startup.
+- **Attack cooldowns** — `damagePerTick` deleted; per-unit `unitCooldowns`/`enemyCooldowns` maps in `EmulatedGame`. `resolveCombat()` 4-step: decrement → collect from cd=0 → apply two-pass → reset fired units. `MoveIntent` now clears `attackingUnits` (cancel path fixed).
+- **Visualizer** — blue-tinted staging layer (0x4488ff) via `syncLayer` on `state.enemyStagingArea`.
+- **Issues #17–#25** created retroactively; commit history rewritten with cherry-pick loop to add `Refs/Closes #N` footers; pushed.
+- **Garden** — 5 new entries: bash `$()` newline stripping, Quarkus `@ConfigProperty defaultValue=""`, subagents don't inherit CLAUDE.md, cherry-pick history rewrite technique, Jackson records without annotations in Quarkus.
+- **Blog** — `2026-04-14-mdp01-enemy-gets-to-work.md` (E4 complete + pivot from Terran plan).
 
 ## Immediate Next Step
 
-**E4: Enemy active AI.** Enemy needs its own economy (mineral harvesting, unit production) and attack logic — so the bot faces a real opponent. Before starting: brainstorm, create GitHub epic + child issues, then write plan. Run `mvn test -Pbenchmark` and record the post-E3 baseline before changing anything.
+**E5: Damage types, armour, retreat, pathfinding.** Per E4 design spec phase table. Before starting: brainstorm → create epic + child issues → write plan. Run `mvn test -Pbenchmark` for post-E4 baseline first.
+
+**Issue-workflow fix for subagents:** Subagent prompts must include explicit issue-workflow instructions — CLAUDE.md automatic behaviours don't propagate to fresh subagent contexts. Add to every implementer prompt: check for active issue, create if missing, include `Refs #N` in all commits.
 
 ## Open Issues
 
@@ -25,18 +28,19 @@
 
 ## Key Technical Notes
 
-- **`attackingUnits` set** — populated by `AttackIntent`, never cleared by `MoveIntent`. Unit continues firing on retreat. E4 needs a cancel path.
-- **Two-pass combat** — collect damage into `Map<String, Integer>` first, then apply. Do NOT change to sequential.
-- **`moveFriendlyUnits()` and `moveEnemyUnits()`** — must carry `u.shields()` and `u.maxShields()` through the `Unit` replacement or shields silently reset to 0 every tick.
-- **Quarkus Flow + shared mutable state** — use one `consume()` step; separate steps serialize/deserialize input, resetting mutations.
+- **Two-pass combat invariant** — all damage collected before any applied. Do NOT change to sequential.
+- **Cooldown absent = 0 = fire immediately** — missing key in cooldown map means unit is ready.
+- **`framesSinceLastAttack` timer** — only resets when attack actually fires (staging non-empty). Empty staging at timer fire → no reset.
+- **`attackingUnits` cancel path** — `MoveIntent` removes from set; `AttackIntent` adds. Fixed in E4.
+- **Subagent issue-workflow** — see garden entry GE-20260414-736039 for the pattern to avoid.
+- **Quarkus Optional config** — use `Optional<String>` not `defaultValue=""` for optional properties (see GE-20260414-1b00a0).
 
 ## References
 
 | Context | Where |
 |---|---|
-| Design snapshot | `docs/design-snapshots/2026-04-09-emulation-e3-combat-complete.md` |
-| E3 spec | `docs/superpowers/specs/2026-04-09-sc2-emulation-e3-design.md` |
-| E4 roadmap entry | E2 spec phase table: `docs/superpowers/specs/2026-04-09-sc2-emulation-e2-design.md` |
-| Benchmark | `docs/benchmarks/2026-04-09-pre-e2-baseline.md` (pre-E3; run again before E4) |
-| Blog | `docs/blog/2026-04-09-mdp03-the-game-has-stakes.md`, `mdp04-watching-the-game.md` |
-| GitHub | mdproctor/quarkmind |
+| E4 design spec | `docs/superpowers/specs/2026-04-14-sc2-emulation-e4-design.md` |
+| E4 implementation plan | `docs/superpowers/plans/2026-04-14-e4-enemy-ai-attack-cooldowns.md` |
+| E3 spec (prior phase) | `docs/superpowers/specs/2026-04-09-sc2-emulation-e3-design.md` |
+| Blog entry | `docs/_posts/2026-04-14-mdp01-enemy-gets-to-work.md` |
+| GitHub | mdproctor/quarkmind (issues #17–#25 closed) |
