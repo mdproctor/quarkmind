@@ -118,24 +118,6 @@ public final class SC2Data {
     }
 
     /**
-     * Damage dealt per 500ms scheduler tick (SC2 DPS at Faster speed × 0.5).
-     * Phase E3: flat per-tick damage. Phase E4 will replace with per-attack events.
-     */
-    public static int damagePerTick(UnitType type) {
-        return switch (type) {
-            case PROBE     -> 3;   // 5.8 DPS × 0.5 ≈ 2.9
-            case ZEALOT    -> 5;   // 9.7 DPS × 0.5 ≈ 4.9
-            case STALKER   -> 5;   // 9.7 DPS × 0.5 ≈ 4.9
-            case IMMORTAL  -> 12;  // 23.7 DPS × 0.5 ≈ 11.9
-            case MARINE    -> 5;   // 9.8 DPS × 0.5 ≈ 4.9
-            case MARAUDER  -> 6;   // 11.0 DPS × 0.5 ≈ 5.5
-            case ROACH     -> 7;   // 13.7 DPS × 0.5 ≈ 6.9
-            case HYDRALISK -> 9;   // 17.6 DPS × 0.5 ≈ 8.8
-            default        -> 4;
-        };
-    }
-
-    /**
      * Damage dealt per attack event (replaces damagePerTick from E3).
      * Phase E4: units fire at cooldown intervals, not every tick.
      */

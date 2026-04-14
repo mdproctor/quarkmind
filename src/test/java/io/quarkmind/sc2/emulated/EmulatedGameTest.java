@@ -183,7 +183,7 @@ class EmulatedGameTest {
     @Test
     void shieldsAbsorbDamageBeforeHp() {
         // probe-0 at (9,9) with 20 shields. Enemy Zealot at (9.3,9) — within 0.5-tile melee range.
-        // Zealot deals 5 dmg/tick → shields take hit first (20→15), HP unchanged.
+        // Zealot deals 8 dmg/attack → shields take hit first (20→12), HP unchanged.
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
         game.tick();
 
@@ -195,7 +195,7 @@ class EmulatedGameTest {
 
     @Test
     void damageOverflowsFromShieldsToHp() {
-        // probe-0 with 3 shields. Zealot deals 5 dmg → 3 absorbed by shields, 2 overflow to HP (45→43).
+        // probe-0 with 3 shields. Zealot deals 8 dmg → 3 absorbed by shields, 5 overflow to HP (45→40).
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
         game.setShieldsForTesting("probe-0", 3);
         game.tick();
@@ -203,12 +203,13 @@ class EmulatedGameTest {
         Unit probe = game.snapshot().myUnits().stream()
             .filter(u -> u.tag().equals("probe-0")).findFirst().orElseThrow();
         assertThat(probe.shields()).isEqualTo(0);
-        assertThat(probe.health()).isEqualTo(SC2Data.maxHealth(UnitType.PROBE) - 2); // 45 - 2 = 43
+        assertThat(probe.health()).isEqualTo(SC2Data.maxHealth(UnitType.PROBE) - 5); // 45 - 5 = 40
+        // Zealot damagePerAttack=8: 3 shields absorb, 5 overflow to HP
     }
 
     @Test
     void unitDiesWhenHpReachesZero() {
-        // probe-0 at 3 HP, 0 shields. Zealot deals 5 dmg → HP goes to -2 → unit removed.
+        // probe-0 at 3 HP, 0 shields. Zealot deals 8 dmg → HP goes to -5 → unit removed.
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
         game.setHealthForTesting("probe-0", 3);
         game.setShieldsForTesting("probe-0", 0);
@@ -240,21 +241,22 @@ class EmulatedGameTest {
         // probe-0 at (9,9). Stalker placed at (6,9) → distance=3 ≤ 5 → attacks.
         // Stalker range = 5 tiles. Stalker at (6,9). Probes 0–4 are in range (distances 3.0–5.0),
         // but probe-0 at distance 3.0 is the nearest so it is the sole target.
-        // Stalker deals 5 dmg → probe-0 shields: 20→15.
+        // Stalker deals 13 dmg → probe-0 shields: 20→7.
         game.spawnEnemyForTesting(UnitType.STALKER, new Point2d(6f, 9));
         game.tick();
 
         Unit probe = game.snapshot().myUnits().stream()
             .filter(u -> u.tag().equals("probe-0")).findFirst().orElseThrow();
         assertThat(probe.shields()).isEqualTo(
-            SC2Data.maxShields(UnitType.PROBE) - SC2Data.damagePerTick(UnitType.STALKER));
+            SC2Data.maxShields(UnitType.PROBE) - SC2Data.damagePerAttack(UnitType.STALKER));
+        // 20 - 13 = 7
     }
 
     @Test
     void combatIsSimultaneous() {
         // probe-0 gets AttackIntent toward enemy → probe attacks enemy too.
-        // probe-0 at 5 HP, 0 shields → Zealot's 5 dmg kills it.
-        // Zealot has 50 shields; probe deals 3 dmg → shields drop 50→47 (simultaneous resolution).
+        // probe-0 at 5 HP, 0 shields → Zealot's 8 dmg kills it.
+        // Zealot has 50 shields; probe deals 5 dmg → shields drop 50→45 (simultaneous resolution).
         // Both damage computations happen before either is applied (simultaneous).
         game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
@@ -263,12 +265,93 @@ class EmulatedGameTest {
 
         game.tick();
 
-        // probe-0 should be dead (5 HP - 5 dmg = 0)
+        // probe-0 should be dead (5 HP - 8 dmg → health ≤ 0)
         assertThat(game.snapshot().myUnits().stream()
             .anyMatch(u -> u.tag().equals("probe-0"))).isFalse();
-        // Enemy should still be alive but damaged (shields 50→47 from probe's 3 dmg)
+        // Enemy should still be alive but damaged (shields 50→45 from probe's 5 dmg)
         assertThat(game.snapshot().enemyUnits()).hasSize(1);
         assertThat(game.snapshot().enemyUnits().get(0).shields())
             .isLessThan(SC2Data.maxShields(UnitType.ZEALOT));
+    }
+
+    // ---- E4: attack cooldowns ----
+
+    @Test
+    void firstAttackFiresImmediately() {
+        // Initial cooldown = 0 (absent from map) — attack fires on first tick
+        game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+
+        game.tick();
+
+        Unit zealot = game.snapshot().enemyUnits().get(0);
+        assertThat(zealot.shields())
+            .isLessThan(SC2Data.maxShields(UnitType.ZEALOT))
+            .isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - SC2Data.damagePerAttack(UnitType.PROBE));
+        // 50 - 5 = 45
+    }
+
+    @Test
+    void attackCooldownPreventsRepeatOnNextTick() {
+        // After attack fires, probe cooldown resets to 2 — no damage on tick 2
+        game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+
+        game.tick(); // tick 1: probe fires, cooldown → 2
+        int shieldsAfterTick1 = game.snapshot().enemyUnits().get(0).shields(); // 45
+
+        game.tick(); // tick 2: cooldown = 1, probe does NOT fire
+        int shieldsAfterTick2 = game.snapshot().enemyUnits().get(0).shields();
+
+        assertThat(shieldsAfterTick2).isEqualTo(shieldsAfterTick1);
+    }
+
+    @Test
+    void cooldownExpiresAndAttackFiresAgain() {
+        // PROBE cooldown = 2: fires tick 1, skips tick 2, fires tick 3
+        game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+
+        game.tick(); // tick 1: attack (shields 50→45)
+        game.tick(); // tick 2: cooldown 1 — no attack
+        game.tick(); // tick 3: cooldown 0 — attack fires again (45→40)
+
+        Unit zealot = game.snapshot().enemyUnits().get(0);
+        assertThat(zealot.shields())
+            .isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - 2 * SC2Data.damagePerAttack(UnitType.PROBE));
+        // 50 - 2*5 = 40
+    }
+
+    @Test
+    void moveIntentCancelsAutoAttack() {
+        // AttackIntent adds to attackingUnits; MoveIntent removes it immediately
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+        game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
+        game.applyIntent(new MoveIntent("probe-0", new Point2d(9.3f, 9))); // cancel
+
+        // Run enough ticks for cooldown to cycle — probe should never attack
+        for (int i = 0; i < 5; i++) game.tick();
+
+        Unit zealot = game.snapshot().enemyUnits().get(0);
+        // Probe-0 never attacked — Zealot shields untouched by probe
+        assertThat(zealot.shields()).isEqualTo(SC2Data.maxShields(UnitType.ZEALOT));
+    }
+
+    @Test
+    void enemyAlwaysAttacksWithCooldown() {
+        // Enemy Zealot (cooldown=2) attacks probe every 2 ticks without AttackIntent
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+
+        game.tick(); // tick 1: Zealot fires (cooldown 0→2), probe shields: 20→12
+        int shieldsAfterTick1 = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals("probe-0")).findFirst().orElseThrow().shields();
+        assertThat(shieldsAfterTick1)
+            .isEqualTo(SC2Data.maxShields(UnitType.PROBE) - SC2Data.damagePerAttack(UnitType.ZEALOT));
+        // 20 - 8 = 12
+
+        game.tick(); // tick 2: Zealot cooldown 1 — no attack. shields unchanged.
+        int shieldsAfterTick2 = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals("probe-0")).findFirst().orElseThrow().shields();
+        assertThat(shieldsAfterTick2).isEqualTo(shieldsAfterTick1);
     }
 }

@@ -34,6 +34,9 @@ public class EmulatedGame {
     private final Map<String, Point2d> unitTargets  = new HashMap<>();
     private final Map<String, Point2d> enemyTargets = new HashMap<>();
     private final Set<String>          attackingUnits = new HashSet<>(); // E3: units with active AttackIntent
+    // E4: per-unit attack cooldowns (absent key = 0 = can attack immediately)
+    private final Map<String, Integer> unitCooldowns  = new HashMap<>();
+    private final Map<String, Integer> enemyCooldowns = new HashMap<>();
     private final List<EnemyWave>         pendingWaves       = new ArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new ArrayList<>();
     private int nextTag = 200;
@@ -54,6 +57,8 @@ public class EmulatedGame {
         unitTargets.clear();
         enemyTargets.clear();
         attackingUnits.clear();
+        unitCooldowns.clear();
+        enemyCooldowns.clear();
         pendingCompletions.clear();
         nextTag = 200;
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
@@ -145,7 +150,8 @@ public class EmulatedGame {
         if (myUnits.stream().anyMatch(u -> u.tag().equals(tag))) {
             unitTargets.put(tag, target);
             if (isAttack) attackingUnits.add(tag);
-            log.debugf("[EMULATED] %s → (%.1f,%.1f)", tag, target.x(), target.y());
+            else          attackingUnits.remove(tag);  // MoveIntent cancels auto-attack
+            log.debugf("[EMULATED] %s → (%.1f,%.1f) attack=%b", tag, target.x(), target.y(), isAttack);
         }
     }
 
@@ -201,39 +207,63 @@ public class EmulatedGame {
     }
 
     private void resolveCombat() {
-        Map<String, Integer> pending = new HashMap<>();
+        // Step 1: decrement all cooldowns (floor 0)
+        unitCooldowns.replaceAll((tag, cd) -> Math.max(0, cd - 1));
+        enemyCooldowns.replaceAll((tag, cd) -> Math.max(0, cd - 1));
 
-        // Friendly units attack only if they have an active AttackIntent
+        Map<String, Integer> pending       = new HashMap<>();
+        Set<String>          firedFriendly = new HashSet<>();
+        Set<String>          firedEnemy    = new HashSet<>();
+
+        // Step 2: collect damage from units where cooldown == 0
         for (Unit attacker : myUnits) {
-            // Only units given an AttackIntent fire back. Units that only received a MoveIntent
-            // do not auto-attack (SC2 semantic: move-only commands don't enable auto-attack mode).
-            // Note: attackingUnits is NOT cleared by a subsequent MoveIntent — a unit continues
-            // firing even while moving under MoveIntent. To stop combat, the unit must die.
-            // E4: consider adding an explicit cancel path for retreat commands.
             if (!attackingUnits.contains(attacker.tag())) continue;
+            if (unitCooldowns.getOrDefault(attacker.tag(), 0) > 0) continue;
             nearestInRange(attacker.position(), enemyUnits, SC2Data.attackRange(attacker.type()))
-                .ifPresent(target ->
-                    pending.merge(target.tag(), SC2Data.damagePerTick(attacker.type()), Integer::sum));
+                .ifPresent(target -> {
+                    pending.merge(target.tag(), SC2Data.damagePerAttack(attacker.type()), Integer::sum);
+                    firedFriendly.add(attacker.tag());
+                });
         }
-
-        // Enemy units always attack nearest friendly in range
         for (Unit attacker : enemyUnits) {
+            if (enemyCooldowns.getOrDefault(attacker.tag(), 0) > 0) continue;
             nearestInRange(attacker.position(), myUnits, SC2Data.attackRange(attacker.type()))
-                .ifPresent(target ->
-                    pending.merge(target.tag(), SC2Data.damagePerTick(attacker.type()), Integer::sum));
+                .ifPresent(target -> {
+                    pending.merge(target.tag(), SC2Data.damagePerAttack(attacker.type()), Integer::sum);
+                    firedEnemy.add(attacker.tag());
+                });
         }
 
-        // Apply damage and remove dead units (two-pass simultaneous resolution)
+        // Step 3: apply damage — two-pass (collect all, then apply)
         myUnits.replaceAll(u -> applyDamage(u, pending.getOrDefault(u.tag(), 0)));
         myUnits.removeIf(u -> {
-            if (u.health() <= 0) { unitTargets.remove(u.tag()); attackingUnits.remove(u.tag()); return true; }
+            if (u.health() <= 0) {
+                unitTargets.remove(u.tag());
+                attackingUnits.remove(u.tag());
+                unitCooldowns.remove(u.tag());
+                return true;
+            }
             return false;
         });
         enemyUnits.replaceAll(u -> applyDamage(u, pending.getOrDefault(u.tag(), 0)));
         enemyUnits.removeIf(u -> {
-            if (u.health() <= 0) { enemyTargets.remove(u.tag()); return true; }
+            if (u.health() <= 0) {
+                enemyTargets.remove(u.tag());
+                enemyCooldowns.remove(u.tag());
+                return true;
+            }
             return false;
         });
+
+        // Step 4: reset cooldown for units that fired
+        for (Unit u : myUnits) {
+            if (firedFriendly.contains(u.tag()))
+                unitCooldowns.put(u.tag(), SC2Data.attackCooldownInTicks(u.type()));
+        }
+        for (Unit u : enemyUnits) {
+            if (firedEnemy.contains(u.tag()))
+                enemyCooldowns.put(u.tag(), SC2Data.attackCooldownInTicks(u.type()));
+        }
     }
 
     private static Optional<Unit> nearestInRange(Point2d from, List<Unit> candidates, float range) {
