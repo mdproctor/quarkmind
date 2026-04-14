@@ -46,6 +46,7 @@ public class EmulatedGame {
     private final List<EnemyWave>         pendingWaves       = new ArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new ArrayList<>();
     private int nextTag = 200;
+    private final DamageCalculator damageCalculator = new DamageCalculator();
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
@@ -279,7 +280,8 @@ public class EmulatedGame {
             if (unitCooldowns.getOrDefault(attacker.tag(), 0) > 0) continue;
             nearestInRange(attacker.position(), enemyUnits, SC2Data.attackRange(attacker.type()))
                 .ifPresent(target -> {
-                    pending.merge(target.tag(), SC2Data.damagePerAttack(attacker.type()), Integer::sum);
+                    pending.merge(target.tag(),
+                        damageCalculator.computeEffective(attacker.type(), target), Integer::sum);
                     firedFriendly.add(attacker.tag());
                 });
         }
@@ -287,7 +289,8 @@ public class EmulatedGame {
             if (enemyCooldowns.getOrDefault(attacker.tag(), 0) > 0) continue;
             nearestInRange(attacker.position(), myUnits, SC2Data.attackRange(attacker.type()))
                 .ifPresent(target -> {
-                    pending.merge(target.tag(), SC2Data.damagePerAttack(attacker.type()), Integer::sum);
+                    pending.merge(target.tag(),
+                        damageCalculator.computeEffective(attacker.type(), target), Integer::sum);
                     firedEnemy.add(attacker.tag());
                 });
         }
@@ -415,6 +418,23 @@ public class EmulatedGame {
     void setShieldsForTesting(String tag, int shields) {
         myUnits.replaceAll(u -> u.tag().equals(tag)
             ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(), shields, u.maxShields())
+            : u);
+    }
+
+    /** Spawns a friendly unit at a specific position for combat tests. Returns the unit's tag. */
+    String spawnFriendlyForTesting(UnitType type, Point2d position) {
+        String tag = "test-unit-" + nextTag++;
+        int hp = SC2Data.maxHealth(type);
+        myUnits.add(new Unit(tag, type, position, hp, hp,
+            SC2Data.maxShields(type), SC2Data.maxShields(type)));
+        return tag;
+    }
+
+    /** Sets an enemy unit's shields directly — for testing Hardened Shield at 0 shields. */
+    void setEnemyShieldsForTesting(String tag, int shields) {
+        enemyUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(),
+                       shields, u.maxShields())
             : u);
     }
 }

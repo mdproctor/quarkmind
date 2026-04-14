@@ -279,17 +279,18 @@ class EmulatedGameTest {
 
     @Test
     void firstAttackFiresImmediately() {
-        // Initial cooldown = 0 (absent from map) — attack fires on first tick
+        // Initial cooldown = 0 (absent from map) — attack fires on first tick.
+        // Probe vs Zealot (1 armour): effective = 5 - 1 = 4. Shields: 50 -> 46.
         game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
 
         game.tick();
 
+        int effective = SC2Data.damagePerAttack(UnitType.PROBE) - SC2Data.armour(UnitType.ZEALOT); // 4
         Unit zealot = game.snapshot().enemyUnits().get(0);
         assertThat(zealot.shields())
             .isLessThan(SC2Data.maxShields(UnitType.ZEALOT))
-            .isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - SC2Data.damagePerAttack(UnitType.PROBE));
-        // 50 - 5 = 45
+            .isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - effective); // 46
     }
 
     @Test
@@ -309,18 +310,19 @@ class EmulatedGameTest {
 
     @Test
     void cooldownExpiresAndAttackFiresAgain() {
-        // PROBE cooldown = 2: fires tick 1, skips tick 2, fires tick 3
+        // PROBE cooldown = 2: fires tick 1, skips tick 2, fires tick 3.
+        // Probe vs Zealot (1 armour): effective = 5 - 1 = 4 per hit. Shields: 50 -> 46 -> 42.
         game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
 
-        game.tick(); // tick 1: attack (shields 50→45)
-        game.tick(); // tick 2: cooldown 1 — no attack
-        game.tick(); // tick 3: cooldown 0 — attack fires again (45→40)
+        game.tick(); // tick 1: attack (shields 50 -> 46)
+        game.tick(); // tick 2: cooldown 1 - no attack
+        game.tick(); // tick 3: cooldown 0 - attack fires again (46 -> 42)
 
+        int effective = SC2Data.damagePerAttack(UnitType.PROBE) - SC2Data.armour(UnitType.ZEALOT); // 4
         Unit zealot = game.snapshot().enemyUnits().get(0);
         assertThat(zealot.shields())
-            .isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - 2 * SC2Data.damagePerAttack(UnitType.PROBE));
-        // 50 - 2*5 = 40
+            .isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - 2 * effective); // 42
     }
 
     @Test
@@ -517,5 +519,92 @@ class EmulatedGameTest {
         game.snapshot().enemyStagingArea().forEach(u ->
             assertThat(u.position()).isEqualTo(new Point2d(26, 26)));
         assertThat(game.snapshot().enemyUnits()).isEmpty();
+    }
+
+    // ---- E5: damage types, armour, Hardened Shield ----
+
+    @Test
+    void stalkerDealsCorrectDamageVsArmored() {
+        // Stalker (friendly) attacks Roach (Armored, 1 armour):
+        // effective = 13 + 4 (vs Armored) - 1 = 16, not raw 13
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(3, 3));
+        game.spawnEnemyForTesting(UnitType.ROACH, new Point2d(3, 5)); // distance=2.0 <= Stalker range 5.0
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(3, 5)));
+
+        game.tick();
+
+        Unit roach = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.ROACH)
+            .findFirst().orElseThrow();
+        assertThat(roach.health()).isEqualTo(SC2Data.maxHealth(UnitType.ROACH) - 16); // 145 - 16 = 129
+    }
+
+    @Test
+    void armourReducesIncomingDamage() {
+        // Stalker (friendly) attacks Zealot (LIGHT, 1 armour):
+        // effective = 13 + 0 (no bonus vs Light) - 1 = 12, not raw 13
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(3, 3));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(3, 5));
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(3, 5)));
+
+        game.tick();
+
+        Unit zealot = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.ZEALOT)
+            .findFirst().orElseThrow();
+        // Without armour: shields = 50 - 13 = 37. With armour: 50 - 12 = 38.
+        assertThat(zealot.shields()).isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - 12); // 38
+    }
+
+    @Test
+    void immortalShieldedCapsDamageAt10() {
+        // Stalker (friendly) attacks shielded Immortal:
+        // effective before cap = 13+4-1=16, Hardened Shield -> min(10,16) = 10
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(3, 3));
+        game.spawnEnemyForTesting(UnitType.IMMORTAL, new Point2d(3, 5));
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(3, 5)));
+
+        game.tick();
+
+        Unit immortal = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.IMMORTAL)
+            .findFirst().orElseThrow();
+        assertThat(immortal.shields()).isEqualTo(SC2Data.maxShields(UnitType.IMMORTAL) - 10); // 90
+        assertThat(immortal.health()).isEqualTo(SC2Data.maxHealth(UnitType.IMMORTAL));         // 200 untouched
+    }
+
+    @Test
+    void immortalUnshieldedTakesFullDamage() {
+        // Stalker vs Immortal with 0 shields: no Hardened Shield -> full 16 damage to HP
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(3, 3));
+        game.spawnEnemyForTesting(UnitType.IMMORTAL, new Point2d(3, 5));
+        String immortalTag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyShieldsForTesting(immortalTag, 0);
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(3, 5)));
+
+        game.tick();
+
+        Unit immortal = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.IMMORTAL)
+            .findFirst().orElseThrow();
+        assertThat(immortal.health()).isEqualTo(SC2Data.maxHealth(UnitType.IMMORTAL) - 16); // 184
+    }
+
+    @Test
+    void spawnedMarineHasCorrectHp() {
+        game.spawnEnemyForTesting(UnitType.MARINE, new Point2d(50, 50)); // far from Probes - no combat
+        Unit marine = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.MARINE)
+            .findFirst().orElseThrow();
+        assertThat(marine.health()).isEqualTo(45);
+    }
+
+    @Test
+    void spawnedImmortalHasCorrectHp() {
+        game.spawnEnemyForTesting(UnitType.IMMORTAL, new Point2d(50, 50));
+        Unit immortal = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.IMMORTAL)
+            .findFirst().orElseThrow();
+        assertThat(immortal.health()).isEqualTo(200);
     }
 }
