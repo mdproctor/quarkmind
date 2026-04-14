@@ -37,6 +37,12 @@ public class EmulatedGame {
     // E4: per-unit attack cooldowns (absent key = 0 = can attack immediately)
     private final Map<String, Integer> unitCooldowns  = new HashMap<>();
     private final Map<String, Integer> enemyCooldowns = new HashMap<>();
+    // E4: enemy economy
+    private EnemyStrategy enemyStrategy;
+    private double        enemyMineralAccumulator;
+    private int           enemyBuildIndex;
+    private long          framesSinceLastAttack;
+    private final List<Unit> enemyStagingArea = new ArrayList<>();
     private final List<EnemyWave>         pendingWaves       = new ArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new ArrayList<>();
     private int nextTag = 200;
@@ -59,6 +65,10 @@ public class EmulatedGame {
         attackingUnits.clear();
         unitCooldowns.clear();
         enemyCooldowns.clear();
+        enemyMineralAccumulator = 0;
+        enemyBuildIndex         = 0;
+        framesSinceLastAttack   = 0;
+        enemyStagingArea.clear();
         pendingCompletions.clear();
         nextTag = 200;
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
@@ -86,6 +96,7 @@ public class EmulatedGame {
         resolveCombat();
         fireCompletions();
         spawnEnemyWaves();
+        tickEnemyStrategy();
     }
 
     private void moveFriendlyUnits() {
@@ -135,6 +146,53 @@ public class EmulatedGame {
                 wave.unitTypes().size(), wave.unitTypes().get(0), gameFrame);
             return true;
         });
+    }
+
+    private void tickEnemyStrategy() {
+        if (enemyStrategy == null) return;
+
+        // 1. Accumulate enemy minerals
+        enemyMineralAccumulator += enemyStrategy.mineralsPerTick();
+
+        // 2. Execute next build step if affordable and order not exhausted
+        List<EnemyBuildStep> order = enemyStrategy.buildOrder();
+        if (!order.isEmpty()) {
+            boolean canAdvance = enemyStrategy.loop() || enemyBuildIndex < order.size();
+            if (canAdvance) {
+                EnemyBuildStep step = order.get(enemyBuildIndex % order.size());
+                int cost = SC2Data.mineralCost(step.unitType());
+                if ((int) enemyMineralAccumulator >= cost) {
+                    enemyMineralAccumulator -= cost;
+                    String tag = "enemy-" + nextTag++;
+                    int hp = SC2Data.maxHealth(step.unitType());
+                    enemyStagingArea.add(new Unit(tag, step.unitType(),
+                        new Point2d(26, 26), hp, hp,
+                        SC2Data.maxShields(step.unitType()), SC2Data.maxShields(step.unitType())));
+                    if (enemyStrategy.loop() || enemyBuildIndex < order.size() - 1)
+                        enemyBuildIndex++;
+                    else
+                        enemyBuildIndex = order.size(); // mark exhausted
+                    log.debugf("[EMULATED] Enemy trained %s (staging size=%d)",
+                        step.unitType(), enemyStagingArea.size());
+                }
+            }
+        }
+
+        // 3. Check attack triggers (army threshold OR frame timer)
+        framesSinceLastAttack++;
+        EnemyAttackConfig atk = enemyStrategy.attackConfig();
+        boolean thresholdMet = enemyStagingArea.size() >= atk.armyThreshold();
+        boolean timerFired   = framesSinceLastAttack >= atk.attackIntervalFrames();
+        if ((thresholdMet || timerFired) && !enemyStagingArea.isEmpty()) {
+            for (Unit u : enemyStagingArea) {
+                enemyUnits.add(u);
+                enemyTargets.put(u.tag(), NEXUS_POS);
+            }
+            log.infof("[EMULATED] Enemy attack launched: %d units (threshold=%b timer=%b)",
+                enemyStagingArea.size(), thresholdMet, timerFired);
+            enemyStagingArea.clear();
+            framesSinceLastAttack = 0;
+        }
     }
 
     public void applyIntent(Intent intent) {
@@ -304,7 +362,7 @@ public class EmulatedGame {
             vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings),
             List.copyOf(enemyUnits),
-            List.of(),                  // enemyStagingArea — wired in Task 5
+            List.copyOf(enemyStagingArea),
             List.copyOf(geysers),
             gameFrame);
     }
@@ -329,6 +387,10 @@ public class EmulatedGame {
     // --- Package-private: used by EmulatedGameTest ---
 
     void setMiningProbes(int count) { this.miningProbes = count; }
+
+    void setEnemyStrategy(EnemyStrategy s) { this.enemyStrategy = s; }
+    int  enemyMinerals()                   { return (int) enemyMineralAccumulator; }
+    int  enemyStagingSize()                { return enemyStagingArea.size(); }
 
     /** Direct mineral override for tests — avoids tick-based accumulation. */
     void setMineralsForTesting(int amount) { this.mineralAccumulator = amount; }
