@@ -199,6 +199,21 @@ class GameStateWebSocketTest {
         ws.abort();
     }
 
+    @Test
+    void gameStateJsonContainsEnemyStagingArea() throws Exception {
+        var received = new LinkedBlockingQueue<String>(10);
+        WebSocket ws = connect(received);
+        ws.request(1);
+
+        engine.observe();
+        String json = poll(received);
+        assertThat(json).isNotNull();
+        // Field must be present even when empty — visualizer reads it on every frame
+        assertThat(json).contains("\"enemyStagingArea\"");
+
+        ws.abort();
+    }
+
     private static int extractInt(String json, String key) {
         int idx = json.indexOf(key);
         assertThat(idx).as("Key %s not found in JSON", key).isGreaterThanOrEqualTo(0);

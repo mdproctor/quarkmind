@@ -1,5 +1,6 @@
 package io.quarkmind.qa;
 
+import io.quarkmind.domain.EnemyStrategy;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -31,5 +32,19 @@ public class EmulatedConfigResource {
         if (updates.containsKey("unitSpeed"))
             config.setUnitSpeed(((Number) updates.get("unitSpeed")).doubleValue());
         return Response.ok(config.snapshot()).build();
+    }
+
+    @GET
+    @Path("/enemy-strategy")
+    public EnemyStrategy getEnemyStrategy() {
+        return config.getEnemyStrategy();
+    }
+
+    @PUT
+    @Path("/enemy-strategy")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response setEnemyStrategy(EnemyStrategy strategy) {
+        config.setEnemyStrategy(strategy);
+        return Response.ok(strategy).build();
     }
 }
