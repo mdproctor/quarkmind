@@ -11,7 +11,10 @@ public final class WalkabilityGrid {
     public WalkabilityGrid(int width, int height, boolean[][] walkable) {
         this.width    = width;
         this.height   = height;
-        this.walkable = walkable;
+        this.walkable = new boolean[width][height];
+        for (int x = 0; x < width; x++) {
+            this.walkable[x] = Arrays.copyOf(walkable[x], height);
+        }
     }
 
     public boolean isWalkable(int x, int y) {
