@@ -8,3 +8,4 @@
 | [2026-04-09-mdp04-watching-the-game.md](2026-04-09-mdp04-watching-the-game.md) | 2026-04-09 | The PixiJS visualizer — watching the game without playing it |
 | [2026-04-10-mdp01-enemy-gets-an-economy.md](2026-04-10-mdp01-enemy-gets-an-economy.md) | 2026-04-10 | Planning the Terran enemy economy (E4 design) |
 | [2026-04-14-mdp01-enemy-gets-to-work.md](2026-04-14-mdp01-enemy-gets-to-work.md) | 2026-04-14 | E4 complete — the enemy gets a strategy and attacks |
+| [2026-04-15-mdp01-armour-retreat-and-walls.md](2026-04-15-mdp01-armour-retreat-and-walls.md) | 2026-04-15 | E5/E6/E7 — armour model, enemy retreat, terrain pathfinding |
