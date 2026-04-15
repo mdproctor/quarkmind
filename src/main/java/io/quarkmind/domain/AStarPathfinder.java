@@ -30,6 +30,9 @@ public final class AStarPathfinder {
                 n.g() + Math.sqrt((n.x() - gx) * (double)(n.x() - gx)
                                 + (n.y() - gy) * (double)(n.y() - gy))));
 
+        // Lazy-deletion A*: tiles can be inserted multiple times with different g values.
+        // The consistent Euclidean heuristic guarantees the first expansion of any tile
+        // is always via the optimal path, so subsequent pops are safely discarded.
         boolean[][] closed = new boolean[grid.width()][grid.height()];
         open.add(new Node(sx, sy, 0, null));
 
@@ -69,6 +72,6 @@ public final class AStarPathfinder {
                 }
             }
         }
-        return new int[]{x, y};
+        return new int[]{x, y}; // no walkable tile found — caller produces an empty path harmlessly
     }
 }

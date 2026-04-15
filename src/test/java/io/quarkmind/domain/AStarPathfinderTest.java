@@ -62,8 +62,8 @@ class AStarPathfinderTest {
         List<Point2d> path = pf.findPath(g, new Point2d(2, 2), new Point2d(7, 8));
         assertThat(path).isNotEmpty();
         Point2d last = path.get(path.size() - 1);
-        assertThat((int) last.x()).isEqualTo(7);
-        assertThat((int) last.y()).isEqualTo(8);
+        assertThat(last.x()).isEqualTo(7.5f);
+        assertThat(last.y()).isEqualTo(8.5f);
     }
 
     @Test void sameStartAndGoal_returnsEmpty() {
