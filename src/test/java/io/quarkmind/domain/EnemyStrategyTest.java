@@ -14,7 +14,7 @@ class EnemyStrategyTest {
     }
 
     @Test
-    void attackConfigHoldsBothTriggers() {
+    void attackConfigHoldsWaveTriggers() {
         EnemyAttackConfig cfg = new EnemyAttackConfig(3, 200, 0, 0);
         assertThat(cfg.armyThreshold()).isEqualTo(3);
         assertThat(cfg.attackIntervalFrames()).isEqualTo(200);
