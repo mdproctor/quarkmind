@@ -16,7 +16,7 @@ public record EnemyStrategy(
                 new EnemyBuildStep(UnitType.ZEALOT)
             ),
             true, 2,
-            new EnemyAttackConfig(3, 200)
+            new EnemyAttackConfig(3, 200, 30, 50)
         );
     }
 }

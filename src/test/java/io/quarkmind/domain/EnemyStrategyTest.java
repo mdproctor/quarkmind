@@ -15,7 +15,7 @@ class EnemyStrategyTest {
 
     @Test
     void attackConfigHoldsBothTriggers() {
-        EnemyAttackConfig cfg = new EnemyAttackConfig(3, 200);
+        EnemyAttackConfig cfg = new EnemyAttackConfig(3, 200, 0, 0);
         assertThat(cfg.armyThreshold()).isEqualTo(3);
         assertThat(cfg.attackIntervalFrames()).isEqualTo(200);
     }
@@ -69,10 +69,24 @@ class EnemyStrategyTest {
         EnemyStrategy s = new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.STALKER), new EnemyBuildStep(UnitType.IMMORTAL)),
             false, 5,
-            new EnemyAttackConfig(2, 100));
+            new EnemyAttackConfig(2, 100, 0, 0));
         assertThat(s.buildOrder()).hasSize(2);
         assertThat(s.buildOrder().get(0).unitType()).isEqualTo(UnitType.STALKER);
         assertThat(s.loop()).isFalse();
+    }
+
+    @Test
+    void attackConfigHoldsRetreatThresholds() {
+        EnemyAttackConfig cfg = new EnemyAttackConfig(3, 200, 30, 50);
+        assertThat(cfg.retreatHealthPercent()).isEqualTo(30);
+        assertThat(cfg.retreatArmyPercent()).isEqualTo(50);
+    }
+
+    @Test
+    void defaultProtossHasRetreatDefaults() {
+        EnemyAttackConfig cfg = EnemyStrategy.defaultProtoss().attackConfig();
+        assertThat(cfg.retreatHealthPercent()).isEqualTo(30);
+        assertThat(cfg.retreatArmyPercent()).isEqualTo(50);
     }
 
     @Test

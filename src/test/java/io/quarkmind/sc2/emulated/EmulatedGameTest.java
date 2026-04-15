@@ -370,7 +370,7 @@ class EmulatedGameTest {
     @Test
     void enemyAccumulatesMineralsEachTick() {
         game.setEnemyStrategy(new EnemyStrategy(
-            List.of(), false, 5, new EnemyAttackConfig(10, 9999)));
+            List.of(), false, 5, new EnemyAttackConfig(10, 9999, 0, 0)));
 
         game.tick();
         assertThat(game.enemyMinerals()).isEqualTo(5);
@@ -385,7 +385,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             false, 20,
-            new EnemyAttackConfig(10, 9999)));
+            new EnemyAttackConfig(10, 9999, 0, 0)));
 
         for (int i = 0; i < 5; i++) game.tick();
 
@@ -398,7 +398,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             false, 0,   // no mineral income
-            new EnemyAttackConfig(10, 9999)));
+            new EnemyAttackConfig(10, 9999, 0, 0)));
 
         for (int i = 0; i < 10; i++) game.tick();
 
@@ -411,7 +411,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             true, 20,
-            new EnemyAttackConfig(1, 9999)));
+            new EnemyAttackConfig(1, 9999, 0, 0)));
 
         for (int i = 0; i < 5; i++) game.tick();
 
@@ -428,7 +428,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             true, 10,
-            new EnemyAttackConfig(100, 5)));
+            new EnemyAttackConfig(100, 5, 0, 0)));
 
         for (int i = 0; i < 5; i++) game.tick();
         assertThat(game.snapshot().enemyUnits()).isEmpty(); // timer fired but staging empty → no attack
@@ -447,7 +447,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             true, 25,
-            new EnemyAttackConfig(3, 5)));
+            new EnemyAttackConfig(3, 5, 0, 0)));
 
         for (int i = 0; i < 4; i++) game.tick();
         assertThat(game.snapshot().enemyStagingArea()).hasSize(1); // training done, attack not yet
@@ -462,7 +462,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             true, 20,
-            new EnemyAttackConfig(1, 9999)));
+            new EnemyAttackConfig(1, 9999, 0, 0)));
 
         for (int i = 0; i < 5; i++) game.tick(); // trains 1 Zealot → threshold=1 → attack fires
 
@@ -478,7 +478,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT), new EnemyBuildStep(UnitType.STALKER)),
             true, 125,
-            new EnemyAttackConfig(10, 9999)));
+            new EnemyAttackConfig(10, 9999, 0, 0)));
 
         game.tick();
         assertThat(game.snapshot().enemyStagingArea()).hasSize(1);
@@ -499,7 +499,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT), new EnemyBuildStep(UnitType.ZEALOT)),
             false, 100,
-            new EnemyAttackConfig(10, 9999)));
+            new EnemyAttackConfig(10, 9999, 0, 0)));
 
         for (int i = 0; i < 10; i++) game.tick();
 
@@ -512,7 +512,7 @@ class EmulatedGameTest {
         game.setEnemyStrategy(new EnemyStrategy(
             List.of(new EnemyBuildStep(UnitType.ZEALOT)),
             true, 100,
-            new EnemyAttackConfig(5, 9999)));
+            new EnemyAttackConfig(5, 9999, 0, 0)));
 
         for (int i = 0; i < 3; i++) game.tick();
 
