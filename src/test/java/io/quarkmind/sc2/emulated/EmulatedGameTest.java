@@ -2,6 +2,7 @@ package io.quarkmind.sc2.emulated;
 
 import io.quarkmind.domain.*;
 import io.quarkmind.sc2.intent.*;
+import io.quarkmind.sc2.emulated.PathfindingMovement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -807,5 +808,51 @@ class EmulatedGameTest {
         assertThat(game.retreatingUnitTags()).containsExactly(tag);
         // enemyUnits still contains the unit (not yet arrived at staging)
         assertThat(game.snapshot().enemyUnits()).hasSize(1);
+    }
+
+    // ---- E7: pathfinding integration ----
+
+    @Test
+    void withPathfinding_unitEventuallyReachesTargetAcrossWall() {
+        game.setMovementStrategy(new PathfindingMovement(WalkabilityGrid.emulatedMap()));
+        // From nexus side (8,8) to staging side (12,22) — must cross wall at y=18 via chokepoint
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 8));
+        game.applyIntent(new MoveIntent(tag, new Point2d(12, 22)));
+        // ~30 tiles / 0.5 per tick = ~60 ticks; use 120 for safety
+        for (int i = 0; i < 120; i++) game.tick();
+        Unit unit = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow();
+        assertThat(EmulatedGame.distance(unit.position(), new Point2d(12, 22))).isLessThan(2.0);
+    }
+
+    @Test
+    void withPathfinding_unitDoesNotCrossWallOutsideChokepoint() {
+        game.setMovementStrategy(new PathfindingMovement(WalkabilityGrid.emulatedMap()));
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 8));
+        game.applyIntent(new MoveIntent(tag, new Point2d(12, 22)));
+        for (int i = 0; i < 80; i++) {
+            game.tick();
+            game.snapshot().myUnits().stream()
+                .filter(u -> u.tag().equals(tag)).findFirst().ifPresent(unit -> {
+                    int tileX = (int) unit.position().x();
+                    int tileY = (int) unit.position().y();
+                    if (tileY == 18) {
+                        assertThat(tileX)
+                            .as("unit at y=18 must be in gap x=[11,13], was x=%d", tileX)
+                            .isBetween(11, 13);
+                    }
+                });
+        }
+    }
+
+    @Test
+    void directMovementDefaultIsUnchanged() {
+        // No setMovementStrategy call — defaults to DirectMovement (straight line)
+        game.applyIntent(new MoveIntent("probe-0", new Point2d(15, 9)));
+        Point2d before = game.snapshot().myUnits().get(0).position();
+        game.tick();
+        Point2d after = game.snapshot().myUnits().get(0).position();
+        assertThat(after.x()).isGreaterThan(before.x());
+        assertThat(after.y()).isCloseTo(before.y(), org.assertj.core.data.Offset.offset(0.1f));
     }
 }

@@ -51,6 +51,7 @@ public class EmulatedGame {
     private final List<PendingCompletion> pendingCompletions = new ArrayList<>();
     private int nextTag = 200;
     private final DamageCalculator damageCalculator = new DamageCalculator();
+    private MovementStrategy movementStrategy = new DirectMovement();
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
@@ -78,6 +79,7 @@ public class EmulatedGame {
         initialAttackSize = 0;
         pendingCompletions.clear();
         nextTag = 200;
+        movementStrategy.reset();
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
 
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
@@ -111,21 +113,19 @@ public class EmulatedGame {
         myUnits.replaceAll(u -> {
             Point2d target = unitTargets.get(u.tag());
             if (target == null) return u;
-            Point2d newPos = stepToward(u.position(), target, unitSpeed);
-            // Safe: remove from unitTargets (different collection from myUnits being iterated).
-            // If myUnits were ever parallelised this would race — keep single-threaded.
+            Point2d newPos = movementStrategy.advance(u.tag(), u.position(), target, unitSpeed);
             if (distance(newPos, target) < 0.2) unitTargets.remove(u.tag());
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
-                u.shields(), u.maxShields());
+                            u.shields(), u.maxShields());
         });
     }
 
     private void moveEnemyUnits() {
         enemyUnits.replaceAll(u -> {
             Point2d target = enemyTargets.getOrDefault(u.tag(), NEXUS_POS);
-            Point2d newPos = stepToward(u.position(), target, unitSpeed);
+            Point2d newPos = movementStrategy.advance(u.tag(), u.position(), target, unitSpeed);
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
-                u.shields(), u.maxShields());
+                            u.shields(), u.maxShields());
         });
     }
 
@@ -198,6 +198,7 @@ public class EmulatedGame {
             if (distance(u.position(), STAGING_POS) >= 0.1) return false;
             retreatingUnits.remove(u.tag());
             enemyTargets.remove(u.tag());
+            movementStrategy.clearUnit(u.tag());
             enemyStagingArea.add(u);  // damaged HP preserved — no healing
             log.debugf("[EMULATED] Unit %s arrived at staging (hp=%d shields=%d)",
                 u.tag(), u.health(), u.shields());
@@ -359,6 +360,7 @@ public class EmulatedGame {
                 unitTargets.remove(u.tag());
                 attackingUnits.remove(u.tag());
                 unitCooldowns.remove(u.tag());
+                movementStrategy.clearUnit(u.tag());
                 return true;
             }
             return false;
@@ -369,6 +371,7 @@ public class EmulatedGame {
                 enemyTargets.remove(u.tag());
                 enemyCooldowns.remove(u.tag());
                 retreatingUnits.remove(u.tag());  // E6: clean up if killed while retreating
+                movementStrategy.clearUnit(u.tag());
                 return true;
             }
             return false;
@@ -509,4 +512,7 @@ public class EmulatedGame {
                        u.shields(), u.maxShields())
             : u);
     }
+
+    /** Swap movement strategy — used by pathfinding tests. Default is DirectMovement. */
+    void setMovementStrategy(MovementStrategy s) { this.movementStrategy = s; }
 }
