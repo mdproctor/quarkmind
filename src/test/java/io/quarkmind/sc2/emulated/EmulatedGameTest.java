@@ -614,4 +614,176 @@ class EmulatedGameTest {
     void retreatingUnitTagsIsInitiallyEmpty() {
         assertThat(game.retreatingUnitTags()).isEmpty();
     }
+
+    // ---- E6: retreat logic ----
+
+    @Test
+    void lowHealthUnitRetreats() {
+        // Zealot HP+shields = 1+0 / 150 = 0.7% — below retreatHealthPercent=30
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 1);
+        game.setEnemyShieldsForTesting(tag, 0);
+        game.setInitialAttackSizeForTesting(1);
+
+        game.tick();
+
+        assertThat(game.retreatingUnitTags()).contains(tag);
+    }
+
+    @Test
+    void healthyUnitDoesNotRetreat() {
+        // Zealot at full HP+shields = 150/150 = 100% — well above retreatHealthPercent=30
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        game.setInitialAttackSizeForTesting(1);
+
+        game.tick();
+
+        assertThat(game.retreatingUnitTags()).isEmpty();
+    }
+
+    @Test
+    void armyDepletionTriggersGroupRetreat() {
+        // 1 unit alive of 4 launched = 25% — below retreatArmyPercent=50
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 0, 50);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setInitialAttackSizeForTesting(4); // 1 alive of 4 launched = 25% < 50%
+
+        game.tick();
+
+        assertThat(game.retreatingUnitTags()).contains(tag);
+    }
+
+    @Test
+    void retreatingUnitMovesTowardStaging() {
+        // Tick 1: retreat fires → target becomes STAGING_POS (26,26)
+        // Tick 2: unit moves toward staging — measurably closer than after tick 1
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 1);
+        game.setEnemyShieldsForTesting(tag, 0);
+        game.setInitialAttackSizeForTesting(1);
+
+        game.tick(); // retreat fires; unit moved toward nexus first, now target = staging
+        Point2d afterTick1 = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow().position();
+
+        game.tick(); // unit moves toward staging
+        Point2d afterTick2 = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow().position();
+
+        double distBefore = EmulatedGame.distance(afterTick1, new Point2d(26, 26));
+        double distAfter  = EmulatedGame.distance(afterTick2, new Point2d(26, 26));
+        assertThat(distAfter).isLessThan(distBefore);
+    }
+
+    @Test
+    void retreatingUnitTransfersToStagingOnArrival() {
+        // Unit placed exactly at STAGING_POS.
+        // Tick 1: moveEnemyUnits moves it ~0.5 tiles toward nexus. retreat fires.
+        //         Transfer check: distance ~0.5 >= 0.1 → NOT yet transferred.
+        // Tick 2: moveEnemyUnits moves it back toward STAGING_POS (dist ~0.5 = speed → snaps to (26,26)).
+        //         Transfer check: distance = 0 < 0.1 → TRANSFERRED.
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(26, 26)); // at staging
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 1);
+        game.setEnemyShieldsForTesting(tag, 0);
+        game.setInitialAttackSizeForTesting(1);
+
+        game.tick(); // retreat fires; not yet transferred
+        assertThat(game.retreatingUnitTags()).contains(tag);
+
+        game.tick(); // unit snaps to staging; transfer fires
+        assertThat(game.snapshot().enemyUnits().stream()
+            .anyMatch(u -> u.tag().equals(tag))).isFalse();
+        assertThat(game.snapshot().enemyStagingArea()).hasSize(1);
+        assertThat(game.snapshot().enemyStagingArea().get(0).tag()).isEqualTo(tag);
+    }
+
+    @Test
+    void retreatedUnitKeepsDamagedHp() {
+        // Zealot: 40+0 / 150 = 26.7% < 30% → retreats. HP preserved at 40 in staging.
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(26, 26)); // at staging
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 40);
+        game.setEnemyShieldsForTesting(tag, 0);
+        game.setInitialAttackSizeForTesting(1);
+
+        game.tick(); // retreat fires; not yet transferred (moved toward nexus)
+        game.tick(); // snaps back to staging; transfer fires
+
+        assertThat(game.snapshot().enemyStagingArea()).hasSize(1);
+        assertThat(game.snapshot().enemyStagingArea().get(0).health()).isEqualTo(40);
+    }
+
+    @Test
+    void disabledThresholdsNeverRetreat() {
+        // Both thresholds = 0 → no retreat regardless of HP
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 0, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 1);
+        game.setEnemyShieldsForTesting(tag, 0);
+        game.setInitialAttackSizeForTesting(1);
+
+        game.tick();
+
+        assertThat(game.retreatingUnitTags()).isEmpty();
+    }
+
+    @Test
+    void retreatDoesNotFireBeforeFirstAttack() {
+        // initialAttackSize = 0 (no wave launched) — guard prevents any retreat
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 50);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 1);
+        game.setEnemyShieldsForTesting(tag, 0);
+        // DO NOT call setInitialAttackSizeForTesting — leave at 0
+
+        game.tick();
+
+        assertThat(game.retreatingUnitTags()).isEmpty();
+    }
+
+    @Test
+    void deadUnitRemovedFromRetreatingSet() {
+        // Probe vs Zealot: 5−1(armour)=4 effective damage.
+        // Tick 1: probe fires, Zealot HP=5-4=1 → survives. Retreat fires (1/150<30%). In retreatingUnits.
+        // Tick 2: probe cooldown=1, no fire. Zealot survives.
+        // Tick 3: probe fires again. Zealot HP=1-4<0, dies. resolveCombat cleans retreatingUnits.
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 0);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 5);
+        game.setEnemyShieldsForTesting(tag, 0); // 5/150=3.3% < 30% — retreats
+        game.setInitialAttackSizeForTesting(1);
+        game.applyIntent(new AttackIntent("probe-0", new Point2d(9.3f, 9)));
+
+        game.tick(); // probe deals 4 dmg → Zealot HP=1; retreat fires
+        assertThat(game.retreatingUnitTags()).contains(tag);
+
+        game.tick(); // probe cooldown=1, no fire; Zealot still alive
+        assertThat(game.retreatingUnitTags()).contains(tag);
+
+        game.tick(); // probe fires again → Zealot HP<0, dies; retreatingUnits cleaned
+        assertThat(game.retreatingUnitTags()).doesNotContain(tag);
+        assertThat(game.snapshot().enemyUnits().stream()
+            .anyMatch(u -> u.tag().equals(tag))).isFalse();
+    }
 }

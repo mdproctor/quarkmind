@@ -101,6 +101,7 @@ public class EmulatedGame {
         moveFriendlyUnits();
         moveEnemyUnits();
         resolveCombat();
+        tickEnemyRetreat();
         fireCompletions();
         spawnEnemyWaves();
         tickEnemyStrategy();
@@ -151,6 +152,55 @@ public class EmulatedGame {
             }
             log.infof("[EMULATED] Enemy wave spawned: %dx%s at frame %d",
                 wave.unitTypes().size(), wave.unitTypes().get(0), gameFrame);
+            return true;
+        });
+    }
+
+    private void tickEnemyRetreat() {
+        if (enemyStrategy == null || initialAttackSize == 0) return;
+        EnemyAttackConfig atk = enemyStrategy.attackConfig();
+
+        // 1. Per-unit health threshold
+        if (atk.retreatHealthPercent() > 0) {
+            for (Unit u : enemyUnits) {
+                if (retreatingUnits.contains(u.tag())) continue;
+                double totalHp    = u.health() + u.shields();
+                double maxTotalHp = (double) SC2Data.maxHealth(u.type()) + SC2Data.maxShields(u.type());
+                if (totalHp / maxTotalHp * 100 < atk.retreatHealthPercent()) {
+                    retreatingUnits.add(u.tag());
+                    enemyTargets.put(u.tag(), STAGING_POS);
+                    log.debugf("[EMULATED] Unit %s retreating (%.1f%% hp)", u.tag(),
+                        totalHp / maxTotalHp * 100);
+                }
+            }
+        }
+
+        // 2. Army-wide depletion threshold
+        if (atk.retreatArmyPercent() > 0) {
+            double survivingPct = (double) enemyUnits.size() / initialAttackSize * 100;
+            if (survivingPct < atk.retreatArmyPercent()) {
+                for (Unit u : enemyUnits) {
+                    if (retreatingUnits.contains(u.tag())) continue;
+                    retreatingUnits.add(u.tag());
+                    enemyTargets.put(u.tag(), STAGING_POS);
+                }
+                log.infof("[EMULATED] Army retreat: %.0f%% surviving (%d/%d)",
+                    survivingPct, enemyUnits.size(), initialAttackSize);
+            }
+        }
+
+        // 3. Transfer arrived retreating units back to enemyStagingArea.
+        // Threshold < 0.1 (not 0.5): stepToward snaps units to exactly STAGING_POS when
+        // within unitSpeed (0.5) of it. After snapping, distance = 0.0. Using < 0.1 avoids
+        // the floating-point ambiguity of comparing ~0.5 against 0.5 at the pre-snap position.
+        enemyUnits.removeIf(u -> {
+            if (!retreatingUnits.contains(u.tag())) return false;
+            if (distance(u.position(), STAGING_POS) >= 0.1) return false;
+            retreatingUnits.remove(u.tag());
+            enemyTargets.remove(u.tag());
+            enemyStagingArea.add(u);  // damaged HP preserved — no healing
+            log.debugf("[EMULATED] Unit %s arrived at staging (hp=%d shields=%d)",
+                u.tag(), u.health(), u.shields());
             return true;
         });
     }
