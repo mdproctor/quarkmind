@@ -786,4 +786,26 @@ class EmulatedGameTest {
         assertThat(game.snapshot().enemyUnits().stream()
             .anyMatch(u -> u.tag().equals(tag))).isFalse();
     }
+
+    @Test
+    void alreadyRetreatingUnitSkippedByArmyCheck() {
+        // Per-unit threshold fires first → unit added to retreatingUnits with target = STAGING_POS.
+        // Army-wide check then fires (1/4 = 25% < 50%). The already-retreating unit must be
+        // skipped — its target must NOT be overwritten, and it must not be double-added.
+        EnemyAttackConfig atk = new EnemyAttackConfig(10, 9999, 30, 50);
+        game.setEnemyStrategy(new EnemyStrategy(List.of(), false, 0, atk));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(14, 14));
+        String tag = game.snapshot().enemyUnits().get(0).tag();
+        game.setEnemyHealthForTesting(tag, 1);
+        game.setEnemyShieldsForTesting(tag, 0); // 1/150 < 30% → per-unit fires
+        game.setInitialAttackSizeForTesting(4); // 1/4 = 25% < 50% → army check also fires
+
+        game.tick();
+
+        // Unit must be in retreatingUnits exactly once (Set guarantees this)
+        // and target must be STAGING_POS (set by per-unit check, not overwritten by army check)
+        assertThat(game.retreatingUnitTags()).containsExactly(tag);
+        // enemyUnits still contains the unit (not yet arrived at staging)
+        assertThat(game.snapshot().enemyUnits()).hasSize(1);
+    }
 }

@@ -165,7 +165,7 @@ public class EmulatedGame {
             for (Unit u : enemyUnits) {
                 if (retreatingUnits.contains(u.tag())) continue;
                 double totalHp    = u.health() + u.shields();
-                double maxTotalHp = (double) SC2Data.maxHealth(u.type()) + SC2Data.maxShields(u.type());
+                double maxTotalHp = (double) u.maxHealth() + u.maxShields();
                 if (totalHp / maxTotalHp * 100 < atk.retreatHealthPercent()) {
                     retreatingUnits.add(u.tag());
                     enemyTargets.put(u.tag(), STAGING_POS);
