@@ -59,6 +59,30 @@ function drawGrid(container) {
 }
 
 /**
+ * Fetch terrain once at startup and draw static wall tiles.
+ * Silently no-ops if the endpoint is unavailable (non-emulated profile).
+ * Walls render as dark filled rectangles beneath the grid lines.
+ */
+async function loadTerrain(container) {
+    try {
+        const resp = await fetch('/qa/emulated/terrain');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const g = new PIXI.Graphics();
+        data.walls.forEach(([wx, wy]) => {
+            // Canvas rectangle for tile (wx, wy).
+            // Y-axis is flipped: tile bottom-left in canvas = (wx*SCALE, (VIEWPORT_H-wy-1)*SCALE)
+            const canvasX = wx * SCALE;
+            const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
+            g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x333333, alpha: 0.85 });
+        });
+        container.addChild(g);
+    } catch (e) {
+        console.warn('Could not load terrain:', e);
+    }
+}
+
+/**
  * Create a circular-masked unit portrait using a PIXI.Container approach (PixiJS 8).
  *
  * PixiJS 8 gotcha (GE-0144): adding a Graphics mask as a child of an anchored Sprite
@@ -311,13 +335,14 @@ async function init() {
 
     // Layers — order matters (bottom to top)
     const background = new PIXI.Container();
+    const terrain    = new PIXI.Container();  // static wall overlay, drawn once at startup
     const resource   = new PIXI.Container();
     const building   = new PIXI.Container();
     const unit       = new PIXI.Container();
     const enemy      = new PIXI.Container();
     const staging    = new PIXI.Container();
     const hud        = new PIXI.Container();
-    app.stage.addChild(background, resource, building, unit, enemy, staging, hud);
+    app.stage.addChild(background, terrain, resource, building, unit, enemy, staging, hud);
     window._layers = { resource, building, unit, enemy, staging };
 
     drawGrid(background);
@@ -367,6 +392,7 @@ async function init() {
     };
 
     await loadAssets();
+    await loadTerrain(terrain);
     connect();
     initConfigPanel();
 }
