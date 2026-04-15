@@ -2,7 +2,6 @@ package io.quarkmind.sc2.emulated;
 
 import io.quarkmind.domain.*;
 import io.quarkmind.sc2.intent.*;
-import io.quarkmind.sc2.emulated.PathfindingMovement;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
