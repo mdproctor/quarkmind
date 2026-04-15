@@ -1,45 +1,59 @@
-# Handover — 2026-04-07
+# Handover — 2026-04-15
 
-**Head commit:** `2e58487` — docs: session wrap 2026-04-07 — Flow economics integration
+**Head commit:** `e9ca647` — docs: blog entry E5/E6/E7
 **Previous handover:** `git show HEAD~1:HANDOVER.md` | diff: `git diff HEAD~1 HEAD -- HANDOVER.md`
 
 ## What Changed This Session
 
-- **FlowEconomicsTask** — second R&D integration complete. Quarkus Flow (`quarkus-flow:0.7.1`) via `@Incoming` + `startInstance()` bridge (not `listen` — see GE-0061). Per-tick instances, four `consume` steps: supply, probes, gas, expansion.
-- **Assimilator ownership** transferred from `DroolsStrategyTask` to `FlowEconomicsTask` (economic decision, not strategic).
-- **128 tests** — up from 107. `EconomicsDecisionServiceTest` (16 plain JUnit) + `EconomicsFlowTest` (4 `@QuarkusTest`).
-- **ADR-0001** — documents three Flow placement options (A: per-tick plugin ✓, B: stateful multi-tick, C: match lifecycle). Option A chosen; all three on record for revisit.
-- **Garden** — GE-0059 (consume step mutation loss), GE-0060 (POJO FAIL_ON_EMPTY_BEANS), GE-0061 (listen silent with SmallRye), GE-0062 (@Incoming+startInstance bridge).
-- **CLAUDE.md** — added `plugin/flow/` to code org, Flow test pattern note, ADR section.
-- **Issue tracking** — enabled (mdproctor/starcraft). All future commits should reference an issue (`Refs #N`).
+**E5 — Damage types, armour, Hardened Shield:**
+- `UnitAttribute` enum in `domain/`; 4 new `SC2Data` methods (`unitAttributes`, `armour`, `bonusDamageVs`, `hasHardenedShield`); corrected HP for 5 units (Immortal→200, Marine→45, Marauder→125, Roach→145, Hydralisk→90)
+- `DamageCalculator` in `sc2/emulated/` — stateless, independently tested
+- Issues #49–#53, milestone #1
 
-## Key Technical Findings (quarkus-flow 0.7.1)
+**E6 — Enemy retreat & regroup:**
+- `EnemyAttackConfig` gains `retreatHealthPercent` + `retreatArmyPercent`; default 30/50
+- `EmulatedGame`: `retreatingUnits` set, `initialAttackSize`, `STAGING_POS` constant, `tickEnemyRetreat()` in tick loop
+- Arrival threshold `>= 0.1` (not 0.5) — floating-point boundary fix
+- Issues #54–#57, milestone #2
 
-- `listen(name, toOne(type))` only works with CloudEvent channels — silent with SmallRye in-memory
-- Bridge: `@Incoming("channel") Uni<Void> method(T t) { return startInstance(t).replaceWithVoid(); }`
-- `consume` steps re-deserialize from JSON — mutable input mutations don't propagate across steps
-- Plain mutable POJOs as workflow input → `FAIL_ON_EMPTY_BEANS` — use records or `@JsonAutoDetect`
+**E7 — Pathfinding:**
+- `WalkabilityGrid` + `AStarPathfinder` in `domain/` — reusable by real SC2 engine
+- Emulated map: 64×64, wall at y=18, gap at x=11–13
+- `MovementStrategy` interface + `DirectMovement` (default, all existing tests unchanged) + `PathfindingMovement` (per-unit A* queues)
+- `EmulatedTerrainResource`: `GET /qa/emulated/terrain` → sparse wall list
+- Visualizer: static terrain layer drawn once at startup
+- Issues #58–#64, milestone #3
+
+**Also:** `%test.quarkus.http.test-port=0` fixes `DroolsScoutingRulesTest` port conflict; `IDEAS.md` created with E8 terrain height entry; 7 garden entries submitted.
+
+**Test count:** 363 passing, 0 failures.
 
 ## Immediate Next Step
 
-**TacticsTask** — third R&D integration target. Options: gdx-ai behaviour trees (JVM-only, `com.badlogicgames.gdx:gdx-ai:1.8.2`) or GOAP planner (~300 LOC). See `docs/library-research.md` §2.2 (gdx-ai) and §2.3 (GOAP). **Create a GitHub issue before starting implementation** (CLAUDE.md work tracking rules).
+**E8: Terrain height, ramps, vision, miss chance** — parked in `IDEAS.md`. If proceeding, start brainstorming: extend `WalkabilityGrid` to `TerrainGrid` with high/low/wall values; ramp walkability direction rules; 25% miss chance for ranged attacks from low ground; visualizer height shading. `AStarPathfinder` is untouched.
+
+**Or: TacticsTask extension** — `DroolsTacticsTask` spike exists (3 actions: MoveToEngage, Attack, Retreat). Future actions: Kite, Focus fire. Now that pathfinding exists, the retreat target in GOAP could be the actual base rather than MAP_CENTER.
+
+**Or: Real SC2 wiring** — `WalkabilityGrid.fromPathingGrid()` stub is ready; `ObservationTranslator` needs to call it from `StartRaw.getPathingGrid()`.
 
 ## Open Questions / Blockers
 
-*Unchanged — `git show HEAD~1:HANDOVER.md`* (SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays, Assimilator placement, Phase 1 Task 9)
+*Unchanged from previous — `git show HEAD~1:HANDOVER.md`* (SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays)
 
-**New:** Flow per-tick instance overhead — needs profiling against real SC2 at 500ms/tick. Budget arbitration across Flow `consume` steps is silently broken (each step sees original budget); SC2 rejects unaffordable commands so no game breakage, but the design assumption was wrong.
+**New:**
+- `EmulatedGame` growing (420+ lines) — `tickEnemyRetreat()` and `tickEnemyStrategy()` could split to `EnemyAI` class if it continues growing
+- Shield regeneration not yet modelled (out-of-combat regen after ~10s in real SC2)
 
 ## References
 
 | Context | Where |
 |---|---|
-| Design snapshot | `docs/design-snapshots/2026-04-07-flow-economics-integration.md` |
-| ADR-0001 | `docs/adr/0001-quarkus-flow-placement.md` |
-| Spec | `docs/superpowers/specs/2026-04-07-flow-economics-design.md` |
-| Plan | `docs/superpowers/plans/2026-04-07-flow-economics-task.md` |
-| Blog | `docs/blog/2026-04-07-mdp03-flow-economics-arrives.md` |
-| Garden | `~/claude/knowledge-garden/GARDEN.md` (index only) |
+| E5 spec | `docs/superpowers/specs/2026-04-15-e5-damage-types-armour-design.md` |
+| E6 spec | `docs/superpowers/specs/2026-04-15-e6-enemy-retreat-design.md` |
+| E7 spec | `docs/superpowers/specs/2026-04-15-e7-pathfinding-design.md` |
+| E8 idea | `IDEAS.md` |
+| Blog | `docs/_posts/2026-04-15-mdp01-armour-retreat-and-walls.md` |
+| Garden | `~/.hortora/garden/GARDEN.md` (7 entries submitted this session) |
 | Library research | `docs/library-research.md` |
 
 ## Environment
