@@ -15,7 +15,8 @@ import java.util.*;
 public class EmulatedGame {
 
     private static final Logger log = Logger.getLogger(EmulatedGame.class);
-    private static final Point2d NEXUS_POS = new Point2d(8, 8);
+    private static final Point2d NEXUS_POS    = new Point2d(8, 8);
+    private static final Point2d STAGING_POS  = new Point2d(26, 26);
 
     // E1 fields
     private double mineralAccumulator;
@@ -43,6 +44,9 @@ public class EmulatedGame {
     private int           enemyBuildIndex;
     private long          framesSinceLastAttack;
     private final List<Unit> enemyStagingArea = new ArrayList<>();
+    // E6: retreat tracking
+    private final Set<String> retreatingUnits  = new HashSet<>();
+    private int               initialAttackSize = 0;
     private final List<EnemyWave>         pendingWaves       = new ArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new ArrayList<>();
     private int nextTag = 200;
@@ -70,6 +74,8 @@ public class EmulatedGame {
         enemyBuildIndex         = 0;
         framesSinceLastAttack   = 0;
         enemyStagingArea.clear();
+        retreatingUnits.clear();
+        initialAttackSize = 0;
         pendingCompletions.clear();
         nextTag = 200;
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
@@ -167,7 +173,7 @@ public class EmulatedGame {
                     String tag = "enemy-" + nextTag++;
                     int hp = SC2Data.maxHealth(step.unitType());
                     enemyStagingArea.add(new Unit(tag, step.unitType(),
-                        new Point2d(26, 26), hp, hp,
+                        STAGING_POS, hp, hp,
                         SC2Data.maxShields(step.unitType()), SC2Data.maxShields(step.unitType())));
                     if (enemyStrategy.loop() || enemyBuildIndex < order.size() - 1)
                         enemyBuildIndex++;
@@ -185,6 +191,7 @@ public class EmulatedGame {
         boolean thresholdMet = enemyStagingArea.size() >= atk.armyThreshold();
         boolean timerFired   = framesSinceLastAttack >= atk.attackIntervalFrames();
         if ((thresholdMet || timerFired) && !enemyStagingArea.isEmpty()) {
+            initialAttackSize = enemyStagingArea.size();   // E6: denominator for army retreat check
             for (Unit u : enemyStagingArea) {
                 enemyUnits.add(u);
                 enemyTargets.put(u.tag(), NEXUS_POS);
@@ -311,6 +318,7 @@ public class EmulatedGame {
             if (u.health() <= 0) {
                 enemyTargets.remove(u.tag());
                 enemyCooldowns.remove(u.tag());
+                retreatingUnits.remove(u.tag());  // E6: clean up if killed while retreating
                 return true;
             }
             return false;
@@ -382,7 +390,7 @@ public class EmulatedGame {
         pendingWaves.add(new EnemyWave(
             spawnFrame,
             new ArrayList<>(types),
-            new Point2d(26, 26),
+            STAGING_POS,
             new Point2d(8, 8)
         ));
     }
@@ -435,6 +443,20 @@ public class EmulatedGame {
         enemyUnits.replaceAll(u -> u.tag().equals(tag)
             ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(),
                        shields, u.maxShields())
+            : u);
+    }
+
+    /** Returns a copy of retreating unit tags — for E6 retreat assertions. */
+    Set<String> retreatingUnitTags() { return Set.copyOf(retreatingUnits); }
+
+    /** Sets initialAttackSize directly — simulates a wave having been launched. */
+    void setInitialAttackSizeForTesting(int n) { this.initialAttackSize = n; }
+
+    /** Sets an enemy unit's health directly — for retreat health threshold tests. */
+    void setEnemyHealthForTesting(String tag, int health) {
+        enemyUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(),
+                       u.shields(), u.maxShields())
             : u);
     }
 }

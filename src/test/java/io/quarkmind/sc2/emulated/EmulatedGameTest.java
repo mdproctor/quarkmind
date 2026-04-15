@@ -607,4 +607,11 @@ class EmulatedGameTest {
             .findFirst().orElseThrow();
         assertThat(immortal.health()).isEqualTo(200);
     }
+
+    // ---- E6: retreat infrastructure ----
+
+    @Test
+    void retreatingUnitTagsIsInitiallyEmpty() {
+        assertThat(game.retreatingUnitTags()).isEmpty();
+    }
 }
