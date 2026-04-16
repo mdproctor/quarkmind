@@ -45,7 +45,7 @@ public class GameStateBroadcaster {
 
     /** Package-private for testing — pure serialisation, no I/O. */
     String toJson(GameState state) throws Exception {
-        var vg  = visibilityHolder != null ? visibilityHolder.get() : null;
+        var vg  = visibilityHolder.get();
         var vis = vg != null ? vg.encode() : null;
         return objectMapper.writeValueAsString(new GameStateBroadcast(state, vis));
     }

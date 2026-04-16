@@ -14,6 +14,7 @@ class GameStateBroadcasterTest {
     void toJsonContainsExpectedFields() throws Exception {
         var broadcaster = new GameStateBroadcaster();
         broadcaster.objectMapper = new ObjectMapper();
+        broadcaster.visibilityHolder = new io.quarkmind.sc2.emulated.VisibilityHolder();
 
         var state = new GameState(
             500, 25, 23, 14,
