@@ -55,6 +55,7 @@ public class EmulatedGame {
     // E7: hard physics constraint — no unit may land on a wall tile regardless of movement strategy.
     // Null in mock/test contexts where no terrain exists.
     private TerrainGrid terrainGrid = null;
+    private Random random = new Random(42L);
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
@@ -377,18 +378,22 @@ public class EmulatedGame {
             if (unitCooldowns.getOrDefault(attacker.tag(), 0) > 0) continue;
             nearestInRange(attacker.position(), enemyUnits, SC2Data.attackRange(attacker.type()))
                 .ifPresent(target -> {
-                    pending.merge(target.tag(),
-                        damageCalculator.computeEffective(attacker.type(), target), Integer::sum);
-                    firedFriendly.add(attacker.tag());
+                    if (!missesHighGround(attacker.position(), target.position(), attacker.type())) {
+                        pending.merge(target.tag(),
+                            damageCalculator.computeEffective(attacker.type(), target), Integer::sum);
+                    }
+                    firedFriendly.add(attacker.tag()); // cooldown resets even on miss
                 });
         }
         for (Unit attacker : enemyUnits) {
             if (enemyCooldowns.getOrDefault(attacker.tag(), 0) > 0) continue;
             nearestInRange(attacker.position(), myUnits, SC2Data.attackRange(attacker.type()))
                 .ifPresent(target -> {
-                    pending.merge(target.tag(),
-                        damageCalculator.computeEffective(attacker.type(), target), Integer::sum);
-                    firedEnemy.add(attacker.tag());
+                    if (!missesHighGround(attacker.position(), target.position(), attacker.type())) {
+                        pending.merge(target.tag(),
+                            damageCalculator.computeEffective(attacker.type(), target), Integer::sum);
+                    }
+                    firedEnemy.add(attacker.tag()); // cooldown resets even on miss
                 });
         }
 
@@ -432,6 +437,20 @@ public class EmulatedGame {
             .filter(u -> distance(from, u.position()) <= range)
             .min(Comparator.comparingDouble(u ->
                 distance(from, u.position()) * 1000 + u.health() + u.shields()));
+    }
+
+    /**
+     * Returns true if this attack should miss due to low-ground-to-high-ground penalty.
+     * Condition: attacker on LOW, target on HIGH, attack is ranged (range > 1.0), and RNG says miss.
+     * Returns false (no miss) when terrainGrid is null or the height condition is not met.
+     */
+    private boolean missesHighGround(Point2d attackerPos, Point2d targetPos, UnitType attackerType) {
+        if (terrainGrid == null) return false;
+        if (SC2Data.attackRange(attackerType) <= 1.0f) return false; // melee — never penalised
+        TerrainGrid.Height ah = terrainGrid.heightAt((int) attackerPos.x(), (int) attackerPos.y());
+        TerrainGrid.Height th = terrainGrid.heightAt((int) targetPos.x(),   (int) targetPos.y());
+        if (ah != TerrainGrid.Height.LOW || th != TerrainGrid.Height.HIGH) return false;
+        return random.nextDouble() < 0.25;
     }
 
     private static Unit applyDamage(Unit u, int damage) {
@@ -555,4 +574,7 @@ public class EmulatedGame {
     /** Swap movement strategy — used by pathfinding tests. Default is DirectMovement. */
     void setMovementStrategy(MovementStrategy s) { this.movementStrategy = s; }
     void setTerrainGrid(TerrainGrid g) { this.terrainGrid = g; }
+
+    /** Injects a predictable Random for miss-chance tests. */
+    void setRandomForTesting(Random r) { this.random = r; }
 }

@@ -935,4 +935,138 @@ class EmulatedGameTest {
         assertThat(after.x()).isGreaterThan(before.x());
         assertThat(after.y()).isCloseTo(before.y(), org.assertj.core.data.Offset.offset(0.1f));
     }
+
+    // ---- E8: high-ground miss chance ----
+
+    @Test
+    void rangedAttackLowToHighMissesWhenRngSaysNo() {
+        // Stalker (friendly, range=5) on LOW (y=14), enemy Zealot on HIGH (y=19).
+        // Distance = 5 tiles = attack range → attack fires.
+        // Always-miss RNG (nextDouble()=0.0 < 0.25) → every ranged low→high attack misses.
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.setRandomForTesting(new java.util.Random() {
+            @Override public double nextDouble() { return 0.0; } // always < 0.25 → miss
+        });
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 14));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(5, 19));
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(5, 19)));
+
+        game.tick(); // Stalker fires but misses — no damage to Zealot
+
+        Unit zealot = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.ZEALOT)
+            .findFirst().orElseThrow();
+        assertThat(zealot.shields()).isEqualTo(SC2Data.maxShields(UnitType.ZEALOT)); // 50 — untouched
+    }
+
+    @Test
+    void rangedAttackLowToHighHitsWhenRngSaysYes() {
+        // Same positions, never-miss RNG (nextDouble()=1.0 ≥ 0.25) → attack lands.
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.setRandomForTesting(new java.util.Random() {
+            @Override public double nextDouble() { return 1.0; } // never < 0.25 → hit
+        });
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 14));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(5, 19));
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(5, 19)));
+
+        game.tick();
+
+        Unit zealot = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.ZEALOT)
+            .findFirst().orElseThrow();
+        // Stalker vs Zealot: 13 base + 0 bonus (Zealot is LIGHT not ARMORED) - 1 armour = 12
+        assertThat(zealot.shields()).isEqualTo(SC2Data.maxShields(UnitType.ZEALOT) - 12); // 38
+    }
+
+    @Test
+    void meleeAttackLowToHighNeverMisses() {
+        // Zealot (friendly, range=0.5 ≤ 1.0 → melee) should never invoke the miss check.
+        // Custom 2-tile TerrainGrid: tile(0,0)=LOW, tile(1,0)=HIGH.
+        // Zealot at (0.6, 0) → floor → tile(0,0)=LOW.
+        // Enemy Marine at (1.1, 0) → floor → tile(1,0)=HIGH.
+        // Distance = 0.5 tiles ≤ Zealot range 0.5 → attack fires.
+        // Always-miss RNG → melee must still deal full damage (range check skips the miss roll).
+        TerrainGrid.Height[][] heights = new TerrainGrid.Height[2][1];
+        heights[0][0] = TerrainGrid.Height.LOW;
+        heights[1][0] = TerrainGrid.Height.HIGH;
+        game.setTerrainGrid(new TerrainGrid(2, 1, heights));
+        game.setRandomForTesting(new java.util.Random() {
+            @Override public double nextDouble() { return 0.0; } // always-miss — must be ignored for melee
+        });
+        String zealotTag = game.spawnFriendlyForTesting(UnitType.ZEALOT, new Point2d(0.6f, 0));
+        game.spawnEnemyForTesting(UnitType.MARINE, new Point2d(1.1f, 0));
+        game.applyIntent(new AttackIntent(zealotTag, new Point2d(1.1f, 0)));
+
+        game.tick();
+
+        Unit marine = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.MARINE)
+            .findFirst().orElseThrow();
+        // Zealot vs Marine: 8 base + 0 bonus - 0 armour = 8. Marine max shields = 0, HP 45 → 37.
+        assertThat(marine.health()).isEqualTo(SC2Data.maxHealth(UnitType.MARINE) - 8); // 37
+    }
+
+    @Test
+    void rangedAttackEqualHeightNeverMisses() {
+        // Both attacker and target on LOW — no miss check regardless of RNG.
+        // Stalker (LOW, y=9) vs enemy Zealot (LOW, y=14). Distance = 5 = range.
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.setRandomForTesting(new java.util.Random() {
+            @Override public double nextDouble() { return 0.0; } // would always miss if check fires
+        });
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 9));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(5, 14));
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(5, 14)));
+
+        game.tick();
+
+        Unit zealot = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.ZEALOT)
+            .findFirst().orElseThrow();
+        assertThat(zealot.shields()).isLessThan(SC2Data.maxShields(UnitType.ZEALOT)); // took damage
+    }
+
+    @Test
+    void rangedAttackHighToLowNeverMisses() {
+        // Enemy Stalker on HIGH (y=19) attacks friendly on LOW (y=14). No miss — shooting downhill.
+        // Distance from (5,19) to (5,14) = 5 ≤ Stalker range 5 → attacks fire.
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.setRandomForTesting(new java.util.Random() {
+            @Override public double nextDouble() { return 0.0; } // would miss if check fires
+        });
+        game.spawnEnemyForTesting(UnitType.STALKER, new Point2d(5, 19));
+        game.spawnFriendlyForTesting(UnitType.PROBE, new Point2d(5, 14));
+
+        game.tick(); // enemy Stalker auto-attacks nearest friendly — no miss check for high→low
+
+        // The newly spawned probe (not probe-0 at y=9) should take damage.
+        // probe-0 is at (9,9) — distance to enemy (5,19) ≈ 10.8 > 5. Out of range.
+        // test-unit-N is at (5,14) — distance 5 ≤ range 5. Takes damage.
+        boolean anyProbeDamaged = game.snapshot().myUnits().stream()
+            .filter(u -> u.type() == UnitType.PROBE)
+            .anyMatch(u -> u.shields() < SC2Data.maxShields(UnitType.PROBE));
+        assertThat(anyProbeDamaged).isTrue();
+    }
+
+    @Test
+    void rampAttackerDoesNotTriggerMissChance() {
+        // Stalker (friendly) on RAMP tile — RAMP ≠ LOW → no miss check even with always-miss RNG.
+        // RAMP tiles: x=11-13, y=18. Position (12.5, 18.5) → floor → tile(12,18) = RAMP.
+        // Enemy Zealot at (12.5, 19.5) → tile(12,19) = HIGH. Distance ≈ 1 ≤ Stalker range 5.
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.setRandomForTesting(new java.util.Random() {
+            @Override public double nextDouble() { return 0.0; } // always-miss if check fires
+        });
+        String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(12.5f, 18.5f));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(12.5f, 19.5f));
+        game.applyIntent(new AttackIntent(stalkerTag, new Point2d(12.5f, 19.5f)));
+
+        game.tick();
+
+        Unit zealot = game.snapshot().enemyUnits().stream()
+            .filter(u -> u.type() == UnitType.ZEALOT)
+            .findFirst().orElseThrow();
+        assertThat(zealot.shields()).isLessThan(SC2Data.maxShields(UnitType.ZEALOT)); // took damage
+    }
 }
