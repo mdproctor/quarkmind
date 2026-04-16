@@ -1,5 +1,7 @@
 # StarCraft II Quarkus Agent
 
+> **Legal:** This is an independent fan research project. StarCraft II® is a trademark of Blizzard Entertainment, Inc. See [LEGAL.md](LEGAL.md) for full notices.
+
 A Quarkus application that plays StarCraft II (Protoss) as a **plugin platform**.
 
 The agent provides scaffolding, SC2 connection, and a [CaseHub](https://github.com/casehub) blackboard control loop. Intelligence is provided by swappable plugins behind CDI seams — swap a plugin by dropping in a new `@ApplicationScoped` bean, no wiring changes needed.
