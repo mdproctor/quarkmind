@@ -43,4 +43,42 @@ class EmulatedTerrainIT {
             .statusCode(200)
             .body("walls.find { it == [12, 18] }", nullValue());
     }
+
+    @Test
+    void terrainEndpointReturnsHighGroundArray() {
+        // y=19..63 = 45 rows × 64 cols = 2880 HIGH tiles
+        given().when().get("/qa/emulated/terrain")
+            .then()
+            .statusCode(200)
+            .body("highGround",        notNullValue())
+            .body("highGround.size()", equalTo(45 * 64));
+    }
+
+    @Test
+    void terrainEndpointReturnsRampArray() {
+        // x=11,12,13 at y=18 = 3 ramp tiles
+        given().when().get("/qa/emulated/terrain")
+            .then()
+            .statusCode(200)
+            .body("ramps",        notNullValue())
+            .body("ramps.size()", equalTo(3));
+    }
+
+    @Test
+    void terrainEndpointHighGroundIncludesStagingTile() {
+        // Staging area (26,26) is HIGH ground
+        given().when().get("/qa/emulated/terrain")
+            .then()
+            .statusCode(200)
+            .body("highGround.find { it == [26, 26] }", notNullValue());
+    }
+
+    @Test
+    void terrainEndpointRampIncludesChokeGap() {
+        // x=11, y=18 is the leftmost ramp tile
+        given().when().get("/qa/emulated/terrain")
+            .then()
+            .statusCode(200)
+            .body("ramps.find { it == [11, 18] }", notNullValue());
+    }
 }
