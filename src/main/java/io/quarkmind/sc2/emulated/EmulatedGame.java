@@ -56,6 +56,8 @@ public class EmulatedGame {
     // Null in mock/test contexts where no terrain exists.
     private TerrainGrid terrainGrid = null;
     private Random random = new Random(42L);
+    // E9: fog of war — persists across ticks, reset on game restart
+    private final VisibilityGrid visibility = new VisibilityGrid();
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
@@ -84,6 +86,7 @@ public class EmulatedGame {
         pendingCompletions.clear();
         nextTag = 200;
         movementStrategy.reset();
+        visibility.reset();
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
         // terrainGrid and random intentionally NOT cleared — set by EmulatedEngine before reset(), persist across resets
 
@@ -106,6 +109,7 @@ public class EmulatedGame {
         gameFrame++;
         mineralAccumulator += miningProbes * SC2Data.MINERALS_PER_PROBE_PER_TICK;
         moveFriendlyUnits();
+        visibility.recompute(myUnits, myBuildings, terrainGrid);
         moveEnemyUnits();
         resolveCombat();
         tickEnemyRetreat();
@@ -480,8 +484,26 @@ public class EmulatedGame {
     }
 
     public GameState snapshot() {
+        // Fog filtering is only active when terrain is configured.
+        // Without terrain (mock/test contexts) all enemies are visible as before.
+        if (terrainGrid != null) {
+            List<Unit> visibleEnemies = enemyUnits.stream()
+                .filter(u -> visibility.isVisible(u.position()))
+                .toList();
+            List<Unit> visibleStaging = enemyStagingArea.stream()
+                .filter(u -> visibility.isVisible(u.position()))
+                .toList();
+            return new GameState(
+                (int) mineralAccumulator,
+                vespene, supply, supplyUsed,
+                List.copyOf(myUnits), List.copyOf(myBuildings),
+                visibleEnemies,
+                visibleStaging,
+                List.copyOf(geysers),
+                gameFrame);
+        }
         return new GameState(
-            (int) mineralAccumulator,  // floor: fractional minerals accumulate silently
+            (int) mineralAccumulator,
             vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings),
             List.copyOf(enemyUnits),
@@ -489,6 +511,9 @@ public class EmulatedGame {
             List.copyOf(geysers),
             gameFrame);
     }
+
+    /** Returns the current visibility grid — used by EmulatedEngine to update VisibilityHolder. */
+    VisibilityGrid observeVisibility() { return visibility; }
 
     // --- Package-private: called by EmulatedEngine ---
 
@@ -578,4 +603,12 @@ public class EmulatedGame {
 
     /** Injects a predictable Random for miss-chance tests. */
     void setRandomForTesting(Random r) { this.random = r; }
+
+    /** Adds a unit directly to enemyStagingArea — for fog-of-war staging visibility tests. */
+    void addStagedUnitForTesting(UnitType type, Point2d position) {
+        String tag = "test-staging-" + nextTag++;
+        int hp = SC2Data.maxHealth(type);
+        enemyStagingArea.add(new Unit(tag, type, position, hp, hp,
+            SC2Data.maxShields(type), SC2Data.maxShields(type)));
+    }
 }

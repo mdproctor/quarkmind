@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 import java.util.List;
+import io.quarkmind.sc2.emulated.VisibilityGrid;
+import io.quarkmind.sc2.emulated.TileVisibility;
 
 class EmulatedGameTest {
 
@@ -943,11 +945,13 @@ class EmulatedGameTest {
         // Stalker (friendly, range=5) on LOW (y=14), enemy Zealot on HIGH (y=19).
         // Distance = 5 tiles = attack range → attack fires.
         // Always-miss RNG (nextDouble()=0.0 < 0.25) → every ranged low→high attack misses.
+        // Observer on HIGH at (5,22) provides vision of (5,19) so snapshot() returns the Zealot.
         game.setTerrainGrid(TerrainGrid.emulatedMap());
         game.setRandomForTesting(new java.util.Random() {
             @Override public double nextDouble() { return 0.0; } // always < 0.25 → miss
         });
         String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 14));
+        game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 22)); // observer on HIGH
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(5, 19));
         game.applyIntent(new AttackIntent(stalkerTag, new Point2d(5, 19)));
 
@@ -962,11 +966,13 @@ class EmulatedGameTest {
     @Test
     void rangedAttackLowToHighHitsWhenRngSaysYes() {
         // Same positions, never-miss RNG (nextDouble()=1.0 ≥ 0.25) → attack lands.
+        // Observer on HIGH at (5,22) provides vision of (5,19) so snapshot() returns the Zealot.
         game.setTerrainGrid(TerrainGrid.emulatedMap());
         game.setRandomForTesting(new java.util.Random() {
             @Override public double nextDouble() { return 1.0; } // never < 0.25 → hit
         });
         String stalkerTag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 14));
+        game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(5, 22)); // observer on HIGH
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(5, 19));
         game.applyIntent(new AttackIntent(stalkerTag, new Point2d(5, 19)));
 
@@ -1068,5 +1074,64 @@ class EmulatedGameTest {
             .filter(u -> u.type() == UnitType.ZEALOT)
             .findFirst().orElseThrow();
         assertThat(zealot.shields()).isLessThan(SC2Data.maxShields(UnitType.ZEALOT)); // took damage
+    }
+
+    // ---- E9: Fog of War filtering ----
+
+    @Test
+    void enemyOnHighGroundIsInvisibleFromLow() {
+        // Emulated map: nexus at (8,8)=LOW, enemy staging at (26,26)=HIGH
+        // Friendly units are on LOW — they cannot see HIGH ground
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.reset();
+        // Spawn enemy on HIGH ground (y=25 > 18)
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(26, 25));
+        game.tick();
+        // snapshot() should filter out the HIGH-ground enemy
+        assertThat(game.snapshot().enemyUnits()).isEmpty();
+    }
+
+    @Test
+    void enemyOnLowGroundIsVisibleFromLow() {
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.reset();
+        // Spawn enemy on LOW ground adjacent to our units (y=10 < 18), within sight range
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(12, 10));
+        game.tick();
+        assertThat(game.snapshot().enemyUnits()).hasSize(1);
+    }
+
+    @Test
+    void enemyOnHighRemainsHiddenAcrossMultipleTicks() {
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.reset();
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(26, 25));
+
+        // Run several ticks — probes stay on LOW, enemy on HIGH stays invisible
+        for (int i = 0; i < 10; i++) game.tick();
+        assertThat(game.snapshot().enemyUnits())
+            .as("HIGH-ground enemy must stay hidden while all observers are on LOW")
+            .isEmpty();
+    }
+
+    @Test
+    void stagingAreaEnemiesAreFilteredByVisibility() {
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.reset();
+        // addStagedUnitForTesting places a unit in enemyStagingArea at STAGING_POS (26,26) = HIGH
+        game.addStagedUnitForTesting(UnitType.ZEALOT, new Point2d(26, 26));
+        game.tick();
+        assertThat(game.snapshot().enemyStagingArea()).isEmpty();
+    }
+
+    @Test
+    void visibilityGridResetOnGameReset() {
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        game.reset();
+        game.tick(); // populates some VISIBLE tiles
+        game.reset();
+        // After reset, all tiles should be UNSEEN again — confirmed via observeVisibility()
+        VisibilityGrid vg = game.observeVisibility();
+        assertThat(vg.at(8, 8)).isEqualTo(TileVisibility.UNSEEN);
     }
 }
