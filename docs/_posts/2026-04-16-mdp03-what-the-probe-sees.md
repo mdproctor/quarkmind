@@ -89,6 +89,6 @@ in this session.
 Three tile states: black means never seen, dimmed grey means seen but no longer
 in vision, clear means currently visible. What the probe sees is all the agent knows.
 
-<!-- TODO: add screenshot showing fog overlay — HIGH ground dark, ramp visible,
-LOW ground lit with units. Run `mvn quarkus:dev -Dquarkus.profile=emulated` and
-capture visualizer.html. Save to docs/blog/assets/e9-fog-of-war.png -->
+[![Fog of war — the probe's vision circle lit, HIGH ground in memory, solid black beyond](/quarkmind/blog/assets/e9-fog-of-war.png)](/quarkmind/blog/assets/e9-fog-of-war.png)
+
+*Frame 133: the Nexus and probes illuminate a circle of LOW ground. The HIGH terrain above the ramp is visible in grey-memory (previously entered, currently dark). Everything else is unseen.*
