@@ -29,13 +29,16 @@ public class EmulatedEngine implements SC2Engine {
     private final EmulatedGame game = new EmulatedGame();
     private final IntentQueue intentQueue;
     private final EmulatedConfig config;
+    private final VisibilityHolder visibilityHolder;
     private final List<Consumer<GameState>> frameListeners = new CopyOnWriteArrayList<>();
     private boolean connected = false;
 
     @Inject
-    public EmulatedEngine(IntentQueue intentQueue, EmulatedConfig config) {
-        this.intentQueue = intentQueue;
-        this.config      = config;
+    public EmulatedEngine(IntentQueue intentQueue, EmulatedConfig config,
+                          VisibilityHolder visibilityHolder) {
+        this.intentQueue       = intentQueue;
+        this.config            = config;
+        this.visibilityHolder  = visibilityHolder;
     }
 
     @Override
@@ -79,6 +82,7 @@ public class EmulatedEngine implements SC2Engine {
         game.setUnitSpeed(config.getUnitSpeed());           // existing
         game.setEnemyStrategy(config.getEnemyStrategy());   // new E4: live strategy updates
         game.tick();
+        visibilityHolder.set(game.observeVisibility());
     }
 
     @Override
