@@ -265,7 +265,7 @@ function updateFog(visibility) {
     const fog = window._layers.fog;
     fog.clear();
     if (!visibility) return;
-    for (let y = 0; y < 64; y++) {
+    for (let y = 0; y < VIEWPORT_H; y++) {
         for (let x = 0; x < 64; x++) {
             const s = visibility.charAt(y * 64 + x);
             if (s === '2') continue;                          // VISIBLE — no overlay
