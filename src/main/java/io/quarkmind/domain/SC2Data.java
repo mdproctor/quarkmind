@@ -207,4 +207,22 @@ public final class SC2Data {
             default        -> 3.0f;
         };
     }
+
+    /** Official SC2 sight radius in tiles. Friendly units only — we compute friendly vision. */
+    public static int sightRange(UnitType type) {
+        return switch (type) {
+            case PROBE   -> 8;
+            case ZEALOT  -> 9;
+            case STALKER -> 10;
+            default      -> 9;
+        };
+    }
+
+    /** Official SC2 sight radius in tiles for buildings. */
+    public static int sightRange(BuildingType type) {
+        return switch (type) {
+            case ASSIMILATOR -> 6;
+            default          -> 9;  // NEXUS, GATEWAY, FORGE, etc.
+        };
+    }
 }
