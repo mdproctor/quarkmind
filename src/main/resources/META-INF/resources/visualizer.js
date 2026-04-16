@@ -260,12 +260,34 @@ function updateScene(state) {
 
 let wsConnected = false;
 
+/** Redraws the fog overlay from the 4096-char visibility string. No-op if null. */
+function updateFog(visibility) {
+    const fog = window._layers.fog;
+    fog.clear();
+    if (!visibility) return;
+    for (let y = 0; y < 64; y++) {
+        for (let x = 0; x < 64; x++) {
+            const s = visibility.charAt(y * 64 + x);
+            if (s === '2') continue;                          // VISIBLE — no overlay
+            const alpha = s === '0' ? 1.0 : 0.45;            // UNSEEN solid, MEMORY 45%
+            const canvasX = x * SCALE;
+            const canvasY = (VIEWPORT_H - y - 1) * SCALE;
+            fog.rect(canvasX, canvasY, SCALE, SCALE)
+               .fill({ color: 0x000000, alpha });
+        }
+    }
+}
+
 /** Open WebSocket; auto-reconnect on close. */
 function connect() {
     const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
     ws.onopen    = () => { wsConnected = true; };
     ws.onmessage = e => {
-        try { updateScene(JSON.parse(e.data)); }
+        try {
+            const msg = JSON.parse(e.data);
+            updateScene(msg.state);
+            updateFog(msg.visibility);
+        }
         catch (err) { console.warn('Bad message', err); }
     };
     ws.onerror = () => ws.close();
@@ -352,14 +374,15 @@ async function init() {
     // Layers — order matters (bottom to top)
     const background = new PIXI.Container();
     const terrain    = new PIXI.Container();  // static wall overlay, drawn once at startup
+    const fogLayer   = new PIXI.Graphics();   // fog of war — above terrain, below units
     const resource   = new PIXI.Container();
     const building   = new PIXI.Container();
     const unit       = new PIXI.Container();
     const enemy      = new PIXI.Container();
     const staging    = new PIXI.Container();
     const hud        = new PIXI.Container();
-    app.stage.addChild(background, terrain, resource, building, unit, enemy, staging, hud);
-    window._layers = { resource, building, unit, enemy, staging };
+    app.stage.addChild(background, terrain, fogLayer, resource, building, unit, enemy, staging, hud);
+    window._layers = { resource, building, unit, enemy, staging, fog: fogLayer };
 
     drawGrid(background);
 
