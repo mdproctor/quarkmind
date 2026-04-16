@@ -107,6 +107,19 @@ class DroolsScoutingTaskIT {
             .first().isInstanceOf(MoveIntent.class);
     }
 
+    @Test
+    void scoutDispatchedToEstimatedSC2Base() {
+        // Regression guard: default map width (256) must still target the SC2 far corner.
+        // nexus at (8,8) → estimated enemy base = (224,224).
+        // Uses a distinct probe tag to avoid scoutProbeTag state from other tests.
+        var cf = caseFile(List.of(), List.of(probe("sc-guard-probe")),
+            (long) DroolsScoutingTask.SCOUT_DELAY_TICKS);
+        scoutingTask.execute(cf);
+        assertThat(intentQueue.pending()).hasSize(1);
+        MoveIntent move = (MoveIntent) intentQueue.pending().get(0);
+        assertThat(move.targetLocation()).isEqualTo(new Point2d(224, 224));
+    }
+
     // ---- Helpers ----
 
     private CaseFile caseFile(List<Unit> enemies, List<Unit> workers, long frame) {

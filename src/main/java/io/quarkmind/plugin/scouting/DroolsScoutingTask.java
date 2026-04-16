@@ -4,6 +4,7 @@ import io.casehub.annotation.CaseType;
 import io.casehub.core.CaseFile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.agent.plugin.ScoutingTask;
 import io.quarkmind.domain.*;
@@ -49,6 +50,9 @@ public class DroolsScoutingTask implements ScoutingTask {
     private final ScoutingSessionManager     sessionManager;
     private final IntentQueue                intentQueue;
 
+    @ConfigProperty(name = "scouting.map.width", defaultValue = "256")
+    int mapWidth;
+
     /** Tag of the probe currently assigned to scout. Null when no active scout. */
     private volatile String scoutProbeTag;
     // Single scheduler thread — no synchronisation needed
@@ -92,7 +96,7 @@ public class DroolsScoutingTask implements ScoutingTask {
 
         long gameTimeMs = (long) (frame * (1000.0 / FRAMES_PER_SECOND));
         Point2d ourNexus      = nexusPosition(buildings);
-        Point2d estimatedBase = estimatedEnemyBase(ourNexus);
+        Point2d estimatedBase = estimatedEnemyBase(ourNexus, mapWidth);
 
         // --- Passive intel (plain Java, no rules needed) ---
         caseFile.put(QuarkMindCaseFile.ENEMY_ARMY_SIZE, enemies.size());
@@ -148,9 +152,13 @@ public class DroolsScoutingTask implements ScoutingTask {
         log.infof("[SCOUTING] Scout probe %s dispatched toward %s", scoutProbeTag, target);
     }
 
-    static Point2d estimatedEnemyBase(Point2d ourBase) {
-        float targetX = ourBase.x() < 64 ? 224 : 32;
-        float targetY = ourBase.y() < 64 ? 224 : 32;
+    static Point2d estimatedEnemyBase(Point2d ourBase, int mapWidth) {
+        int margin    = mapWidth / 8;
+        int farCoord  = mapWidth - margin;
+        int nearCoord = margin;
+        float threshold = mapWidth / 4f;
+        float targetX = ourBase.x() < threshold ? farCoord : nearCoord;
+        float targetY = ourBase.y() < threshold ? farCoord : nearCoord;
         return new Point2d(targetX, targetY);
     }
 
