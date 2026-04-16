@@ -45,6 +45,16 @@ mvn quarkus:dev -Dquarkus.profile=replay
 ```bash
 mvn quarkus:dev -Dquarkus.profile=emulated
 # Opens visualizer at http://localhost:8080/visualizer.html
+# Logs to /tmp/quarkmind-emulated.log (rotation configured — max 20M, 3 backups)
+```
+
+**Stopping emulated mode / cleaning log files:**
+```bash
+# Always kill Java BEFORE deleting log files.
+# Deleting /tmp/quarkmind-emulated.log while Java has it open leaves an invisible
+# open file descriptor — disk space is not freed until the JVM exits.
+# Symptoms: du shows nothing, but df shows disk full. Visible via: lsof -c java | grep deleted
+pkill -f 'quarkus:dev' && sleep 2 && rm -f /tmp/quarkmind-emulated.log*
 ```
 
 **Run (real SC2):**
