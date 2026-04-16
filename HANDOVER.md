@@ -1,55 +1,58 @@
 # Handover — 2026-04-16
 
-**Head commit:** `6936ca8` — docs: add blog entry 2026-04-16 — high ground (E8)
+**Head commit:** `ab78614` — docs: add blog entry 2026-04-16 — fog of war (E9); update CLAUDE.md
 
 ## What Changed This Session
 
-**E8: Terrain height — complete (GitHub #65, closed)**
+**Scouting fix (pre-E9):**
+- `DroolsScoutingTask.estimatedEnemyBase()` now takes `int mapWidth` param; `%emulated` overrides to 64 via `scouting.map.width` config — scout dispatches to (56,56) not clamped (63,63)
+- 7 unit tests + 1 IT regression guard added; scouting fix closed GitHub #67 (wrong — #67 was E9; scouting had no issue)
 
-- `TerrainGrid` replaces `WalkabilityGrid` everywhere — 4-value height model (HIGH/LOW/RAMP/WALL)
-- Map layout: y>18 = HIGH (enemy staging), y<18 = LOW (nexus), y=18 x=11–13 = RAMP, rest = WALL
-- 25% miss chance for ranged attacks from LOW→HIGH in `resolveCombat()` — `missesHighGround()` guard before `computeEffective()`; null/melee/RAMP bypassed; seeded `Random` injectable via `setRandomForTesting()`
-- Terrain REST API (`/qa/emulated/terrain`) now returns `highGround` (2880 tiles) + `ramps` (3 tiles)
-- Visualizer: topographic shading — HIGH=tan/brown, RAMP=mid-brown, WALL=dark-grey, LOW=bare canvas
-- Playwright `playwright` Maven profile added; `@Tag("browser")` now consistently on all pixel-sampling tests
-- **Log rotation + shutdown config** — `quarkus.shutdown.timeout=10S`, `%emulated.quarkus.log.file.rotation.*` (20M/3-backup/rotate-on-boot); CLAUDE.md documents kill-first rule for log cleanup
+**E9: Fog of War — complete (GitHub #66 epic, #67 implementation, closed)**
 
-Executed via subagent-driven development (7 tasks, spec + code quality review per task). 378 surefire tests.
+- `TileVisibility` enum (UNSEEN/MEMORY/VISIBLE) in `sc2/emulated/`
+- `VisibilityGrid` — 64×64 tile states, SC2 sight ranges, high-ground rule (LOW/RAMP observers cannot illuminate HIGH tiles), `encode()` → 4096-char string for WebSocket
+- `EmulatedGame`: recomputes visibility after `moveFriendlyUnits()` each tick; filters `enemyUnits` + `enemyStagingArea` in `snapshot()` (gated on `terrainGrid != null` for backward compat)
+- `VisibilityHolder` — `@ApplicationScoped` CDI bridge, no profile guard; `EmulatedEngine` writes to it each tick
+- `GameStateBroadcast(GameState state, String visibility)` record; broadcaster wraps payload — visualizer receives `{state, visibility}` envelope
+- `visualizer.js`: fog layer (`PIXI.Graphics`) added between terrain and unit layers; `updateFog()` single-pass draw; `onmessage` unwraps `msg.state` / `msg.visibility`; loop uses `VIEWPORT_H` (32) not 64 (perf fix from code review)
+- 409 surefire tests; 2 Playwright fog tests in `VisualizerFogRenderTest`
 
-**Garden submissions (3 PRs):**
-- Hortora/garden#63 — Maven `*IT` suffix silently skipped by `mvn test`
-- Hortora/garden#64 — Anonymous `Random` subclass for deterministic probability tests  
-- Hortora/garden#65 — Quarkus deleted log file causes invisible disk usage
+Executed via subagent-driven development (9 tasks, spec + quality review per task).
 
-**Blog:** `docs/_posts/2026-04-16-mdp02-high-ground.md`
+**Garden submissions (2 PRs):**
+- Hortora/garden#67 — PixiJS Graphics loop over full grid draws invisible off-screen tiles silently
+- Hortora/garden#68 — `@ApplicationScoped` CDI bridge bean for profile-specific data flow
+
+**Blog:** `docs/_posts/2026-04-16-mdp03-what-the-probe-sees.md`
+**Screenshot needed:** Run emulated mode and capture fog visualizer → `docs/blog/assets/e9-fog-of-war.png`
 
 ## Immediate Next Step
 
-**E9 candidates (no spec yet, in IDEAS.md):**
-1. **Fog of war** — explicitly deferred from E8; full system-level feature (units on HIGH invisible to LOW without spotter)
-2. **TacticsTask extension** — GOAP retreat to actual base (not MAP_CENTER), kite, focus-fire
-3. **Scouting fix** — `DroolsScoutingTask` still dispatches to SC2 coords (224,224), clamped to corner (63,63); scouting target should respect emulated map bounds
+**E10 candidates:**
+1. **TacticsTask extension** — GOAP retreat to actual base (not MAP_CENTER), kite, focus-fire
+2. **Fog of war polish** — capture the missing visualizer screenshot; verify fog works end-to-end in emulated mode (hasn't been manually tested yet this session)
 
-Start with brainstorm to pick E9.
+Start next session by running `mvn quarkus:dev -Dquarkus.profile=emulated` and visually verifying the fog, then capture the screenshot for the blog entry.
 
 ## Open Questions / Blockers
 
-*Unchanged — `git show 2e7c934:HANDOFF.md` (2026-04-14 handover)*
+*Prior open questions unchanged — `git show 62e6f03:HANDOVER.md`*
 
 **New:**
-- `DroolsScoutingTask` dispatches to (224,224) — still clamped to (63,63), scout goes to far corner, not meaningful
-- Log rotation config added; verify it works correctly on first emulated run (rotate-on-boot should create fresh file each start)
+- E9 fog hasn't been manually verified in running emulated mode — automated tests pass but visual check still outstanding
+- `VisibilityGrid.recompute(null terrain)` produces selective visibility (only within-range tiles), NOT all-visible; `snapshot()` must gate fog filter on `terrainGrid != null` — documented in code with comment
+- ASL/GitHub publication: EmulatedGame is a clean reimplementation (no SC2 code copied, no assets); add "not affiliated with Blizzard Entertainment" to README before publishing
 
 ## References
 
 | Context | Where |
 |---|---|
-| E8 spec | `docs/superpowers/specs/2026-04-16-e8-terrain-height-design.md` |
-| E8 plan | `docs/superpowers/plans/2026-04-16-e8-terrain-height.md` |
-| Blog | `docs/_posts/2026-04-16-mdp02-high-ground.md` |
-| Visualizer screenshot | `docs/blog/assets/e8-high-ground.png` |
-| Previous handover | `git show 2e7c934:HANDOFF.md` |
+| E9 spec | `docs/superpowers/specs/2026-04-16-e9-fog-of-war-design.md` |
+| E9 plan | `docs/superpowers/plans/2026-04-16-e9-fog-of-war.md` |
+| Blog | `docs/_posts/2026-04-16-mdp03-what-the-probe-sees.md` |
+| E8 references | `git show 62e6f03:HANDOVER.md` |
 
 ## Environment
 
-*Unchanged — `git show 2e7c934:HANDOFF.md`*
+*Unchanged — `git show 62e6f03:HANDOVER.md`*
