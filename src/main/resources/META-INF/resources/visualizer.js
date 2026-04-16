@@ -59,9 +59,10 @@ function drawGrid(container) {
 }
 
 /**
- * Fetch terrain once at startup and draw static wall tiles.
+ * Fetch terrain once at startup and draw static height-shaded tiles.
+ * Colour scheme (topographic): HIGH=tan/brown, RAMP=mid-brown, WALL=dark-grey.
+ * LOW tiles are the default canvas background — no fill drawn.
  * Silently no-ops if the endpoint is unavailable (non-emulated profile).
- * Walls render as dark filled rectangles beneath the grid lines.
  */
 async function loadTerrain(container) {
     try {
@@ -69,13 +70,28 @@ async function loadTerrain(container) {
         if (!resp.ok) return;
         const data = await resp.json();
         const g = new PIXI.Graphics();
+
+        // HIGH ground — warm tan/brown
+        (data.highGround ?? []).forEach(([wx, wy]) => {
+            const canvasX = wx * SCALE;
+            const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
+            g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x8B6914, alpha: 0.55 });
+        });
+
+        // RAMP — mid brown (transitional slope)
+        (data.ramps ?? []).forEach(([wx, wy]) => {
+            const canvasX = wx * SCALE;
+            const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
+            g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x7A6040, alpha: 0.40 });
+        });
+
+        // WALL — dark grey (unchanged from E7)
         data.walls.forEach(([wx, wy]) => {
-            // Canvas rectangle for tile (wx, wy).
-            // Y-axis is flipped: tile bottom-left in canvas = (wx*SCALE, (VIEWPORT_H-wy-1)*SCALE)
             const canvasX = wx * SCALE;
             const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
             g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x333333, alpha: 0.85 });
         });
+
         container.addChild(g);
     } catch (e) {
         console.warn('Could not load terrain:', e);

@@ -12,6 +12,7 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import io.quarkmind.agent.AgentOrchestrator;
 import io.quarkmind.domain.Point2d;
@@ -319,6 +320,53 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    /**
+     * Terrain shading test: a HIGH ground tile must render with a brownish fill,
+     * not the bare canvas background.
+     *
+     * HIGH tiles (y >= 19) are drawn by loadTerrain() with colour 0x8B6914 (α=0.55)
+     * blended over the background #1a1a2e. The blended red channel is well above the
+     * background red value of 26, so asserting red > 50 is a robust threshold.
+     *
+     * Tile (5, 20) is HIGH. Canvas position uses the terrain Y formula:
+     *   canvasX = 5 * 20 = 100,  canvasY = (32 - 20 - 1) * 20 = 220
+     * Centre of that tile is sampled at (110, 230).
+     *
+     * Note: terrain is drawn at startup before the WebSocket connects, so waiting
+     * for wsConnected() is sufficient before screenshotting.
+     */
+    @Test
+    @Tag("browser")
+    void highGroundTileRendersWithBrownShading() throws Exception {
+        Page page = openPage();
+
+        // Wait for PixiJS to flush the frame before screenshotting
+        page.evaluate("() => new Promise(r => requestAnimationFrame(r))");
+
+        ElementHandle canvas = page.querySelector("canvas");
+        byte[] png = canvas.screenshot();
+        BufferedImage img = ImageIO.read(new ByteArrayInputStream(png));
+
+        // HIGH ground tile (5, 20): terrain Y formula uses (VIEWPORT_H - wy - 1)
+        // canvasX = 5 * 20 = 100, canvasY = (32 - 20 - 1) * 20 = 220
+        // Sample centre of tile: (110, 230)
+        int canvasX = 5 * SCALE;
+        int canvasY = (VIEWPORT_H - 20 - 1) * SCALE;
+        int sampleX = canvasX + SCALE / 2;
+        int sampleY = canvasY + SCALE / 2;
+
+        Color pixel = new Color(img.getRGB(sampleX, sampleY));
+
+        // HIGH ground (0x8B6914 α=0.55) blended over background gives red ≈ 88.
+        // Background red = 26. Assert > 50 to confirm shading, not bare background.
+        assertThat(pixel.getRed())
+            .as("HIGH ground tile at canvas (%d,%d) should be brownish, not background (red=26)",
+                sampleX, sampleY)
+            .isGreaterThan(50);
+
+        page.close();
+    }
+
     /** Extract minerals integer from "Minerals: 55   Gas: ..." HUD text. */
     private static int parseMinerals(String hud) {
         int idx = hud.indexOf("Minerals:");
@@ -511,6 +559,7 @@ class VisualizerRenderTest {
      * of renderer type and is immune to PixiJS API changes.
      */
     @Test
+    @Tag("browser")
     void nexusPixelIsNotBackground() throws Exception {
         Page page = openPage();
         observeAndWait(page, "building", 1);
@@ -541,6 +590,7 @@ class VisualizerRenderTest {
      * Probes are the entities most recently affected by the mask bug.
      */
     @Test
+    @Tag("browser")
     void probePixelIsNotBackground() throws Exception {
         Page page = openPage();
         observeAndWait(page, "unit", 12);
