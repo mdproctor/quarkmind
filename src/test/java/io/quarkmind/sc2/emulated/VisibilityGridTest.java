@@ -68,7 +68,7 @@ class VisibilityGridTest {
     // ---- MEMORY accumulation ----
 
     @Test
-    void visibleTileBecomesMemotyWhenObserverLeaves() {
+    void visibleTileBecomesMemoryWhenObserverLeaves() {
         Unit probe = unit(10, 10, UnitType.PROBE);
         grid.recompute(List.of(probe), List.of(), null);
         assertThat(grid.at(10, 10)).isEqualTo(TileVisibility.VISIBLE);
