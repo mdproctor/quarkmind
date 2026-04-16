@@ -1,61 +1,48 @@
-# Handover — 2026-04-15
+# Handover — 2026-04-16
 
-**Head commit:** `e9ca647` — docs: blog entry E5/E6/E7
-**Previous handover:** `git show HEAD~1:HANDOVER.md` | diff: `git diff HEAD~1 HEAD -- HANDOVER.md`
+**Head commit:** `1ca2233` — docs: session handover 2026-04-15
+**Previous handover:** `git show HEAD:HANDOVER.md` (that's the previous one — this session's changes are all uncommitted)
 
 ## What Changed This Session
 
-**E5 — Damage types, armour, Hardened Shield:**
-- `UnitAttribute` enum in `domain/`; 4 new `SC2Data` methods (`unitAttributes`, `armour`, `bonusDamageVs`, `hasHardenedShield`); corrected HP for 5 units (Immortal→200, Marine→45, Marauder→125, Roach→145, Hydralisk→90)
-- `DamageCalculator` in `sc2/emulated/` — stateless, independently tested
-- Issues #49–#53, milestone #1
+**Pathfinding bugs fixed (emulated game is now wallsafe):**
 
-**E6 — Enemy retreat & regroup:**
-- `EnemyAttackConfig` gains `retreatHealthPercent` + `retreatArmyPercent`; default 30/50
-- `EmulatedGame`: `retreatingUnits` set, `initialAttackSize`, `STAGING_POS` constant, `tickEnemyRetreat()` in tick loop
-- Arrival threshold `>= 0.1` (not 0.5) — floating-point boundary fix
-- Issues #54–#57, milestone #2
+- **A* `nearestWalkable` radius cap** — spiral search capped at `Math.max(width,height)=64`; target (224,224) needs radius 161. Fixed: clamp x/y to grid bounds before searching (`AStarPathfinder.java`).
+- **PathfindingMovement fallback** — empty path fell back to DirectMovement (through walls). Fixed: stay put when >1.5 tiles from target; direct movement only for final approach (<1.5 tiles).
+- **Physics wall enforcement** — independent layer in `EmulatedGame.enforceWall()`: every movement call checked against `WalkabilityGrid`; blocked positions trigger `movementStrategy.invalidatePath()` so A* recomputes next tick. Wired via `game.setWalkabilityGrid(grid)` in `EmulatedEngine.joinGame()`.
+- **Stop-to-fight** — enemies within attack range hold position instead of walking through friendlies.
+- **Root cause**: the unit going through the wall was `unit-200` — a scout probe sent by `DroolsScoutingTask` to `Point2d(224,224)` (real SC2 coords, outside the 64×64 emulated map). Not an enemy. Diagnosed via `grep` on profile-scoped file log.
 
-**E7 — Pathfinding:**
-- `WalkabilityGrid` + `AStarPathfinder` in `domain/` — reusable by real SC2 engine
-- Emulated map: 64×64, wall at y=18, gap at x=11–13
-- `MovementStrategy` interface + `DirectMovement` (default, all existing tests unchanged) + `PathfindingMovement` (per-unit A* queues)
-- `EmulatedTerrainResource`: `GET /qa/emulated/terrain` → sparse wall list
-- Visualizer: static terrain layer drawn once at startup
-- Issues #58–#64, milestone #3
+**Tests:** 363 → 368. New: `wallPhysicsBlocksUnitRegardlessOfMovementStrategy`, `enemyStopsToFightWhenInMeleeRange`, `enemyRespectsWallWithPathfinding`, `enemyMovesWhenNoFriendlyInRange`, `enemyUnitRendersAtCorrectCanvasPosition` (Playwright).
 
-**Also:** `%test.quarkus.http.test-port=0` fixes `DroolsScoutingRulesTest` port conflict; `IDEAS.md` created with E8 terrain height entry; 7 garden entries submitted.
+**CLAUDE.md:** added `setWalkabilityGrid` and `spawnEnemyUnit` to test helper lists.
 
-**Test count:** 363 passing, 0 failures.
+**Garden:** 4 entries submitted — A* radius cap gotcha, stop-to-fight test ordering gotcha, Quarkus dev-mode compile-at-startup gotcha, profile-scoped file logging technique.
+
+**Blog:** `docs/_posts/2026-04-16-mdp01-defending-the-wall.md`
 
 ## Immediate Next Step
 
-**E8: Terrain height, ramps, vision, miss chance** — parked in `IDEAS.md`. If proceeding, start brainstorming: extend `WalkabilityGrid` to `TerrainGrid` with high/low/wall values; ramp walkability direction rules; 25% miss chance for ranged attacks from low ground; visualizer height shading. `AStarPathfinder` is untouched.
+**E8: Terrain height, ramps, vision, miss chance** — parked in `IDEAS.md`. Extend `WalkabilityGrid` → `TerrainGrid` with high/low/wall values; ramp walkability direction rules; 25% miss chance for ranged attacks from low ground; visualizer height shading.
 
-**Or: TacticsTask extension** — `DroolsTacticsTask` spike exists (3 actions: MoveToEngage, Attack, Retreat). Future actions: Kite, Focus fire. Now that pathfinding exists, the retreat target in GOAP could be the actual base rather than MAP_CENTER.
-
-**Or: Real SC2 wiring** — `WalkabilityGrid.fromPathingGrid()` stub is ready; `ObservationTranslator` needs to call it from `StartRaw.getPathingGrid()`.
+**Or: TacticsTask extension** — GOAP has real pathfinding now; retreat target could be actual base rather than MAP_CENTER; Kite and Focus-fire actions possible.
 
 ## Open Questions / Blockers
 
-*Unchanged from previous — `git show HEAD~1:HANDOVER.md`* (SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays)
+*Unchanged — `git show HEAD:HANDOVER.md`* (SC2Engine.tick() ownership, ReplayEngine profile, 7 unparseable AI Arena replays, EmulatedGame growing)
 
 **New:**
-- `EmulatedGame` growing (420+ lines) — `tickEnemyRetreat()` and `tickEnemyStrategy()` could split to `EnemyAI` class if it continues growing
-- Shield regeneration not yet modelled (out-of-combat regen after ~10s in real SC2)
+- `DroolsScoutingTask` dispatches to SC2 map coords (224,224) — works now (clamped to 63,63) but scout goes to the far corner of the emulated map, which isn't meaningful. The scouting target should be configurable per-engine or the ScoutingTask should respect the actual map bounds.
 
 ## References
 
 | Context | Where |
 |---|---|
-| E5 spec | `docs/superpowers/specs/2026-04-15-e5-damage-types-armour-design.md` |
-| E6 spec | `docs/superpowers/specs/2026-04-15-e6-enemy-retreat-design.md` |
-| E7 spec | `docs/superpowers/specs/2026-04-15-e7-pathfinding-design.md` |
 | E8 idea | `IDEAS.md` |
-| Blog | `docs/_posts/2026-04-15-mdp01-armour-retreat-and-walls.md` |
-| Garden | `~/.hortora/garden/GARDEN.md` (7 entries submitted this session) |
-| Library research | `docs/library-research.md` |
+| Blog | `docs/_posts/2026-04-16-mdp01-defending-the-wall.md` |
+| Previous handover | `git show HEAD:HANDOVER.md` |
+| Garden entries | `~/.hortora/garden/java/GE-20260415-fb675d.md`, `GE-20260416-53d13c.md`, `quarkus/GE-20260416-1a2d0e.md`, `GE-20260416-99d4c6.md` |
 
 ## Environment
 
-*Unchanged — `git show HEAD~1:HANDOVER.md`*
+*Unchanged — `git show HEAD:HANDOVER.md`*

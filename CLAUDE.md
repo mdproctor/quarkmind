@@ -90,12 +90,14 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - `setEnemyStrategy(EnemyStrategy)` — sets the active enemy AI strategy for economy/attack tests
 - `enemyMinerals()` — returns current enemy mineral accumulator (int) for economy assertions
 - `enemyStagingSize()` — returns count of staged enemy units waiting to attack
+- `setWalkabilityGrid(WalkabilityGrid)` — activate the physics wall constraint for tests that verify wall enforcement (default null = no wall checking)
 
 **SimulatedGame test helpers** (public, usable from any test including `VisualizerRenderTest`):
 - `setUnitHealth(String tag, int health)` — inject low-health state for visualiser E2E tests
 - `removeUnit(String tag)` — simulate unit death for visualiser disappearance tests
 - `addStagedUnitForTesting(UnitType, Point2d)` — inject a staged enemy unit into `enemyStagingArea` snapshot (for VisualizerRenderTest)
 - `clearStagedUnitsForTesting()` — clear the staging area; also called by `reset()`
+- `spawnEnemyUnit(UnitType, Point2d)` — add an enemy to `enemyUnits` (for Playwright render tests)
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 

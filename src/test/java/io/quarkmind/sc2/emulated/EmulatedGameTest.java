@@ -183,9 +183,10 @@ class EmulatedGameTest {
 
     @Test
     void shieldsAbsorbDamageBeforeHp() {
-        // probe-0 at (9,9) with 20 shields. Enemy Zealot at (9.3,9) — within 0.5-tile melee range.
+        // probe-0 at (9,9) with 20 shields. Enemy Zealot at (9.0,9.3) — 0.3 tiles away, within melee range.
+        // probe-1 at (9.5,9) is 0.58 tiles away — outside melee range, so probe-0 is the sole target.
         // Zealot deals 8 dmg/attack → shields take hit first (20→12), HP unchanged.
-        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.0f, 9.3f));
         game.tick();
 
         Unit probe = game.snapshot().myUnits().stream()
@@ -196,8 +197,9 @@ class EmulatedGameTest {
 
     @Test
     void damageOverflowsFromShieldsToHp() {
-        // probe-0 with 3 shields. Zealot deals 8 dmg → 3 absorbed by shields, 5 overflow to HP (45→40).
-        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+        // probe-0 with 3 shields. Zealot at (9.0,9.3) — probe-0 is nearest target (0.3 tiles).
+        // Zealot deals 8 dmg → 3 absorbed by shields, 5 overflow to HP (45→40).
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.0f, 9.3f));
         game.setShieldsForTesting("probe-0", 3);
         game.tick();
 
@@ -210,8 +212,9 @@ class EmulatedGameTest {
 
     @Test
     void unitDiesWhenHpReachesZero() {
-        // probe-0 at 3 HP, 0 shields. Zealot deals 8 dmg → HP goes to -5 → unit removed.
-        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+        // probe-0 at 3 HP, 0 shields. Zealot at (9.0,9.3) — probe-0 nearest (0.3 tiles).
+        // Zealot deals 8 dmg → HP goes to -5 → unit removed.
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.0f, 9.3f));
         game.setHealthForTesting("probe-0", 3);
         game.setShieldsForTesting("probe-0", 0);
         int before = game.snapshot().myUnits().size();
@@ -342,8 +345,9 @@ class EmulatedGameTest {
 
     @Test
     void enemyAlwaysAttacksWithCooldown() {
-        // Enemy Zealot (cooldown=2) attacks probe every 2 ticks without AttackIntent
-        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.3f, 9));
+        // Enemy Zealot (cooldown=2) attacks probe every 2 ticks without AttackIntent.
+        // Placed at (9.0,9.3) so probe-0 is the nearest target (0.3 tiles, probe-1 is 0.58 — out of range).
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.0f, 9.3f));
 
         game.tick(); // tick 1: Zealot fires (cooldown 0→2), probe shields: 20→12
         int shieldsAfterTick1 = game.snapshot().myUnits().stream()
@@ -842,6 +846,83 @@ class EmulatedGameTest {
                     }
                 });
         }
+    }
+
+    @Test
+    void wallPhysicsBlocksUnitRegardlessOfMovementStrategy() {
+        // Hard physics rule: even if the movement strategy returns a wall tile position,
+        // enforceWall() must reject it and hold the unit. This is independent of pathfinding.
+        // Place a unit adjacent to the wall (y=17.6) heading toward a target above it (y=22).
+        // DirectMovement would step into y=18 (wall tile) — the physics constraint must block it.
+        // x=20 is a wall tile at y=18 (gap is only x=11-13). x=12 would be the gap — use x=20.
+        game.setWalkabilityGrid(WalkabilityGrid.emulatedMap());
+        // DirectMovement is the default — it ignores walls
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(20f, 17.6f));
+        game.applyIntent(new MoveIntent(tag, new Point2d(20f, 22f)));
+
+        game.tick(); // DirectMovement would move to (12, 18.1) — a wall tile
+
+        Unit unit = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow();
+        // Physics must have held the unit below the wall — y must remain < 18
+        assertThat(unit.position().y())
+            .as("unit must not enter wall tile at y=18 — physics constraint must hold it")
+            .isLessThan(18f);
+    }
+
+    @Test
+    void enemyRespectsWallWithPathfinding() {
+        // Wall at y=18, gap at x=11-13. Enemy spawns at (26,26) and heads to nexus (8,8).
+        // DirectMovement would cross y=18 at x≈26 (wall tile) — the live bug.
+        // With PathfindingMovement the unit must stay within x=[11,13] when at y=18.
+        game.setMovementStrategy(new PathfindingMovement(WalkabilityGrid.emulatedMap()));
+        game.configureWave(1, 1, UnitType.ZEALOT);
+        game.reset();
+        game.tick(); // frame 1: wave spawns at (26,26)
+        for (int i = 0; i < 80; i++) {
+            game.tick();
+            game.snapshot().enemyUnits().stream().findFirst().ifPresent(u -> {
+                int tileX = (int) u.position().x();
+                int tileY = (int) u.position().y();
+                if (tileY == 18) {
+                    assertThat(tileX)
+                        .as("enemy at y=18 must be in chokepoint gap x=[11,13], was x=%d", tileX)
+                        .isBetween(11, 13);
+                }
+            });
+        }
+    }
+
+    @Test
+    void enemyStopsToFightWhenInMeleeRange() {
+        // Zealot melee range = 0.5 tiles. Placed at (9.0,9.3) — probe-0 at distance 0.3 (in range),
+        // probe-1 at distance 0.58 (out of range). Enemy must NOT advance while probe-0 is within range.
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(9.0f, 9.3f));
+        Point2d before = game.snapshot().enemyUnits().get(0).position();
+
+        game.tick();
+
+        Point2d after = game.snapshot().enemyUnits().get(0).position();
+        assertThat(after.x()).as("enemy x must not change — stopped to fight").isCloseTo(before.x(), within(0.01f));
+        assertThat(after.y()).as("enemy y must not change — stopped to fight").isCloseTo(before.y(), within(0.01f));
+        // And the probe took damage from the stationary attacker
+        Unit probe = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals("probe-0")).findFirst().orElseThrow();
+        assertThat(probe.shields()).as("probe-0 shields must drop — took combat damage").isLessThan(SC2Data.maxShields(UnitType.PROBE));
+    }
+
+    @Test
+    void enemyMovesWhenNoFriendlyInRange() {
+        // Zealot spawned at (20,20) — nearest probe is at (14.5,9), distance ≈12 tiles > 0.5 range.
+        // No friendly in melee range → enemy must advance toward nexus each tick.
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(20f, 20f));
+        Point2d before = game.snapshot().enemyUnits().get(0).position();
+
+        game.tick();
+
+        Point2d after = game.snapshot().enemyUnits().get(0).position();
+        assertThat(after.x()).as("enemy must move toward nexus (x decreases)").isLessThan(before.x());
+        assertThat(after.y()).as("enemy must move toward nexus (y decreases)").isLessThan(before.y());
     }
 
     @Test

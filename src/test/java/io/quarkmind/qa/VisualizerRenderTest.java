@@ -285,6 +285,40 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    /**
+     * Enemy render test: an enemy unit spawned into game state must appear as a sprite
+     * at the correct canvas position (coordinate transform is the same as friendlies).
+     * This is the only end-to-end test for the enemy rendering layer — previously untested.
+     */
+    @Test
+    void enemyUnitRendersAtCorrectCanvasPosition() {
+        Page page = openPage();
+
+        simulatedGame.spawnEnemyUnit(UnitType.ZEALOT, new Point2d(14, 14));
+        engine.observe();
+
+        page.waitForFunction(
+            "() => window.__test.spriteCount('enemy') >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.spriteCount('enemy')")).intValue();
+        assertThat(count).as("one enemy Zealot must render").isEqualTo(1);
+
+        // Sprite key format: "enemy:<tag>" — the first spawned enemy gets tag "enemy-200"
+        @SuppressWarnings("unchecked")
+        Map<String, Object> sprite = (Map<String, Object>) page.evaluate(
+            "() => window.__test.sprite('enemy:enemy-200')");
+        assertThat(sprite).as("enemy sprite must exist by tag").isNotNull();
+        assertThat(((Number) sprite.get("x")).intValue())
+            .as("enemy canvas X (tile 14 * 20 = 280)")
+            .isEqualTo(canvasX(14));
+        assertThat(((Number) sprite.get("y")).intValue())
+            .as("enemy canvas Y ((32-14) * 20 = 360)")
+            .isEqualTo(canvasY(14));
+
+        page.close();
+    }
+
     /** Extract minerals integer from "Minerals: 55   Gas: ..." HUD text. */
     private static int parseMinerals(String hud) {
         int idx = hud.indexOf("Minerals:");

@@ -61,6 +61,11 @@ public final class AStarPathfinder {
     }
 
     private static int[] nearestWalkable(WalkabilityGrid grid, int x, int y) {
+        // Clamp out-of-bounds coordinates to grid edge before spiral search.
+        // Without this, a target like (224, 224) on a 64×64 grid would require
+        // a search radius of 160+ to reach valid tiles — far beyond the loop limit.
+        x = Math.max(0, Math.min(grid.width()  - 1, x));
+        y = Math.max(0, Math.min(grid.height() - 1, y));
         if (grid.isWalkable(x, y)) return new int[]{x, y};
         for (int r = 1; r <= Math.max(grid.width(), grid.height()); r++) {
             for (int dx = -r; dx <= r; dx++) {

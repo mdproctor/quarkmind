@@ -52,6 +52,9 @@ public class EmulatedGame {
     private int nextTag = 200;
     private final DamageCalculator damageCalculator = new DamageCalculator();
     private MovementStrategy movementStrategy = new DirectMovement();
+    // E7: hard physics constraint — no unit may land on a wall tile regardless of movement strategy.
+    // Null in mock/test contexts where no terrain exists.
+    private WalkabilityGrid walkabilityGrid = null;
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
@@ -109,11 +112,31 @@ public class EmulatedGame {
         tickEnemyStrategy();
     }
 
+    /**
+     * Hard physics wall constraint — applied after every movement strategy call.
+     * If the proposed position lands on a wall tile, the unit stays put.
+     * This is independent of pathfinding and acts as an inviolable backstop.
+     */
+    private Point2d enforceWall(String unitTag, Point2d proposed, Point2d current) {
+        if (walkabilityGrid == null) return proposed;
+        int tx = (int) proposed.x();
+        int ty = (int) proposed.y();
+        if (!walkabilityGrid.isWalkable(tx, ty)) {
+            log.warnf("[PHYSICS] Wall collision blocked %s at (%.2f,%.2f) tile(%d,%d) — invalidating path",
+                unitTag, proposed.x(), proposed.y(), tx, ty);
+            movementStrategy.invalidatePath(unitTag); // repath next tick from current position
+            return current;
+        }
+        return proposed;
+    }
+
     private void moveFriendlyUnits() {
         myUnits.replaceAll(u -> {
             Point2d target = unitTargets.get(u.tag());
             if (target == null) return u;
-            Point2d newPos = movementStrategy.advance(u.tag(), u.position(), target, unitSpeed);
+            Point2d newPos = enforceWall(u.tag(),
+                movementStrategy.advance(u.tag(), u.position(), target, unitSpeed),
+                u.position());
             if (distance(newPos, target) < 0.2) unitTargets.remove(u.tag());
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
                             u.shields(), u.maxShields());
@@ -122,8 +145,24 @@ public class EmulatedGame {
 
     private void moveEnemyUnits() {
         enemyUnits.replaceAll(u -> {
+            // Non-retreating units stop to fight when a friendly is within attack range.
+            // Retreating units always move — they are disengaging, not attacking.
+            if (!retreatingUnits.contains(u.tag()) &&
+                    nearestInRange(u.position(), myUnits, SC2Data.attackRange(u.type())).isPresent()) {
+                return u; // stay and fight — resolveCombat() handles the attack this tick
+            }
             Point2d target = enemyTargets.getOrDefault(u.tag(), NEXUS_POS);
-            Point2d newPos = movementStrategy.advance(u.tag(), u.position(), target, unitSpeed);
+            Point2d newPos = enforceWall(u.tag(),
+                movementStrategy.advance(u.tag(), u.position(), target, unitSpeed),
+                u.position());
+            // Log when a unit crosses the wall row (y transitions through 18)
+            float prevY = u.position().y();
+            float nextY = newPos.y();
+            if ((prevY > 18f && nextY <= 18f) || (prevY >= 18f && nextY < 18f)) {
+                log.infof("[WALL-CROSS] %s crossed y=18: from (%.2f,%.2f) to (%.2f,%.2f) — x=%.2f %s",
+                    u.tag(), u.position().x(), prevY, newPos.x(), nextY, newPos.x(),
+                    (newPos.x() >= 11f && newPos.x() <= 14f) ? "IN GAP ✓" : "THROUGH WALL ✗");
+            }
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
                             u.shields(), u.maxShields());
         });
@@ -515,4 +554,5 @@ public class EmulatedGame {
 
     /** Swap movement strategy — used by pathfinding tests. Default is DirectMovement. */
     void setMovementStrategy(MovementStrategy s) { this.movementStrategy = s; }
+    void setWalkabilityGrid(WalkabilityGrid g)   { this.walkabilityGrid  = g; }
 }
