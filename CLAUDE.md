@@ -77,8 +77,8 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 **Playwright render tests** (`@QuarkusTest` + `@Tag("browser")`, excluded from default surefire run — need Chromium installed):
 - `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, pixel sampling via `window.__test` API
 - Install Chromium once: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`
-- Run with: `mvn test -Pplaywright` (TODO: add playwright profile once Playwright tests are stable)
-- Currently excluded via `@Tag("benchmark")` exclusion (will get own tag/profile)
+- Run with: `mvn test -Pplaywright` (profile configured in pom.xml, runs `@Tag("browser")` tests)
+- Excluded from default surefire run via `excludedGroups=benchmark,browser`
 
 **WebSocket integration tests** (`@QuarkusTest`, run in normal suite):
 - `GameStateWebSocketTest` — connects via `java.net.http.WebSocket`, calls `engine.observe()` directly (not `gameTick()`) to avoid triggering async Flow economics which pollutes IntentQueue across tests

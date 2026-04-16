@@ -85,6 +85,7 @@ public class EmulatedGame {
         nextTag = 200;
         movementStrategy.reset();
         // pendingWaves intentionally NOT cleared — configured before reset() via configureWave()
+        // terrainGrid and random intentionally NOT cleared — set by EmulatedEngine before reset(), persist across resets
 
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
             myUnits.add(new Unit("probe-" + i, UnitType.PROBE,
