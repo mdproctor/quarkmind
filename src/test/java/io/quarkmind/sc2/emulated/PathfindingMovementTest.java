@@ -7,10 +7,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class PathfindingMovementTest {
 
-    private WalkabilityGrid open() {
-        boolean[][] g = new boolean[32][32];
-        for (boolean[] col : g) Arrays.fill(col, true);
-        return new WalkabilityGrid(32, 32, g);
+    private TerrainGrid open() {
+        TerrainGrid.Height[][] g = new TerrainGrid.Height[32][32];
+        for (TerrainGrid.Height[] col : g) Arrays.fill(col, TerrainGrid.Height.LOW);
+        return new TerrainGrid(32, 32, g);
     }
 
     @Test void unitMovesTowardFirstWaypoint() {
@@ -57,10 +57,10 @@ class PathfindingMovementTest {
     }
 
     @Test void unreachableTargetFallsBackToStepToward() {
-        boolean[][] g = new boolean[10][10];
-        for (boolean[] col : g) Arrays.fill(col, true);
-        for (int y = 0; y < 10; y++) g[5][y] = false; // vertical wall — right side unreachable
-        PathfindingMovement pm = new PathfindingMovement(new WalkabilityGrid(10, 10, g));
+        TerrainGrid.Height[][] g = new TerrainGrid.Height[10][10];
+        for (TerrainGrid.Height[] col : g) Arrays.fill(col, TerrainGrid.Height.LOW);
+        for (int y = 0; y < 10; y++) g[5][y] = TerrainGrid.Height.WALL; // vertical wall — right side unreachable
+        PathfindingMovement pm = new PathfindingMovement(new TerrainGrid(10, 10, g));
         Point2d result = pm.advance("u1", new Point2d(2f, 5f), new Point2d(8f, 5f), 0.5);
         assertThat(result).isNotNull(); // must not throw
     }

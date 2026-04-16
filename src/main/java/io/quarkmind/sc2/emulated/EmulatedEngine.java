@@ -5,7 +5,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import io.quarkmind.domain.GameState;
 import io.quarkmind.domain.UnitType;
-import io.quarkmind.domain.WalkabilityGrid;
+import io.quarkmind.domain.TerrainGrid;
 import io.quarkmind.qa.EmulatedConfig;
 import io.quarkmind.sc2.IntentQueue;
 import io.quarkmind.sc2.SC2Engine;
@@ -52,9 +52,9 @@ public class EmulatedEngine implements SC2Engine {
             config.getWaveUnitCount(),
             UnitType.valueOf(config.getWaveUnitType()));
         // Wire pathfinding and the independent physics wall constraint
-        WalkabilityGrid grid = WalkabilityGrid.emulatedMap();
+        TerrainGrid grid = TerrainGrid.emulatedMap();
         game.setMovementStrategy(new PathfindingMovement(grid));
-        game.setWalkabilityGrid(grid);
+        game.setTerrainGrid(grid);
         log.info("[EMULATED] PathfindingMovement wired — wall y=18, gap x=11-13");
         log.info("[EMULATED] Wall physics constraint active — no unit may land on a wall tile");
         game.reset();

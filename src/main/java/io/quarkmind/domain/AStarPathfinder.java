@@ -15,7 +15,7 @@ public final class AStarPathfinder {
     };
     private static final double DIAG = Math.sqrt(2);
 
-    public List<Point2d> findPath(WalkabilityGrid grid, Point2d from, Point2d to) {
+    public List<Point2d> findPath(TerrainGrid grid, Point2d from, Point2d to) {
         int[] start = nearestWalkable(grid, (int) from.x(), (int) from.y());
         int[] goal  = nearestWalkable(grid, (int) to.x(),   (int) to.y());
         final int sx = start[0], sy = start[1];
@@ -60,7 +60,7 @@ public final class AStarPathfinder {
         return List.of();
     }
 
-    private static int[] nearestWalkable(WalkabilityGrid grid, int x, int y) {
+    private static int[] nearestWalkable(TerrainGrid grid, int x, int y) {
         // Clamp out-of-bounds coordinates to grid edge before spiral search.
         // Without this, a target like (224, 224) on a 64×64 grid would require
         // a search radius of 160+ to reach valid tiles — far beyond the loop limit.

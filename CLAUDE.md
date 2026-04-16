@@ -90,7 +90,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - `setEnemyStrategy(EnemyStrategy)` — sets the active enemy AI strategy for economy/attack tests
 - `enemyMinerals()` — returns current enemy mineral accumulator (int) for economy assertions
 - `enemyStagingSize()` — returns count of staged enemy units waiting to attack
-- `setWalkabilityGrid(WalkabilityGrid)` — activate the physics wall constraint for tests that verify wall enforcement (default null = no wall checking)
+- `setTerrainGrid(TerrainGrid)` — activate the physics wall constraint for tests that verify wall enforcement (default null = no wall checking)
 
 **SimulatedGame test helpers** (public, usable from any test including `VisualizerRenderTest`):
 - `setUnitHealth(String tag, int health)` — inject low-health state for visualiser E2E tests

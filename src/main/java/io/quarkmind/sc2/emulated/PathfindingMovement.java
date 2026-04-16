@@ -2,7 +2,7 @@ package io.quarkmind.sc2.emulated;
 
 import io.quarkmind.domain.AStarPathfinder;
 import io.quarkmind.domain.Point2d;
-import io.quarkmind.domain.WalkabilityGrid;
+import io.quarkmind.domain.TerrainGrid;
 import org.jboss.logging.Logger;
 
 import java.util.*;
@@ -12,12 +12,12 @@ public class PathfindingMovement implements MovementStrategy {
 
     private static final Logger log = Logger.getLogger(PathfindingMovement.class);
 
-    private final WalkabilityGrid grid;
+    private final TerrainGrid grid;
     private final AStarPathfinder pathfinder = new AStarPathfinder();
     private final Map<String, Deque<Point2d>> waypoints   = new HashMap<>();
     private final Map<String, Point2d>        lastTargets = new HashMap<>();
 
-    public PathfindingMovement(WalkabilityGrid grid) { this.grid = grid; }
+    public PathfindingMovement(TerrainGrid grid) { this.grid = grid; }
 
     @Override
     public Point2d advance(String unitTag, Point2d current, Point2d target, double speed) {

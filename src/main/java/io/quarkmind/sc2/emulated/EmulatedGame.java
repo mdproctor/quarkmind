@@ -54,7 +54,7 @@ public class EmulatedGame {
     private MovementStrategy movementStrategy = new DirectMovement();
     // E7: hard physics constraint — no unit may land on a wall tile regardless of movement strategy.
     // Null in mock/test contexts where no terrain exists.
-    private WalkabilityGrid walkabilityGrid = null;
+    private TerrainGrid terrainGrid = null;
 
     private record PendingCompletion(long completesAtTick, Runnable action) {}
 
@@ -118,10 +118,10 @@ public class EmulatedGame {
      * This is independent of pathfinding and acts as an inviolable backstop.
      */
     private Point2d enforceWall(String unitTag, Point2d proposed, Point2d current) {
-        if (walkabilityGrid == null) return proposed;
+        if (terrainGrid == null) return proposed;
         int tx = (int) proposed.x();
         int ty = (int) proposed.y();
-        if (!walkabilityGrid.isWalkable(tx, ty)) {
+        if (!terrainGrid.isWalkable(tx, ty)) {
             log.warnf("[PHYSICS] Wall collision blocked %s at (%.2f,%.2f) tile(%d,%d) — invalidating path",
                 unitTag, proposed.x(), proposed.y(), tx, ty);
             movementStrategy.invalidatePath(unitTag); // repath next tick from current position
@@ -554,5 +554,5 @@ public class EmulatedGame {
 
     /** Swap movement strategy — used by pathfinding tests. Default is DirectMovement. */
     void setMovementStrategy(MovementStrategy s) { this.movementStrategy = s; }
-    void setWalkabilityGrid(WalkabilityGrid g)   { this.walkabilityGrid  = g; }
+    void setTerrainGrid(TerrainGrid g) { this.terrainGrid = g; }
 }

@@ -817,7 +817,7 @@ class EmulatedGameTest {
 
     @Test
     void withPathfinding_unitEventuallyReachesTargetAcrossWall() {
-        game.setMovementStrategy(new PathfindingMovement(WalkabilityGrid.emulatedMap()));
+        game.setMovementStrategy(new PathfindingMovement(TerrainGrid.emulatedMap()));
         // From nexus side (8,8) to staging side (12,22) — must cross wall at y=18 via chokepoint
         String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 8));
         game.applyIntent(new MoveIntent(tag, new Point2d(12, 22)));
@@ -830,7 +830,7 @@ class EmulatedGameTest {
 
     @Test
     void withPathfinding_unitDoesNotCrossWallOutsideChokepoint() {
-        game.setMovementStrategy(new PathfindingMovement(WalkabilityGrid.emulatedMap()));
+        game.setMovementStrategy(new PathfindingMovement(TerrainGrid.emulatedMap()));
         String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 8));
         game.applyIntent(new MoveIntent(tag, new Point2d(12, 22)));
         for (int i = 0; i < 80; i++) {
@@ -855,7 +855,7 @@ class EmulatedGameTest {
         // Place a unit adjacent to the wall (y=17.6) heading toward a target above it (y=22).
         // DirectMovement would step into y=18 (wall tile) — the physics constraint must block it.
         // x=20 is a wall tile at y=18 (gap is only x=11-13). x=12 would be the gap — use x=20.
-        game.setWalkabilityGrid(WalkabilityGrid.emulatedMap());
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
         // DirectMovement is the default — it ignores walls
         String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(20f, 17.6f));
         game.applyIntent(new MoveIntent(tag, new Point2d(20f, 22f)));
@@ -875,7 +875,7 @@ class EmulatedGameTest {
         // Wall at y=18, gap at x=11-13. Enemy spawns at (26,26) and heads to nexus (8,8).
         // DirectMovement would cross y=18 at x≈26 (wall tile) — the live bug.
         // With PathfindingMovement the unit must stay within x=[11,13] when at y=18.
-        game.setMovementStrategy(new PathfindingMovement(WalkabilityGrid.emulatedMap()));
+        game.setMovementStrategy(new PathfindingMovement(TerrainGrid.emulatedMap()));
         game.configureWave(1, 1, UnitType.ZEALOT);
         game.reset();
         game.tick(); // frame 1: wave spawns at (26,26)

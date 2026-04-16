@@ -133,7 +133,20 @@
       "Bash(find /Users/mdproctor/claude/starcraft/src/main/resources/io/quarkmind -name '*.drl' -exec sed -i '' 's/import org\\\\.acme\\\\.starcraft\\\\./import io.quarkmind./g' '{}' ';')",
       "Bash(find /Users/mdproctor/claude/starcraft/src/main/java/io/quarkmind /Users/mdproctor/claude/starcraft/src/test/java/io/quarkmind -name '*.java' -exec sed -i '' 's/org\\\\.acme\\\\.starcraft/io.quarkmind/g' '{}' ';')",
       "Bash(grep:*)",
-      "Bash(gh repo:*)"
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "mcp__intellij-index__ide_refactor_rename",
+      "mcp__intellij__replace_text_in_file",
+      "Bash(echo \"Exit code: $?\")",
+      "Bash(node *)",
+      "Bash(pkill -f \"quarkmind\")",
+      "Bash(lsof -ti:8080)",
+      "Bash(xargs kill *)",
+      "Bash(lsof -i:8080)",
+      "Bash(break)",
+      "Read(//Users/mdproctor/claude-workspace/writing-styles/**)",
+      "Read(//Users/mdproctor/claude/claude-workspace/**)",
+      "Bash(ls /Users/mdproctor/claude/quarkmind/docs/_posts/2026-04-16-mdp*.md)"
     ],
     "additionalDirectories": [
       "/Users/mdproctor/claude/scelight"

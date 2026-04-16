@@ -1,6 +1,6 @@
 package io.quarkmind.qa;
 
-import io.quarkmind.domain.WalkabilityGrid;
+import io.quarkmind.domain.TerrainGrid;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -20,7 +20,7 @@ public class EmulatedTerrainResource {
 
     @GET
     public TerrainResponse getTerrain() {
-        WalkabilityGrid grid = WalkabilityGrid.emulatedMap();
+        TerrainGrid grid = TerrainGrid.emulatedMap();
         List<int[]> walls = new ArrayList<>();
         for (int x = 0; x < grid.width(); x++) {
             for (int y = 0; y < grid.height(); y++) {

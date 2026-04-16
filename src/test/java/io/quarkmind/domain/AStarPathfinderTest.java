@@ -9,19 +9,19 @@ class AStarPathfinderTest {
 
     private final AStarPathfinder pf = new AStarPathfinder();
 
-    private WalkabilityGrid open(int w, int h) {
-        boolean[][] g = new boolean[w][h];
-        for (boolean[] col : g) Arrays.fill(col, true);
-        return new WalkabilityGrid(w, h, g);
+    private TerrainGrid open(int w, int h) {
+        TerrainGrid.Height[][] g = new TerrainGrid.Height[w][h];
+        for (TerrainGrid.Height[] col : g) Arrays.fill(col, TerrainGrid.Height.LOW);
+        return new TerrainGrid(w, h, g);
     }
 
-    private WalkabilityGrid withWall(int w, int h, int wallY, int gapX) {
-        boolean[][] g = new boolean[w][h];
-        for (boolean[] col : g) Arrays.fill(col, true);
+    private TerrainGrid withWall(int w, int h, int wallY, int gapX) {
+        TerrainGrid.Height[][] g = new TerrainGrid.Height[w][h];
+        for (TerrainGrid.Height[] col : g) Arrays.fill(col, TerrainGrid.Height.LOW);
         for (int x = 0; x < w; x++) {
-            if (x != gapX) g[x][wallY] = false;
+            if (x != gapX) g[x][wallY] = TerrainGrid.Height.WALL;
         }
-        return new WalkabilityGrid(w, h, g);
+        return new TerrainGrid(w, h, g);
     }
 
     @Test void pathOnOpenMap_isNonEmpty() {
@@ -30,7 +30,7 @@ class AStarPathfinderTest {
     }
 
     @Test void pathOnOpenMap_allWaypointsWalkable() {
-        WalkabilityGrid g = open(10, 10);
+        TerrainGrid g = open(10, 10);
         List<Point2d> path = pf.findPath(g, new Point2d(0, 0), new Point2d(9, 9));
         for (Point2d wp : path) {
             assertThat(g.isWalkable((int) wp.x(), (int) wp.y()))
@@ -46,7 +46,7 @@ class AStarPathfinderTest {
     }
 
     @Test void pathAroundWall_doesNotCrossWall() {
-        WalkabilityGrid g = withWall(10, 10, 5, 5);
+        TerrainGrid g = withWall(10, 10, 5, 5);
         List<Point2d> path = pf.findPath(g, new Point2d(2, 2), new Point2d(7, 8));
         for (Point2d wp : path) {
             int tx = (int) wp.x();
@@ -58,7 +58,7 @@ class AStarPathfinderTest {
     }
 
     @Test void pathAroundWall_reachesGoal() {
-        WalkabilityGrid g = withWall(10, 10, 5, 5);
+        TerrainGrid g = withWall(10, 10, 5, 5);
         List<Point2d> path = pf.findPath(g, new Point2d(2, 2), new Point2d(7, 8));
         assertThat(path).isNotEmpty();
         Point2d last = path.get(path.size() - 1);
@@ -71,21 +71,21 @@ class AStarPathfinderTest {
     }
 
     @Test void unreachableGoal_returnsEmpty() {
-        boolean[][] g = new boolean[10][10];
-        for (boolean[] col : g) Arrays.fill(col, true);
-        for (int y = 0; y < 10; y++) g[5][y] = false;
-        WalkabilityGrid blocked = new WalkabilityGrid(10, 10, g);
+        TerrainGrid.Height[][] g = new TerrainGrid.Height[10][10];
+        for (TerrainGrid.Height[] col : g) Arrays.fill(col, TerrainGrid.Height.LOW);
+        for (int y = 0; y < 10; y++) g[5][y] = TerrainGrid.Height.WALL;
+        TerrainGrid blocked = new TerrainGrid(10, 10, g);
         assertThat(pf.findPath(blocked, new Point2d(2, 5), new Point2d(8, 5))).isEmpty();
     }
 
     @Test void pathOnEmulatedMap_nexusToStaging_isNonEmpty() {
-        WalkabilityGrid g = WalkabilityGrid.emulatedMap();
+        TerrainGrid g = TerrainGrid.emulatedMap();
         List<Point2d> path = pf.findPath(g, new Point2d(8, 8), new Point2d(26, 26));
         assertThat(path).isNotEmpty();
     }
 
     @Test void pathOnEmulatedMap_passesNearChokepoint() {
-        WalkabilityGrid g = WalkabilityGrid.emulatedMap();
+        TerrainGrid g = TerrainGrid.emulatedMap();
         List<Point2d> path = pf.findPath(g, new Point2d(8, 8), new Point2d(26, 26));
         for (Point2d wp : path) {
             int tx = (int) wp.x();
@@ -97,7 +97,7 @@ class AStarPathfinderTest {
     }
 
     @Test void pathOnEmulatedMap_stagingToNexus() {
-        WalkabilityGrid g = WalkabilityGrid.emulatedMap();
+        TerrainGrid g = TerrainGrid.emulatedMap();
         List<Point2d> path = pf.findPath(g, new Point2d(26, 26), new Point2d(8, 8));
         assertThat(path).isNotEmpty();
         for (Point2d wp : path) {
