@@ -8,6 +8,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import io.quarkmind.domain.GameState;
 import io.quarkmind.sc2.SC2Engine;
+import io.quarkmind.sc2.emulated.VisibilityHolder;
 import org.jboss.logging.Logger;
 
 import java.util.Set;
@@ -21,6 +22,7 @@ public class GameStateBroadcaster {
 
     @Inject SC2Engine engine;
     @Inject ObjectMapper objectMapper;
+    @Inject VisibilityHolder visibilityHolder;
 
     private final Set<WebSocketConnection> sessions = new CopyOnWriteArraySet<>();
 
@@ -43,7 +45,9 @@ public class GameStateBroadcaster {
 
     /** Package-private for testing — pure serialisation, no I/O. */
     String toJson(GameState state) throws Exception {
-        return objectMapper.writeValueAsString(state);
+        var vg  = visibilityHolder != null ? visibilityHolder.get() : null;
+        var vis = vg != null ? vg.encode() : null;
+        return objectMapper.writeValueAsString(new GameStateBroadcast(state, vis));
     }
 
     private void onFrame(GameState state) {

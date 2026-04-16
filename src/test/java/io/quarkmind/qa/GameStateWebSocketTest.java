@@ -214,6 +214,41 @@ class GameStateWebSocketTest {
         ws.abort();
     }
 
+    @Test
+    void broadcastEnvelopeHasStateField() throws Exception {
+        var received = new LinkedBlockingQueue<String>(10);
+        WebSocket ws = connect(received);
+        ws.request(1);
+
+        engine.observe();
+        String json = poll(received);
+        assertThat(json).isNotNull();
+
+        // New envelope: {"state":{...},"visibility":...}
+        assertThat(json).contains("\"state\"");
+        // All game state fields are nested under "state"
+        assertThat(json).contains("\"minerals\"");
+        assertThat(json).contains("\"myUnits\"");
+
+        ws.abort();
+    }
+
+    @Test
+    void broadcastEnvelopeHasVisibilityField() throws Exception {
+        var received = new LinkedBlockingQueue<String>(10);
+        WebSocket ws = connect(received);
+        ws.request(1);
+
+        engine.observe();
+        String json = poll(received);
+        assertThat(json).isNotNull();
+
+        // visibility field present (null in mock profile, string in emulated)
+        assertThat(json).contains("\"visibility\"");
+
+        ws.abort();
+    }
+
     private static int extractInt(String json, String key) {
         int idx = json.indexOf(key);
         assertThat(idx).as("Key %s not found in JSON", key).isGreaterThanOrEqualTo(0);
