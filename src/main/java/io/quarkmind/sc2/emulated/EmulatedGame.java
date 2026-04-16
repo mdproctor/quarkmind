@@ -109,6 +109,8 @@ public class EmulatedGame {
         gameFrame++;
         mineralAccumulator += miningProbes * SC2Data.MINERALS_PER_PROBE_PER_TICK;
         moveFriendlyUnits();
+        // Recompute after movement, before combat: a unit that dies this tick still
+        // provided vision for this frame — correct SC2 behaviour.
         visibility.recompute(myUnits, myBuildings, terrainGrid);
         moveEnemyUnits();
         resolveCombat();
@@ -486,6 +488,10 @@ public class EmulatedGame {
     public GameState snapshot() {
         // Fog filtering is only active when terrain is configured.
         // Without terrain (mock/test contexts) all enemies are visible as before.
+        // Fog gated on terrainGrid: recompute(null terrain) treats all tiles as LOW and
+        // produces selective visibility (only tiles within probe range are VISIBLE), which
+        // would make distant enemies invisible in no-terrain test contexts. When no terrain
+        // is configured, return all enemies as pre-fog behaviour.
         if (terrainGrid != null) {
             List<Unit> visibleEnemies = enemyUnits.stream()
                 .filter(u -> visibility.isVisible(u.position()))
@@ -503,7 +509,7 @@ public class EmulatedGame {
                 gameFrame);
         }
         return new GameState(
-            (int) mineralAccumulator,
+            (int) mineralAccumulator, // floor: fractional minerals accumulate silently
             vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings),
             List.copyOf(enemyUnits),
