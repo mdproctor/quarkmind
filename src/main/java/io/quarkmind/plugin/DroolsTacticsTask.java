@@ -19,6 +19,7 @@ import org.drools.ruleunits.api.RuleUnitInstance;
 import org.jboss.logging.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Drools-backed GOAP {@link TacticsTask} — third R&D integration.
@@ -39,6 +40,7 @@ import java.util.*;
 public class DroolsTacticsTask implements TacticsTask {
 
     static final Point2d MAP_CENTER   = new Point2d(64, 64);
+    static final double KITE_STEP = 1.0; // tiles per kite step
 
     private static final Map<String, GoapAction> ACTION_TEMPLATES = Map.of(
         "RETREAT",        new GoapAction("RETREAT",
@@ -143,6 +145,26 @@ public class DroolsTacticsTask implements TacticsTask {
     static Optional<Unit> selectFocusTarget(List<Unit> enemies) {
         return enemies.stream()
             .min(Comparator.comparingInt(e -> e.health() + e.shields()));
+    }
+
+    static Set<String> computeOnCooldownTags(List<Unit> army) {
+        return army.stream()
+            .filter(u -> u.weaponCooldownTicks() > 0)
+            .map(Unit::tag)
+            .collect(Collectors.toSet());
+    }
+
+    static Point2d kiteRetreatTarget(Point2d unitPos, List<Unit> enemies) {
+        Unit nearest = enemies.stream()
+            .min(Comparator.comparingDouble(e -> distance(unitPos, e.position())))
+            .orElseThrow();
+        double dx = unitPos.x() - nearest.position().x();
+        double dy = unitPos.y() - nearest.position().y();
+        double len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 0.001) return unitPos; // degenerate: unit on top of enemy
+        return new Point2d(
+            (float)(unitPos.x() + dx / len * KITE_STEP),
+            (float)(unitPos.y() + dy / len * KITE_STEP));
     }
 
     private TacticsRuleUnit buildRuleUnit(List<Unit> army, List<Unit> enemies,

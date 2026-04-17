@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 class DroolsTacticsTaskTest {
 
@@ -90,5 +91,66 @@ class DroolsTacticsTaskTest {
     @Test
     void selectFocusTarget_emptyList_returnsEmpty() {
         assertThat(DroolsTacticsTask.selectFocusTarget(List.of())).isEmpty();
+    }
+
+    // ---- computeOnCooldownTags ----
+
+    @Test
+    void computeOnCooldownTags_includesOnlyUnitsWithCooldown() {
+        Unit ready  = unit("s-ready",  UnitType.STALKER, new Point2d(10, 10), 0);
+        Unit kiting = unit("s-kiting", UnitType.STALKER, new Point2d(10, 10), 3);
+        Set<String> result = DroolsTacticsTask.computeOnCooldownTags(List.of(ready, kiting));
+        assertThat(result).containsOnly("s-kiting");
+    }
+
+    @Test
+    void computeOnCooldownTags_allReady_returnsEmpty() {
+        Unit r0 = unit("s-0", UnitType.STALKER, new Point2d(10,10), 0);
+        Unit r1 = unit("s-1", UnitType.STALKER, new Point2d(10,10), 0);
+        assertThat(DroolsTacticsTask.computeOnCooldownTags(List.of(r0, r1))).isEmpty();
+    }
+
+    // ---- kiteRetreatTarget ----
+
+    @Test
+    void kiteRetreatTarget_movesAwayOnYAxis() {
+        // Unit at (10,10), enemy at (10,15): retreat direction is (0,-1), step 1.0 → (10,9)
+        Point2d unitPos = new Point2d(10, 10);
+        Unit e = enemy(new Point2d(10, 15));
+        Point2d retreat = DroolsTacticsTask.kiteRetreatTarget(unitPos, List.of(e));
+        assertThat(retreat.x()).isCloseTo(10f, within(0.01f));
+        assertThat(retreat.y()).isCloseTo(9f,  within(0.01f));
+    }
+
+    @Test
+    void kiteRetreatTarget_stepLengthEqualsKiteStep_diagonal() {
+        // Any direction: step vector must have magnitude == KITE_STEP
+        Point2d unitPos = new Point2d(10, 10);
+        Unit e = enemy(new Point2d(13, 14)); // diagonal enemy
+        Point2d retreat = DroolsTacticsTask.kiteRetreatTarget(unitPos, List.of(e));
+        double stepLen = Math.sqrt(
+            Math.pow(retreat.x() - unitPos.x(), 2) +
+            Math.pow(retreat.y() - unitPos.y(), 2));
+        assertThat(stepLen).isCloseTo(DroolsTacticsTask.KITE_STEP, within(0.01));
+    }
+
+    @Test
+    void kiteRetreatTarget_degenerate_unitOnEnemy_returnsUnitPos() {
+        Point2d unitPos = new Point2d(10, 10);
+        Unit e = enemy(new Point2d(10, 10)); // exactly overlapping
+        Point2d retreat = DroolsTacticsTask.kiteRetreatTarget(unitPos, List.of(e));
+        assertThat(retreat).isEqualTo(unitPos);
+    }
+
+    @Test
+    void kiteRetreatTarget_usesNearestEnemy() {
+        // Retreat should be away from the closest enemy, not the farther one
+        Point2d unitPos = new Point2d(10, 10);
+        Unit near = enemy(new Point2d(10, 12)); // 2 tiles away
+        Unit far  = enemy(new Point2d(10, 20)); // 10 tiles away — use a different tag
+        Unit farEnemy = new Unit("e-far", UnitType.ZEALOT, new Point2d(10, 20), 100, 100, 50, 50, 0);
+        Point2d retreat = DroolsTacticsTask.kiteRetreatTarget(unitPos, List.of(near, farEnemy));
+        // Away from near (10,12): direction (0,-1), step 1.0 → (10,9)
+        assertThat(retreat.y()).isCloseTo(9f, within(0.01f));
     }
 }
