@@ -147,8 +147,7 @@ class DroolsTacticsTaskTest {
         // Retreat should be away from the closest enemy, not the farther one
         Point2d unitPos = new Point2d(10, 10);
         Unit near = enemy(new Point2d(10, 12)); // 2 tiles away
-        Unit far  = enemy(new Point2d(10, 20)); // 10 tiles away — use a different tag
-        Unit farEnemy = new Unit("e-far", UnitType.ZEALOT, new Point2d(10, 20), 100, 100, 50, 50, 0);
+        Unit farEnemy = new Unit("e-far", UnitType.ZEALOT, new Point2d(10, 20), 100, 100, 50, 50, 0); // 10 tiles, distinct tag
         Point2d retreat = DroolsTacticsTask.kiteRetreatTarget(unitPos, List.of(near, farEnemy));
         // Away from near (10,12): direction (0,-1), step 1.0 → (10,9)
         assertThat(retreat.y()).isCloseTo(9f, within(0.01f));
