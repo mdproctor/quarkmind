@@ -1196,21 +1196,52 @@ class EmulatedGameTest {
 
     // ---- E10: Kiting physics ----
 
+    // At STALKER cooldown=1, kiting fires every other tick:
+    //   attack tick  → AttackIntent fires the weapon, cooldown set to 1
+    //   cooldown tick → MoveIntent(retreat) clears attackingUnits so no fire this tick;
+    //                   Stalker steps 0.5 tiles away from the approaching Zealot
+    //
+    // The baseline is "standing-still": same every-other-tick fire rate (achieved by
+    // issuing MoveIntent(own position) on cooldown ticks to also clear attackingUnits),
+    // but the Stalker never retreats.  This isolates the retreat movement as the only
+    // variable.
+    //
+    // Starting setup: Stalker at (8,12), Zealot at (8,16), distance = 4.0 tiles.
+    // Standing:  Zealot closes 0.5/tick (unimpeded) → melee contact in ~6 ticks.
+    // Kiting:    on cooldown ticks Stalker retreats 0.5 while Zealot advances 0.5 →
+    //            net separation unchanged that tick → melee contact doubled to ~12 ticks.
+    // Result: kiting Stalker receives far fewer Zealot attacks → significantly more HP.
+
     @Test
     void kiting_stallsEnemyContact_stalkerRetainsMoreHp() {
-        int standingHp = runStandingScenario();
+        int standingHp = runStandingStillScenario();
         int kitingHp   = runKitingScenario();
         assertThat(kitingHp).isGreaterThan(standingHp);
     }
 
-    private int runStandingScenario() {
+    /**
+     * Baseline: same every-other-tick fire rate as kiting, but Stalker never retreats.
+     * MoveIntent(own position) on cooldown ticks clears attackingUnits (matching kiting's
+     * fire parity).  The Zealot closes at full speed (0.5 tiles/tick) and reaches melee
+     * range sooner — generating more Zealot attacks before the Stalker can kill it.
+     */
+    private int runStandingStillScenario() {
         game.reset();
         String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 12));
         game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(8, 16));
         for (int tick = 0; tick < 25; tick++) {
-            List<Unit> enemies = game.snapshot().enemyUnits();
-            if (!enemies.isEmpty()) {
-                game.applyIntent(new AttackIntent(tag, enemies.get(0).position()));
+            GameState state = game.snapshot();
+            Unit stalker = state.myUnits().stream()
+                .filter(u -> u.tag().equals(tag)).findFirst().orElse(null);
+            List<Unit> enemies = state.enemyUnits();
+            if (stalker == null || enemies.isEmpty()) break;
+            if (stalker.weaponCooldownTicks() == 0) {
+                // Off cooldown: attack in place — own position as target so Stalker does not move
+                game.applyIntent(new AttackIntent(tag, stalker.position()));
+            } else {
+                // On cooldown: idle in place — MoveIntent(own pos) clears attackingUnits,
+                // giving the same every-other-tick fire rate as the kiting scenario
+                game.applyIntent(new MoveIntent(tag, stalker.position()));
             }
             game.tick();
         }
@@ -1219,6 +1250,12 @@ class EmulatedGameTest {
             .mapToInt(u -> u.health() + u.shields()).findFirst().orElse(0);
     }
 
+    /**
+     * Kiting: Stalker attacks in place when cooldown is 0, retreats 1 tile away from
+     * the Zealot on cooldown ticks.  MoveIntent on cooldown ticks clears attackingUnits
+     * (same fire rate as standing), but the retreat delays the Zealot reaching melee —
+     * resulting in significantly fewer Zealot attacks and more surviving HP.
+     */
     private int runKitingScenario() {
         game.reset();
         String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 12));
@@ -1246,8 +1283,9 @@ class EmulatedGameTest {
                     game.applyIntent(new MoveIntent(tag, retreat));
                 }
             } else {
-                // Off cooldown: attack nearest enemy
-                game.applyIntent(new AttackIntent(tag, enemies.get(0).position()));
+                // Off cooldown: attack in place (own position as target — no movement toward
+                // enemy, so only the retreat on cooldown ticks differentiates the scenarios)
+                game.applyIntent(new AttackIntent(tag, stalker.position()));
             }
             game.tick();
         }
