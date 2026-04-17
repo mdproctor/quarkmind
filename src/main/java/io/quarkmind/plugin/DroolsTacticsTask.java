@@ -7,16 +7,23 @@ import jakarta.inject.Inject;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.agent.plugin.TacticsTask;
 import io.quarkmind.domain.*;
+import io.quarkmind.domain.TerrainGrid;
 import io.quarkmind.plugin.drools.TacticsRuleUnit;
+import io.quarkmind.plugin.tactics.FocusFireStrategy;
 import io.quarkmind.plugin.tactics.GoapAction;
 import io.quarkmind.plugin.tactics.GoapPlanner;
+import io.quarkmind.plugin.tactics.KiteStrategy;
 import io.quarkmind.plugin.tactics.WorldState;
 import io.quarkmind.sc2.IntentQueue;
 import io.quarkmind.sc2.intent.AttackIntent;
 import io.quarkmind.sc2.intent.MoveIntent;
+import jakarta.annotation.PostConstruct;
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.literal.NamedLiteral;
 import org.drools.ruleunits.api.RuleUnit;
 import org.drools.ruleunits.api.RuleUnitInstance;
 import org.jboss.logging.Logger;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,7 +47,6 @@ import java.util.stream.Collectors;
 public class DroolsTacticsTask implements TacticsTask {
 
     static final Point2d MAP_CENTER   = new Point2d(64, 64);
-    static final double KITE_STEP = 1.0; // tiles per kite step
 
     private static final Map<String, GoapAction> ACTION_TEMPLATES = Map.of(
         "RETREAT",        new GoapAction("RETREAT",
@@ -62,6 +68,26 @@ public class DroolsTacticsTask implements TacticsTask {
     private final RuleUnit<TacticsRuleUnit> ruleUnit;
     private final IntentQueue intentQueue;
     private final GoapPlanner planner = new GoapPlanner();
+
+    @Inject
+    @ConfigProperty(name = "quarkmind.tactics.kite.strategy", defaultValue = "direct")
+    String kiteStrategyName;
+
+    @Inject
+    @ConfigProperty(name = "quarkmind.tactics.focus-fire.strategy", defaultValue = "lowest-hp")
+    String focusFireStrategyName;
+
+    @Inject Instance<KiteStrategy>      kiteStrategies;
+    @Inject Instance<FocusFireStrategy> focusFireStrategies;
+
+    private KiteStrategy      kiteStrategy;
+    private FocusFireStrategy focusFireStrategy;
+
+    @PostConstruct
+    void init() {
+        kiteStrategy      = kiteStrategies.select(NamedLiteral.of(kiteStrategyName)).get();
+        focusFireStrategy = focusFireStrategies.select(NamedLiteral.of(focusFireStrategyName)).get();
+    }
 
     @Inject
     public DroolsTacticsTask(RuleUnit<TacticsRuleUnit> ruleUnit, IntentQueue intentQueue) {
@@ -108,15 +134,13 @@ public class DroolsTacticsTask implements TacticsTask {
 
         List<GoapAction> allActions = List.copyOf(ACTION_TEMPLATES.values());
 
-        Optional<Unit> focusTarget = selectFocusTarget(enemies);
-
         for (Map.Entry<String, GroupInfo> entry : groups.entrySet()) {
             String    groupId   = entry.getKey();
             GroupInfo groupInfo = entry.getValue();
             WorldState ws       = buildWorldState(groupId, !enemies.isEmpty());
             List<GoapAction> plan = planner.plan(ws, groupInfo.goalCondition(), allActions);
             if (!plan.isEmpty()) {
-                dispatch(plan.get(0), groupInfo.unitTags(), army, enemies, threat, bld, focusTarget);
+                dispatch(plan.get(0), groupInfo.unitTags(), army, enemies, threat, bld, null);
             }
             log.debugf("[DROOLS-GOAP] group=%s goal=%s plan=%s units=%d",
                 groupId, groupInfo.goalCondition(),
@@ -144,29 +168,11 @@ public class DroolsTacticsTask implements TacticsTask {
         return Math.sqrt(dx * dx + dy * dy);
     }
 
-    static Optional<Unit> selectFocusTarget(List<Unit> enemies) {
-        return enemies.stream()
-            .min(Comparator.comparingInt(e -> e.health() + e.shields()));
-    }
-
     static Set<String> computeOnCooldownTags(List<Unit> army) {
         return army.stream()
             .filter(u -> u.weaponCooldownTicks() > 0)
             .map(Unit::tag)
             .collect(Collectors.toSet());
-    }
-
-    static Point2d kiteRetreatTarget(Point2d unitPos, List<Unit> enemies) {
-        Unit nearest = enemies.stream()
-            .min(Comparator.comparingDouble(e -> distance(unitPos, e.position())))
-            .orElseThrow();
-        double dx = unitPos.x() - nearest.position().x();
-        double dy = unitPos.y() - nearest.position().y();
-        double len = Math.sqrt(dx * dx + dy * dy);
-        if (len < 0.001) return unitPos; // degenerate: unit on top of enemy
-        return new Point2d(
-            (float)(unitPos.x() + dx / len * KITE_STEP),
-            (float)(unitPos.y() + dy / len * KITE_STEP));
     }
 
     private TacticsRuleUnit buildRuleUnit(List<Unit> army, List<Unit> enemies,
@@ -242,13 +248,16 @@ public class DroolsTacticsTask implements TacticsTask {
     private void dispatch(GoapAction action, List<String> unitTags,
                           List<Unit> army, List<Unit> enemies,
                           Point2d threat, List<Building> buildings,
-                          Optional<Unit> focusTarget) {
+                          TerrainGrid terrain) {
         switch (action.name()) {
             case "ATTACK" -> {
-                Point2d target = focusTarget
-                    .map(Unit::position)
-                    .orElse(threat != null ? threat : MAP_CENTER);
-                unitTags.forEach(tag -> intentQueue.add(new AttackIntent(tag, target)));
+                List<Unit> attackers = army.stream()
+                    .filter(u -> unitTags.contains(u.tag())).toList();
+                Map<String, Point2d> targets = focusFireStrategy.assignTargets(attackers, enemies);
+                unitTags.forEach(tag -> {
+                    Point2d target = targets.getOrDefault(tag, threat != null ? threat : MAP_CENTER);
+                    intentQueue.add(new AttackIntent(tag, target));
+                });
             }
             case "MOVE_TO_ENGAGE" -> {
                 Point2d target = threat != null ? threat : MAP_CENTER;
@@ -264,14 +273,9 @@ public class DroolsTacticsTask implements TacticsTask {
             }
             case "KITE" -> {
                 unitTags.forEach(tag ->
-                    army.stream()
-                        .filter(u -> u.tag().equals(tag))
-                        .findFirst()
-                        .ifPresent(unit -> {
-                            Point2d retreatTarget = kiteRetreatTarget(unit.position(), enemies);
-                            intentQueue.add(new MoveIntent(tag, retreatTarget));
-                        })
-                );
+                    army.stream().filter(u -> u.tag().equals(tag)).findFirst()
+                        .ifPresent(unit -> intentQueue.add(
+                            new MoveIntent(tag, kiteStrategy.retreatTarget(unit, enemies, terrain)))));
             }
         }
     }
