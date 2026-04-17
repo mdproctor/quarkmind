@@ -202,7 +202,7 @@ public class DroolsTacticsTask implements TacticsTask {
         return switch (goalName) {
             case "UNIT_SAFE"        -> "unitSafe";
             case "ENEMY_ELIMINATED" -> "enemyEliminated";
-            case "KITING"           -> "unitSafe";
+            case "KITING"           -> "enemyEliminated"; // plan: KITE → ATTACK
             default                 -> goalName.toLowerCase();
         };
     }
