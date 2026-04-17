@@ -12,3 +12,4 @@
 | [2026-04-16-mdp01-defending-the-wall.md](2026-04-16-mdp01-defending-the-wall.md) | 2026-04-16 | Debugging wall passthrough: scout to OOB coords, A* radius cap, physics enforcement layer |
 | [2026-04-16-mdp02-high-ground.md](2026-04-16-mdp02-high-ground.md) | 2026-04-16 | E8 — TerrainGrid, 25% miss chance from low→high ground, topographic visualizer shading |
 | [2026-04-16-mdp03-what-the-probe-sees.md](2026-04-16-mdp03-what-the-probe-sees.md) | 2026-04-16 | E9 fog of war — VisibilityGrid, server-side filtering, CDI bridge, three-state visualizer overlay |
+| [2026-04-17-mdp01-kiting-and-the-planners-mistakes.md](2026-04-17-mdp01-kiting-and-the-planners-mistakes.md) | 2026-04-17 | E10 — range fix, focus-fire, kiting, and two silent GOAP planner bugs |
