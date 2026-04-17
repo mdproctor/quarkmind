@@ -18,7 +18,7 @@ class GameStateBroadcasterTest {
 
         var state = new GameState(
             500, 25, 23, 14,
-            List.of(new Unit("probe-0", UnitType.PROBE, new Point2d(9f, 9f), 45, 45, 20, 20)),
+            List.of(new Unit("probe-0", UnitType.PROBE, new Point2d(9f, 9f), 45, 45, 20, 20, 0)),
             List.of(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8f, 8f), 1500, 1500, true)),
             List.of(),
             List.of(),   // enemyStagingArea

@@ -159,11 +159,11 @@ class DroolsTacticsTaskIT {
     }
 
     private Unit stalker(String tag, Point2d pos, int health, int maxHealth) {
-        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth, 80, 80);
+        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth, 80, 80, 0);
     }
 
     private Unit enemy(Point2d pos) {
-        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100, 50, 50);
+        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100, 50, 50, 0);
     }
 
     private Building nexus(Point2d pos) {

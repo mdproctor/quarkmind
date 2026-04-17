@@ -115,7 +115,8 @@ public final class ObservationTranslator {
             u.getHealth().map(Float::intValue).orElse(0),
             u.getHealthMax().map(Float::intValue).orElse(0),
             u.getShield().map(Float::intValue).orElse(0),
-            u.getShieldMax().map(Float::intValue).orElse(0)
+            u.getShieldMax().map(Float::intValue).orElse(0),
+            0   // weapon_cooldown not mapped — real SC2 mode not tested in this project
         );
     }
 

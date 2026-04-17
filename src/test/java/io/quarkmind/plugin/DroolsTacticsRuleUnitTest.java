@@ -131,10 +131,10 @@ class DroolsTacticsRuleUnitTest {
     }
 
     private Unit stalker(String tag, int health, int maxHealth) {
-        return new Unit(tag, UnitType.STALKER, new Point2d(10, 10), health, maxHealth, 80, 80);
+        return new Unit(tag, UnitType.STALKER, new Point2d(10, 10), health, maxHealth, 80, 80, 0);
     }
 
     private Unit enemy() {
-        return new Unit("e-0", UnitType.ZEALOT, new Point2d(15, 15), 100, 100, 50, 50);
+        return new Unit("e-0", UnitType.ZEALOT, new Point2d(15, 15), 100, 100, 50, 50, 0);
     }
 }

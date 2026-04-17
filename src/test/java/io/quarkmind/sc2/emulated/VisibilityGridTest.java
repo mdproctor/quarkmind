@@ -178,7 +178,7 @@ class VisibilityGridTest {
     // ---- Helpers ----
 
     private Unit unit(float x, float y, UnitType type) {
-        return new Unit("u-" + x + "-" + y, type, new Point2d(x, y), 100, 100, 50, 50);
+        return new Unit("u-" + x + "-" + y, type, new Point2d(x, y), 100, 100, 50, 50, 0);
     }
 
     private Building building(float x, float y, BuildingType type) {

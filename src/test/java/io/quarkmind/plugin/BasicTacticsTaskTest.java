@@ -123,7 +123,7 @@ class BasicTacticsTaskTest {
     }
 
     private Unit stalker(String tag) {
-        return new Unit(tag, UnitType.STALKER, new Point2d(10, 10), 80, 80, 80, 80);
+        return new Unit(tag, UnitType.STALKER, new Point2d(10, 10), 80, 80, 80, 80, 0);
     }
 
     private Building nexus() {

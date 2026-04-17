@@ -15,13 +15,13 @@ class DamageCalculatorTest {
     private Unit full(UnitType type) {
         int hp = SC2Data.maxHealth(type);
         int sh = SC2Data.maxShields(type);
-        return new Unit("t", type, new Point2d(0, 0), hp, hp, sh, sh);
+        return new Unit("t", type, new Point2d(0, 0), hp, hp, sh, sh, 0);
     }
 
     /** Unit with custom shield value (HP at max). */
     private Unit withShields(UnitType type, int shields) {
         int hp = SC2Data.maxHealth(type);
-        return new Unit("t", type, new Point2d(0, 0), hp, hp, shields, SC2Data.maxShields(type));
+        return new Unit("t", type, new Point2d(0, 0), hp, hp, shields, SC2Data.maxShields(type), 0);
     }
 
     // ---- no bonus damage ----

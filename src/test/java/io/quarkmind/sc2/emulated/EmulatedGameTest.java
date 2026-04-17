@@ -1134,4 +1134,26 @@ class EmulatedGameTest {
         VisibilityGrid vg = game.observeVisibility();
         assertThat(vg.at(8, 8)).isEqualTo(TileVisibility.UNSEEN);
     }
+
+    // ---- E10: weapon cooldown snapshot ----
+
+    @Test
+    void firingUnit_hasCooldownInSnapshot() {
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10, 10));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(10, 12)); // within Stalker range 5.0
+        game.applyIntent(new AttackIntent(tag, new Point2d(10, 12)));
+        game.tick(); // Stalker fires; cooldown = SC2Data.attackCooldownInTicks(STALKER) = 3
+        Unit stalker = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow();
+        assertThat(stalker.weaponCooldownTicks())
+            .isEqualTo(SC2Data.attackCooldownInTicks(UnitType.STALKER));
+    }
+
+    @Test
+    void freshUnit_hasCooldownZeroInSnapshot() {
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10, 10));
+        Unit stalker = game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow();
+        assertThat(stalker.weaponCooldownTicks()).isEqualTo(0);
+    }
 }
