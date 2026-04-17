@@ -1,46 +1,56 @@
-# Handover — 2026-04-14
+# Handover — 2026-04-17
 
-**Head commit:** `b193fdc` — feat(e4): add YAML file loading support for EnemyStrategy config
+**Head commit:** `e077a90` — docs(e10): add blog entry 2026-04-17
 
 ## What Changed This Session
 
-- **E4 complete** — enemy active AI + attack cooldowns merged to main. 272 tests (unit + integration + E2E Playwright).
-- **EnemyStrategy** — pure domain record (loop, mineralsPerTick, buildOrder, attackConfig). Staged units wait at spawn until threshold OR timer fires. Swappable at runtime via `PUT /qa/emulated/config/enemy-strategy` or YAML file at startup.
-- **Attack cooldowns** — `damagePerTick` deleted; per-unit `unitCooldowns`/`enemyCooldowns` maps in `EmulatedGame`. `resolveCombat()` 4-step: decrement → collect from cd=0 → apply two-pass → reset fired units. `MoveIntent` now clears `attackingUnits` (cancel path fixed).
-- **Visualizer** — blue-tinted staging layer (0x4488ff) via `syncLayer` on `state.enemyStagingArea`.
-- **Issues #17–#25** created retroactively; commit history rewritten with cherry-pick loop to add `Refs/Closes #N` footers; pushed.
-- **Garden** — 5 new entries: bash `$()` newline stripping, Quarkus `@ConfigProperty defaultValue=""`, subagents don't inherit CLAUDE.md, cherry-pick history rewrite technique, Jackson records without annotations in Quarkus.
-- **Blog** — `2026-04-14-mdp01-enemy-gets-to-work.md` (E4 complete + pivot from Terran plan).
+**Scouting fix committed (recovered from working tree):**
+- `DroolsTacticsTask.estimatedEnemyBase` parameterised by `mapWidth`; `%emulated.scouting.map.width=64` config; 7 unit tests + 1 IT regression guard. Closes #68.
+
+**E10: Kiting, focus-fire, per-unit range — complete (closes #69–#73)**
+- `weaponCooldownTicks` added to `Unit` record (8th field); stamped from `unitCooldowns` map in `EmulatedGame.snapshot()`. Matches SC2 protobuf `weapon_cooldown`.
+- Range fix: `STALKER_RANGE=6.0` deleted; `SC2Data.attackRange(unit.type())` per unit.
+- Focus-fire: `selectFocusTarget()` picks lowest HP+shields enemy; all attacking units target same position.
+- Kiting: `onCooldownTags` DataStore in `TacticsRuleUnit`; Drools `"kiting"` group; GOAP `KITE` action; `kiteRetreatTarget()` steps 1.0 tile away from nearest enemy.
+- Two GOAP correctness bugs caught mid-flight: kiting goal was `"unitSafe"` (unreachable) → fixed to `"enemyEliminated"`; ATTACK missing `"onCooldown", false` precondition allowed planner to bypass KITE at cost 2 vs 3.
+- 430 tests, 0 failures.
+
+**Garden:** 5 entries submitted — PRs #70–74 on Hortora/garden (GOAP silent plan, ATTACK precondition bypass, handover commit gap, GOAP two-condition correctness check, WorldState open-world semantics).
+
+**Blog:** `docs/_posts/2026-04-17-mdp01-kiting-and-the-planners-mistakes.md`
 
 ## Immediate Next Step
 
-**E5: Damage types, armour, retreat, pathfinding.** Per E4 design spec phase table. Before starting: brainstorm → create epic + child issues → write plan. Run `mvn test -Pbenchmark` for post-E4 baseline first.
+**Run the post-E10 benchmark baseline before E11:**
+```bash
+mvn test -Pbenchmark
+```
+Paste output to `docs/benchmarks/2026-04-17-post-e10.md`.
 
-**Issue-workflow fix for subagents:** Subagent prompts must include explicit issue-workflow instructions — CLAUDE.md automatic behaviours don't propagate to fresh subagent contexts. Add to every implementer prompt: check for active issue, create if missing, include `Refs #N` in all commits.
+**Then brainstorm E11.** Deferred from E10: kiting with terrain avoidance (kite step may land on wall tile), Stalker Blink micro, multi-target focus-fire split, timing fidelity (`attackCooldownInTicks(STALKER)` → 1 tick). Full deferred list in `docs/superpowers/specs/2026-04-17-e10-tactics-kiting-focusfire-design.md` § Out of Scope.
+
+## Key Technical Notes
+
+- **GOAP goal key must be reachable** — wrong goal = empty plan, no error, units idle. Check: can any action chain reach the goal from the starting WorldState? See GE-20260417-c6e3db.
+- **GOAP ATTACK precondition now includes `"onCooldown", false`** — without it, planner bypasses KITE (cost 2 < 3). See GE-20260417-a7f7fc.
+- **`WorldState.get()` returns false for absent keys** — open-world semantics; actions only check keys they declare. See GE-20260417-988839.
+- **`weaponCooldownTicks` internal units always 0** — cooldown lives in `unitCooldowns` map; stamped onto `Unit` only at `snapshot()` time.
+- **Package-private static pattern for CDI bean unit testing** — make pure methods `static` (not `private`) so same-package test classes can call them. Now in CLAUDE.md.
 
 ## Open Issues
 
 | # | What | Status |
 |---|---|---|
 | #13 | Live SC2 smoke test | Blocked on SC2 |
-| #14 | GraalVM native image tracing | Blocked on #13 |
+| #14 | GraalVM native image | Blocked on #13 |
 | #16 | Scouting CEP threshold calibration | Needs replay data |
-
-## Key Technical Notes
-
-- **Two-pass combat invariant** — all damage collected before any applied. Do NOT change to sequential.
-- **Cooldown absent = 0 = fire immediately** — missing key in cooldown map means unit is ready.
-- **`framesSinceLastAttack` timer** — only resets when attack actually fires (staging non-empty). Empty staging at timer fire → no reset.
-- **`attackingUnits` cancel path** — `MoveIntent` removes from set; `AttackIntent` adds. Fixed in E4.
-- **Subagent issue-workflow** — see garden entry GE-20260414-736039 for the pattern to avoid.
-- **Quarkus Optional config** — use `Optional<String>` not `defaultValue=""` for optional properties (see GE-20260414-1b00a0).
 
 ## References
 
 | Context | Where |
 |---|---|
-| E4 design spec | `docs/superpowers/specs/2026-04-14-sc2-emulation-e4-design.md` |
-| E4 implementation plan | `docs/superpowers/plans/2026-04-14-e4-enemy-ai-attack-cooldowns.md` |
-| E3 spec (prior phase) | `docs/superpowers/specs/2026-04-09-sc2-emulation-e3-design.md` |
-| Blog entry | `docs/_posts/2026-04-14-mdp01-enemy-gets-to-work.md` |
-| GitHub | mdproctor/quarkmind (issues #17–#25 closed) |
+| E10 design spec | `docs/superpowers/specs/2026-04-17-e10-tactics-kiting-focusfire-design.md` |
+| E10 implementation plan | `docs/superpowers/plans/2026-04-17-e10-tactics-kiting-focusfire.md` |
+| E9 handover (prior) | `git show 79b7424:HANDOVER.md` |
+| Blog entry | `docs/_posts/2026-04-17-mdp01-kiting-and-the-planners-mistakes.md` |
+| GitHub | mdproctor/quarkmind (issues #68–#73 closed) |
