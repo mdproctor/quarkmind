@@ -186,9 +186,8 @@ public final class SC2Data {
     /** Ticks between attacks (cooldown reset after firing). 1 tick = 500ms at Faster speed. */
     public static int attackCooldownInTicks(UnitType type) {
         return switch (type) {
-            case MARINE, HYDRALISK                         -> 1;
-            case PROBE, ZEALOT, IMMORTAL, MARAUDER, ROACH  -> 2;
-            case STALKER                                   -> 3;
+            case MARINE, HYDRALISK, STALKER                -> 1;
+            case PROBE, ZEALOT, IMMORTAL, MARAUDER, ROACH -> 2;
             default                                        -> 2;
         };
     }

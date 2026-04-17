@@ -83,7 +83,7 @@ class SC2DataTest {
         assertThat(SC2Data.attackCooldownInTicks(UnitType.HYDRALISK)).isEqualTo(1);
         assertThat(SC2Data.attackCooldownInTicks(UnitType.PROBE)).isEqualTo(2);
         assertThat(SC2Data.attackCooldownInTicks(UnitType.ZEALOT)).isEqualTo(2);
-        assertThat(SC2Data.attackCooldownInTicks(UnitType.STALKER)).isEqualTo(3);
+        assertThat(SC2Data.attackCooldownInTicks(UnitType.STALKER)).isEqualTo(1);
     }
 
     @Test
