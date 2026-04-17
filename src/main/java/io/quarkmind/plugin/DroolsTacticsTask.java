@@ -39,8 +39,6 @@ import java.util.*;
 public class DroolsTacticsTask implements TacticsTask {
 
     static final Point2d MAP_CENTER   = new Point2d(64, 64);
-    /** Stalker effective attack range in tiles. TODO(R&D): parameterise per unit type. */
-    static final double  STALKER_RANGE = 6.0;
 
     private static final Map<String, GoapAction> ACTION_TEMPLATES = Map.of(
         "RETREAT",        new GoapAction("RETREAT",
@@ -123,11 +121,11 @@ public class DroolsTacticsTask implements TacticsTask {
         }
     }
 
-    private Set<String> computeInRangeTags(List<Unit> army, List<Unit> enemies) {
+    static Set<String> computeInRangeTags(List<Unit> army, List<Unit> enemies) {
         Set<String> result = new HashSet<>();
         for (Unit unit : army) {
             for (Unit enemy : enemies) {
-                if (distance(unit.position(), enemy.position()) <= STALKER_RANGE) {
+                if (distance(unit.position(), enemy.position()) <= SC2Data.attackRange(unit.type())) {
                     result.add(unit.tag());
                     break;
                 }
@@ -136,7 +134,7 @@ public class DroolsTacticsTask implements TacticsTask {
         return result;
     }
 
-    private double distance(Point2d a, Point2d b) {
+    static double distance(Point2d a, Point2d b) {
         double dx = a.x() - b.x();
         double dy = a.y() - b.y();
         return Math.sqrt(dx * dx + dy * dy);
