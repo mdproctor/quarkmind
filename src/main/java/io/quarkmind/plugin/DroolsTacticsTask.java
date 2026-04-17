@@ -51,7 +51,10 @@ public class DroolsTacticsTask implements TacticsTask {
             Map.of("enemyEliminated", true), 2),
         "MOVE_TO_ENGAGE", new GoapAction("MOVE_TO_ENGAGE",
             Map.of("enemyVisible", true, "inRange", false),
-            Map.of("inRange", true), 1)
+            Map.of("inRange", true), 1),
+        "KITE",           new GoapAction("KITE",
+            Map.of("inRange", true, "onCooldown", true, "enemyVisible", true),
+            Map.of("onCooldown", false), 1)
     );
 
     private static final Logger log = Logger.getLogger(DroolsTacticsTask.class);
@@ -91,9 +94,10 @@ public class DroolsTacticsTask implements TacticsTask {
 
         if (enemies.isEmpty()) return;
 
-        Set<String> inRangeSet = computeInRangeTags(army, enemies);
+        Set<String> inRangeSet    = computeInRangeTags(army, enemies);
+        Set<String> onCooldownSet = computeOnCooldownTags(army);
 
-        TacticsRuleUnit data = buildRuleUnit(army, enemies, inRangeSet, strategy);
+        TacticsRuleUnit data = buildRuleUnit(army, enemies, inRangeSet, onCooldownSet, strategy);
         try (RuleUnitInstance<TacticsRuleUnit> instance = ruleUnit.createInstance(data)) {
             instance.fire();
         }
@@ -102,11 +106,9 @@ public class DroolsTacticsTask implements TacticsTask {
 
         if (groups.isEmpty()) return;
 
-        // Planner needs the full action library to chain multi-step plans; Drools
-        // action decisions only confirm which actions are applicable for active groups,
-        // but the A* search must see all actions to find paths to goals like
-        // "enemyEliminated" that require MOVE_TO_ENGAGE → ATTACK in sequence.
         List<GoapAction> allActions = List.copyOf(ACTION_TEMPLATES.values());
+
+        Optional<Unit> focusTarget = selectFocusTarget(enemies);
 
         for (Map.Entry<String, GroupInfo> entry : groups.entrySet()) {
             String    groupId   = entry.getKey();
@@ -114,7 +116,7 @@ public class DroolsTacticsTask implements TacticsTask {
             WorldState ws       = buildWorldState(groupId, !enemies.isEmpty());
             List<GoapAction> plan = planner.plan(ws, groupInfo.goalCondition(), allActions);
             if (!plan.isEmpty()) {
-                dispatch(plan.get(0), groupInfo.unitTags(), threat, bld);
+                dispatch(plan.get(0), groupInfo.unitTags(), army, enemies, threat, bld, focusTarget);
             }
             log.debugf("[DROOLS-GOAP] group=%s goal=%s plan=%s units=%d",
                 groupId, groupInfo.goalCondition(),
@@ -168,12 +170,14 @@ public class DroolsTacticsTask implements TacticsTask {
     }
 
     private TacticsRuleUnit buildRuleUnit(List<Unit> army, List<Unit> enemies,
-                                          Set<String> inRangeTags, String strategy) {
+                                           Set<String> inRangeTags, Set<String> onCooldownTags,
+                                           String strategy) {
         TacticsRuleUnit data = new TacticsRuleUnit();
         data.setStrategyGoal(strategy);
         army.forEach(data.getArmy()::add);
         enemies.forEach(data.getEnemies()::add);
         inRangeTags.forEach(data.getInRangeTags()::add);
+        onCooldownTags.forEach(data.getOnCooldownTags()::add);
         return data;
     }
 
@@ -198,6 +202,7 @@ public class DroolsTacticsTask implements TacticsTask {
         return switch (goalName) {
             case "UNIT_SAFE"        -> "unitSafe";
             case "ENEMY_ELIMINATED" -> "enemyEliminated";
+            case "KITING"           -> "unitSafe";
             default                 -> goalName.toLowerCase();
         };
     }
@@ -222,15 +227,26 @@ public class DroolsTacticsTask implements TacticsTask {
                 "inRange",         false,
                 "unitSafe",        false,
                 "enemyEliminated", false));
+            case "kiting" -> new WorldState(Map.of(
+                "lowHealth",       false,
+                "enemyVisible",    true,
+                "inRange",         true,
+                "onCooldown",      true,
+                "unitSafe",        false,
+                "enemyEliminated", false));
             default             -> new WorldState(Map.of("enemyEliminated", false));
         };
     }
 
     private void dispatch(GoapAction action, List<String> unitTags,
-                          Point2d threat, List<Building> buildings) {
+                          List<Unit> army, List<Unit> enemies,
+                          Point2d threat, List<Building> buildings,
+                          Optional<Unit> focusTarget) {
         switch (action.name()) {
             case "ATTACK" -> {
-                Point2d target = threat != null ? threat : MAP_CENTER;
+                Point2d target = focusTarget
+                    .map(Unit::position)
+                    .orElse(threat != null ? threat : MAP_CENTER);
                 unitTags.forEach(tag -> intentQueue.add(new AttackIntent(tag, target)));
             }
             case "MOVE_TO_ENGAGE" -> {
@@ -244,6 +260,17 @@ public class DroolsTacticsTask implements TacticsTask {
                     .map(Building::position)
                     .orElse(MAP_CENTER);
                 unitTags.forEach(tag -> intentQueue.add(new MoveIntent(tag, rally)));
+            }
+            case "KITE" -> {
+                unitTags.forEach(tag ->
+                    army.stream()
+                        .filter(u -> u.tag().equals(tag))
+                        .findFirst()
+                        .ifPresent(unit -> {
+                            Point2d retreatTarget = kiteRetreatTarget(unit.position(), enemies);
+                            intentQueue.add(new MoveIntent(tag, retreatTarget));
+                        })
+                );
             }
         }
     }
