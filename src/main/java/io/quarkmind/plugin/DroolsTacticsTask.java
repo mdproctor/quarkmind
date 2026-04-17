@@ -19,8 +19,6 @@ import org.drools.ruleunits.api.RuleUnitInstance;
 import org.jboss.logging.Logger;
 
 import java.util.*;
-import java.util.Comparator;
-import java.util.Optional;
 
 /**
  * Drools-backed GOAP {@link TacticsTask} — third R&D integration.
