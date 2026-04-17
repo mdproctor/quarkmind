@@ -19,6 +19,8 @@ import org.drools.ruleunits.api.RuleUnitInstance;
 import org.jboss.logging.Logger;
 
 import java.util.*;
+import java.util.Comparator;
+import java.util.Optional;
 
 /**
  * Drools-backed GOAP {@link TacticsTask} — third R&D integration.
@@ -138,6 +140,11 @@ public class DroolsTacticsTask implements TacticsTask {
         double dx = a.x() - b.x();
         double dy = a.y() - b.y();
         return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    static Optional<Unit> selectFocusTarget(List<Unit> enemies) {
+        return enemies.stream()
+            .min(Comparator.comparingInt(e -> e.health() + e.shields()));
     }
 
     private TacticsRuleUnit buildRuleUnit(List<Unit> army, List<Unit> enemies,

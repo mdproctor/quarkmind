@@ -63,4 +63,32 @@ class DroolsTacticsTaskTest {
         Set<String> result = DroolsTacticsTask.computeInRangeTags(List.of(z), List.of(e));
         assertThat(result).doesNotContain("z-0");
     }
+
+    // ---- selectFocusTarget ----
+
+    @Test
+    void selectFocusTarget_returnsLowestCombinedHpAndShields() {
+        Unit strong = new Unit("e-strong", UnitType.ZEALOT, new Point2d(10,10), 100, 100, 50, 50, 0); // 150
+        Unit weak   = new Unit("e-weak",   UnitType.ZEALOT, new Point2d(10,10),  20, 100,  0, 50, 0); //  20
+        Unit mid    = new Unit("e-mid",    UnitType.ZEALOT, new Point2d(10,10),  60, 100, 30, 50, 0); //  90
+        var result = DroolsTacticsTask.selectFocusTarget(List.of(strong, weak, mid));
+        assertThat(result).isPresent();
+        assertThat(result.get().tag()).isEqualTo("e-weak");
+    }
+
+    @Test
+    void selectFocusTarget_shieldsCountTowardTotal() {
+        // e-1: 80 hp + 0 shields = 80 total
+        // e-2: 10 hp + 50 shields = 60 total → lower, should be chosen
+        Unit e1 = new Unit("e-1", UnitType.ZEALOT, new Point2d(10,10), 80, 100,  0, 50, 0);
+        Unit e2 = new Unit("e-2", UnitType.ZEALOT, new Point2d(10,10), 10, 100, 50, 50, 0);
+        var result = DroolsTacticsTask.selectFocusTarget(List.of(e1, e2));
+        assertThat(result).isPresent();
+        assertThat(result.get().tag()).isEqualTo("e-2");
+    }
+
+    @Test
+    void selectFocusTarget_emptyList_returnsEmpty() {
+        assertThat(DroolsTacticsTask.selectFocusTarget(List.of())).isEmpty();
+    }
 }
