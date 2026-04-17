@@ -4,18 +4,14 @@ unit TacticsRuleUnit;
 // ---------------------------------------------------------------------------
 // Phase 1 — Group Classification (salience 200+)
 //
-// Classifies each army unit into exactly one group based on health and enemy
-// proximity. Only fires for ATTACK strategy.
-//   - DEFEND: handled in Java (bypass GOAP), no rules fire
-//   - MACRO:  no rules fire; army holds position
+// Groups are mutually exclusive:
+//   low-health (< 30% hp) → UNIT_SAFE goal
+//   kiting (healthy + in-range + on cooldown) → KITING goal
+//   in-range (healthy + in-range + off cooldown) → ENEMY_ELIMINATED goal
+//   out-of-range (healthy + not in-range) → ENEMY_ELIMINATED goal
 //
-// Output format for groupDecisions: "groupId:GOAL:unitTag"
-// activeGroups DataStore is also updated so Phase 2 rules fire correctly.
-//
-// Syntax notes:
-//   - No-constraint pattern: /army  (NOT /army[])
-//   - Record accessors: this.method() to avoid DRL keyword clashes
-//   - health/maxHealth cast to double avoids integer division
+// Low-health guard (health/maxHealth >= 0.3) on kiting and in-range rules
+// ensures a low-health unit is never also classified as kiting or in-range.
 // ---------------------------------------------------------------------------
 
 rule "Group: low health"
@@ -28,12 +24,25 @@ then
     activeGroups.add("low-health");
 end
 
+rule "Group: kiting"
+    salience 200
+when
+    eval(strategyGoal.equals("ATTACK"))
+    $u: /army[ (double) this.health() / this.maxHealth() >= 0.3 ]
+    /inRangeTags[ this == $u.tag() ]
+    /onCooldownTags[ this == $u.tag() ]
+then
+    groupDecisions.add("kiting:KITING:" + $u.tag());
+    activeGroups.add("kiting");
+end
+
 rule "Group: in range"
     salience 200
 when
     eval(strategyGoal.equals("ATTACK"))
     $u: /army[ (double) this.health() / this.maxHealth() >= 0.3 ]
     /inRangeTags[ this == $u.tag() ]
+    not /onCooldownTags[ this == $u.tag() ]
 then
     groupDecisions.add("in-range:ENEMY_ELIMINATED:" + $u.tag());
     activeGroups.add("in-range");
@@ -53,11 +62,6 @@ end
 
 // ---------------------------------------------------------------------------
 // Phase 2 — Action Emission (salience 100+)
-//
-// Fires once per active group. Matches on activeGroups DataStore (not
-// groupDecisions List) to guarantee Drools re-evaluates after Phase 1.
-//
-// Output format for actionDecisions: "ACTION_NAME:cost"
 // ---------------------------------------------------------------------------
 
 rule "Action: Retreat available"
@@ -66,6 +70,14 @@ when
     /activeGroups[ this == "low-health" ]
 then
     actionDecisions.add("RETREAT:1");
+end
+
+rule "Action: Kite available"
+    salience 100
+when
+    /activeGroups[ this == "kiting" ]
+then
+    actionDecisions.add("KITE:1");
 end
 
 rule "Action: Attack available"

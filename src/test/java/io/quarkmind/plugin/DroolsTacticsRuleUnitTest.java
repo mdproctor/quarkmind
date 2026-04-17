@@ -113,6 +113,64 @@ class DroolsTacticsRuleUnitTest {
         assertThat(data.getActionDecisions()).contains("MOVE_TO_ENGAGE:1");
     }
 
+    // ---- Phase 1: Kiting classification ----
+
+    @Test
+    void inRangeUnitOnCooldown_classifiedAsKiting() {
+        TacticsRuleUnit data = attackWithCooldown(
+            List.of(stalker("s-0", 80, 80, 3)),   // healthy, on cooldown
+            List.of(enemy()),
+            List.of("s-0"),                         // in range
+            List.of("s-0")                          // on cooldown
+        );
+        fire(data);
+        assertThat(data.getGroupDecisions())
+            .anyMatch(g -> g.startsWith("kiting:KITING:s-0"));
+    }
+
+    @Test
+    void inRangeUnitOffCooldown_classifiedAsInRange_notKiting() {
+        TacticsRuleUnit data = attackWithCooldown(
+            List.of(stalker("s-0", 80, 80, 0)),   // healthy, off cooldown
+            List.of(enemy()),
+            List.of("s-0"),                         // in range
+            List.of()                               // NOT on cooldown
+        );
+        fire(data);
+        assertThat(data.getGroupDecisions())
+            .anyMatch(g -> g.startsWith("in-range:ENEMY_ELIMINATED:s-0"))
+            .noneMatch(g -> g.startsWith("kiting:"));
+    }
+
+    @Test
+    void lowHealthUnitOnCooldown_classifiedAsLowHealth_notKiting() {
+        // Low-health guard (< 30%) takes priority over kiting classification
+        TacticsRuleUnit data = attackWithCooldown(
+            List.of(stalker("s-0", 20, 100, 3)),  // low health + on cooldown
+            List.of(enemy()),
+            List.of("s-0"),                         // in range
+            List.of("s-0")                          // on cooldown
+        );
+        fire(data);
+        assertThat(data.getGroupDecisions())
+            .anyMatch(g -> g.startsWith("low-health:UNIT_SAFE:s-0"))
+            .noneMatch(g -> g.startsWith("kiting:"));
+    }
+
+    // ---- Phase 2: Kite action emission ----
+
+    @Test
+    void kitingGroupEmitsKiteAction() {
+        TacticsRuleUnit data = attackWithCooldown(
+            List.of(stalker("s-0", 80, 80, 3)),
+            List.of(enemy()),
+            List.of("s-0"),
+            List.of("s-0")
+        );
+        fire(data);
+        assertThat(data.getActionDecisions()).contains("KITE:1");
+    }
+
     // ---- Helpers ----
 
     private void fire(TacticsRuleUnit data) {
@@ -130,8 +188,25 @@ class DroolsTacticsRuleUnitTest {
         return data;
     }
 
+    private TacticsRuleUnit attackWithCooldown(List<Unit> army, List<Unit> enemies,
+                                                List<String> inRangeTags,
+                                                List<String> onCooldownTags) {
+        TacticsRuleUnit data = new TacticsRuleUnit();
+        data.setStrategyGoal("ATTACK");
+        army.forEach(data.getArmy()::add);
+        enemies.forEach(data.getEnemies()::add);
+        inRangeTags.forEach(data.getInRangeTags()::add);
+        onCooldownTags.forEach(data.getOnCooldownTags()::add);
+        return data;
+    }
+
     private Unit stalker(String tag, int health, int maxHealth) {
         return new Unit(tag, UnitType.STALKER, new Point2d(10, 10), health, maxHealth, 80, 80, 0);
+    }
+
+    // Overload with cooldown parameter
+    private Unit stalker(String tag, int health, int maxHealth, int cooldown) {
+        return new Unit(tag, UnitType.STALKER, new Point2d(10, 10), health, maxHealth, 80, 80, cooldown);
     }
 
     private Unit enemy() {

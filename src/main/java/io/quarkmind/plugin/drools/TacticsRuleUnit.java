@@ -25,6 +25,7 @@ public class TacticsRuleUnit implements RuleUnitData {
     private final DataStore<Unit>   army           = DataSource.createStore();
     private final DataStore<Unit>   enemies        = DataSource.createStore();
     private final DataStore<String> inRangeTags    = DataSource.createStore();
+    private final DataStore<String> onCooldownTags  = DataSource.createStore();
     private final DataStore<String> activeGroups   = DataSource.createStore();
     private final List<String>      groupDecisions  = new ArrayList<>();
     private final List<String>      actionDecisions = new ArrayList<>();
@@ -33,6 +34,7 @@ public class TacticsRuleUnit implements RuleUnitData {
     public DataStore<Unit>   getArmy()             { return army; }
     public DataStore<Unit>   getEnemies()           { return enemies; }
     public DataStore<String> getInRangeTags()       { return inRangeTags; }
+    public DataStore<String> getOnCooldownTags()    { return onCooldownTags; }
     public DataStore<String> getActiveGroups()      { return activeGroups; }
     public List<String>      getGroupDecisions()    { return groupDecisions; }
     public List<String>      getActionDecisions()   { return actionDecisions; }
