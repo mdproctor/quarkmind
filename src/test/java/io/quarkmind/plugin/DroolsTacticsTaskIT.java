@@ -82,7 +82,7 @@ class DroolsTacticsTaskIT {
     @Test
     void attackMixedArmyEmitsCorrectIntentPerGroup() {
         // s-low: low health → retreat (MoveIntent)
-        // s-near: healthy + in range (distance ~4 ≤ 6) → attack (AttackIntent)
+        // s-near: healthy + in range (distance ~4 ≤ 5.0) → attack (AttackIntent)
         // s-far: healthy + out of range → move-to-engage (MoveIntent)
         var cf = caseFile("ATTACK",
             List.of(stalker("s-low",  new Point2d(10, 10), 20, 100),

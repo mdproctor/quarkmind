@@ -219,6 +219,7 @@ public class DroolsTacticsTask implements TacticsTask {
                 "lowHealth",       false,
                 "enemyVisible",    true,
                 "inRange",         true,
+                "onCooldown",      false,
                 "unitSafe",        false,
                 "enemyEliminated", false));
             case "out-of-range" -> new WorldState(Map.of(
