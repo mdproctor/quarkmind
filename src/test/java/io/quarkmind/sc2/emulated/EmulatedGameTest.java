@@ -6,6 +6,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
+import java.util.Comparator;
 import java.util.List;
 import io.quarkmind.sc2.emulated.VisibilityGrid;
 import io.quarkmind.sc2.emulated.TileVisibility;
@@ -1155,5 +1156,103 @@ class EmulatedGameTest {
         Unit stalker = game.snapshot().myUnits().stream()
             .filter(u -> u.tag().equals(tag)).findFirst().orElseThrow();
         assertThat(stalker.weaponCooldownTicks()).isEqualTo(0);
+    }
+
+    // ---- E10: Focus-fire physics ----
+
+    @Test
+    void focusFire_eliminatesFirstEnemyBeforeSpreadFire() {
+        int focusTicks = runFocusFireScenario(true);
+        int spreadTicks = runFocusFireScenario(false);
+        assertThat(focusTicks).isLessThan(spreadTicks);
+    }
+
+    private int runFocusFireScenario(boolean focusFire) {
+        game.reset();
+        String s0 = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10, 10));
+        String s1 = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10, 11));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(12, 10));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(12, 11));
+        int initialEnemyCount = game.snapshot().enemyUnits().size();
+
+        for (int tick = 1; tick <= 60; tick++) {
+            List<Unit> enemies = game.snapshot().enemyUnits();
+            if (enemies.isEmpty()) return tick;
+            if (focusFire) {
+                // Both Stalkers target same (first) enemy
+                game.applyIntent(new AttackIntent(s0, enemies.get(0).position()));
+                game.applyIntent(new AttackIntent(s1, enemies.get(0).position()));
+            } else {
+                // Each Stalker targets a different enemy (spread fire)
+                game.applyIntent(new AttackIntent(s0, enemies.get(0).position()));
+                game.applyIntent(new AttackIntent(s1, enemies.size() > 1
+                    ? enemies.get(1).position() : enemies.get(0).position()));
+            }
+            game.tick();
+            if (game.snapshot().enemyUnits().size() < initialEnemyCount) return tick;
+        }
+        return 60;
+    }
+
+    // ---- E10: Kiting physics ----
+
+    @Test
+    void kiting_stallsEnemyContact_stalkerRetainsMoreHp() {
+        int standingHp = runStandingScenario();
+        int kitingHp   = runKitingScenario();
+        assertThat(kitingHp).isGreaterThan(standingHp);
+    }
+
+    private int runStandingScenario() {
+        game.reset();
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 12));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(8, 16));
+        for (int tick = 0; tick < 25; tick++) {
+            List<Unit> enemies = game.snapshot().enemyUnits();
+            if (!enemies.isEmpty()) {
+                game.applyIntent(new AttackIntent(tag, enemies.get(0).position()));
+            }
+            game.tick();
+        }
+        return game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(tag))
+            .mapToInt(u -> u.health() + u.shields()).findFirst().orElse(0);
+    }
+
+    private int runKitingScenario() {
+        game.reset();
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(8, 12));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(8, 16));
+        for (int tick = 0; tick < 25; tick++) {
+            GameState state = game.snapshot();
+            Unit stalker = state.myUnits().stream()
+                .filter(u -> u.tag().equals(tag)).findFirst().orElse(null);
+            List<Unit> enemies = state.enemyUnits();
+            if (stalker == null || enemies.isEmpty()) break;
+            if (stalker.weaponCooldownTicks() > 0) {
+                // On cooldown: kite backward (away from nearest enemy)
+                Unit nearest = enemies.stream()
+                    .min(Comparator.comparingDouble(e ->
+                        Math.sqrt(Math.pow(e.position().x() - stalker.position().x(), 2) +
+                                  Math.pow(e.position().y() - stalker.position().y(), 2))))
+                    .orElseThrow();
+                double dx = stalker.position().x() - nearest.position().x();
+                double dy = stalker.position().y() - nearest.position().y();
+                double len = Math.sqrt(dx * dx + dy * dy);
+                if (len > 0.001) {
+                    Point2d retreat = new Point2d(
+                        (float)(stalker.position().x() + dx / len),
+                        (float)(stalker.position().y() + dy / len));
+                    game.applyIntent(new MoveIntent(tag, retreat));
+                }
+            } else {
+                // Off cooldown: attack nearest enemy
+                game.applyIntent(new AttackIntent(tag, enemies.get(0).position()));
+            }
+            game.tick();
+        }
+        return game.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(tag))
+            .mapToInt(u -> u.health() + u.shields()).findFirst().orElse(0);
     }
 }
