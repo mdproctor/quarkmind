@@ -25,7 +25,7 @@ public class TacticsRuleUnit implements RuleUnitData {
     private final DataStore<Unit>   army           = DataSource.createStore();
     private final DataStore<Unit>   enemies        = DataSource.createStore();
     private final DataStore<String> inRangeTags    = DataSource.createStore();
-    private final DataStore<String> onCooldownTags  = DataSource.createStore();
+    private final DataStore<String> onCooldownTags = DataSource.createStore();
     private final DataStore<String> activeGroups   = DataSource.createStore();
     private final List<String>      groupDecisions  = new ArrayList<>();
     private final List<String>      actionDecisions = new ArrayList<>();

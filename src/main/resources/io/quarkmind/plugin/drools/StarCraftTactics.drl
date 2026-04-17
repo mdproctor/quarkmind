@@ -62,6 +62,9 @@ end
 
 // ---------------------------------------------------------------------------
 // Phase 2 — Action Emission (salience 100+)
+//
+// Rules match activeGroups (DataStore) not groupDecisions (List) because
+// Drools reactive evaluation only tracks DataStore insertions — see GE-0053.
 // ---------------------------------------------------------------------------
 
 rule "Action: Retreat available"
