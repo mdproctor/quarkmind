@@ -33,6 +33,14 @@ class KiteStrategyTest {
             List.of(unit("e-near", new Point2d(6,5)), unit("e-far", new Point2d(10,5))), null);
         assertThat(result.x()).isLessThan(5f);
     }
+    @Test void direct_unitOnTopOfEnemy_returnsCurrentPosition() {
+        Point2d pos = new Point2d(5, 5);
+        Point2d result = new DirectKiteStrategy().retreatTarget(
+            unit("u-0", pos),
+            List.of(unit("e-0", pos)), // same position
+            null);
+        assertThat(result).isEqualTo(pos);
+    }
     @Test void direct_ignoresNonNullTerrain() {
         TerrainGrid terrain = TerrainGrid.emulatedMap();
         DirectKiteStrategy s = new DirectKiteStrategy();

@@ -7,7 +7,6 @@ import jakarta.inject.Inject;
 import io.quarkmind.agent.QuarkMindCaseFile;
 import io.quarkmind.agent.plugin.TacticsTask;
 import io.quarkmind.domain.*;
-import io.quarkmind.domain.TerrainGrid;
 import io.quarkmind.plugin.drools.TacticsRuleUnit;
 import io.quarkmind.plugin.tactics.FocusFireStrategy;
 import io.quarkmind.plugin.tactics.GoapAction;

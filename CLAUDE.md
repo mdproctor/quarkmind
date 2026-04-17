@@ -78,7 +78,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 **Unit tests** (no Quarkus, fast):
 - Instantiate classes directly via `new` — no CDI
 - Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `BasicStrategyTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`, `DroolsTacticsTaskTest`, `DroolsScoutingTaskTest`
-- Package-private static methods on CDI beans (e.g. `DroolsTacticsTask.computeInRangeTags`, `selectFocusTarget`, `kiteRetreatTarget`) are tested from the same package without CDI — make them `static` (not `private`) to enable this
+- Package-private static methods on CDI beans (e.g. `DroolsTacticsTask.computeInRangeTags`, `computeOnCooldownTags`) are tested from the same package without CDI — make them `static` (not `private`) to enable this. Strategy classes (`DirectKiteStrategy`, `LowestHpFocusFireStrategy`) follow the same pattern
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
 - Use `@Inject` to get beans; scheduler is disabled — call `orchestrator.gameTick()` directly
