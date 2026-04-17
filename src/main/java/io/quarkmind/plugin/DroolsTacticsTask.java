@@ -14,6 +14,7 @@ import io.quarkmind.plugin.tactics.GoapPlanner;
 import io.quarkmind.plugin.tactics.KiteStrategy;
 import io.quarkmind.plugin.tactics.WorldState;
 import io.quarkmind.sc2.IntentQueue;
+import io.quarkmind.sc2.TerrainProvider;
 import io.quarkmind.sc2.intent.AttackIntent;
 import io.quarkmind.sc2.intent.MoveIntent;
 import jakarta.annotation.PostConstruct;
@@ -78,6 +79,7 @@ public class DroolsTacticsTask implements TacticsTask {
 
     @Inject Instance<KiteStrategy>      kiteStrategies;
     @Inject Instance<FocusFireStrategy> focusFireStrategies;
+    @Inject TerrainProvider             terrainProvider;
 
     private KiteStrategy      kiteStrategy;
     private FocusFireStrategy focusFireStrategy;
@@ -132,6 +134,7 @@ public class DroolsTacticsTask implements TacticsTask {
         if (groups.isEmpty()) return;
 
         List<GoapAction> allActions = List.copyOf(ACTION_TEMPLATES.values());
+        TerrainGrid terrain = terrainProvider.get();
 
         for (Map.Entry<String, GroupInfo> entry : groups.entrySet()) {
             String    groupId   = entry.getKey();
@@ -139,7 +142,7 @@ public class DroolsTacticsTask implements TacticsTask {
             WorldState ws       = buildWorldState(groupId, !enemies.isEmpty());
             List<GoapAction> plan = planner.plan(ws, groupInfo.goalCondition(), allActions);
             if (!plan.isEmpty()) {
-                dispatch(plan.get(0), groupInfo.unitTags(), army, enemies, threat, bld, null);
+                dispatch(plan.get(0), groupInfo.unitTags(), army, enemies, threat, bld, terrain);
             }
             log.debugf("[DROOLS-GOAP] group=%s goal=%s plan=%s units=%d",
                 groupId, groupInfo.goalCondition(),

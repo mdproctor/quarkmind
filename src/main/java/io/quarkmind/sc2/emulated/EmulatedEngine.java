@@ -9,6 +9,7 @@ import io.quarkmind.domain.TerrainGrid;
 import io.quarkmind.qa.EmulatedConfig;
 import io.quarkmind.sc2.IntentQueue;
 import io.quarkmind.sc2.SC2Engine;
+import io.quarkmind.sc2.TerrainProvider;
 import org.jboss.logging.Logger;
 
 import java.util.List;
@@ -30,15 +31,17 @@ public class EmulatedEngine implements SC2Engine {
     private final IntentQueue intentQueue;
     private final EmulatedConfig config;
     private final VisibilityHolder visibilityHolder;
+    private final TerrainProvider terrainProvider;
     private final List<Consumer<GameState>> frameListeners = new CopyOnWriteArrayList<>();
     private boolean connected = false;
 
     @Inject
     public EmulatedEngine(IntentQueue intentQueue, EmulatedConfig config,
-                          VisibilityHolder visibilityHolder) {
+                          VisibilityHolder visibilityHolder, TerrainProvider terrainProvider) {
         this.intentQueue       = intentQueue;
         this.config            = config;
         this.visibilityHolder  = visibilityHolder;
+        this.terrainProvider   = terrainProvider;
     }
 
     @Override
@@ -58,6 +61,7 @@ public class EmulatedEngine implements SC2Engine {
         TerrainGrid grid = TerrainGrid.emulatedMap();
         game.setMovementStrategy(new PathfindingMovement(grid));
         game.setTerrainGrid(grid);
+        terrainProvider.setTerrain(grid);
         log.info("[EMULATED] PathfindingMovement wired — wall y=18, gap x=11-13");
         log.info("[EMULATED] Wall physics constraint active — no unit may land on a wall tile");
         game.reset();
