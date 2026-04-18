@@ -96,7 +96,7 @@ public final class ActionTranslator {
     }
 
     private static ResolvedCommand blink(BlinkIntent intent) {
-        // implemented in Task 4
+        log.warnf("[ACTION] Blink not yet implemented for real SC2 — dropping intent for unit %s", intent.unitTag());
         return null;
     }
 

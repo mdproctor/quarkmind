@@ -44,6 +44,7 @@ when
     $u: /army[ (double) this.health() / this.maxHealth() >= 0.3 ]
     /inRangeTags[ this == $u.tag() ]
     /onCooldownTags[ this == $u.tag() ]
+    not /shieldsLowTags[ this == $u.tag() ]
 then
     groupDecisions.add("kiting:KITING:" + $u.tag());
     activeGroups.add("kiting");
