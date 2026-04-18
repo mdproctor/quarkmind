@@ -224,4 +224,19 @@ public final class SC2Data {
             default          -> 9;  // NEXUS, GATEWAY, FORGE, etc.
         };
     }
+
+    /** Blink range in tiles (STALKER only). */
+    public static float blinkRange(UnitType type) {
+        return type == UnitType.STALKER ? 8.0f : 0.0f;
+    }
+
+    /** Ticks before blink can be used again. 21 ticks ≈ 10.5s at 500ms/tick. */
+    public static int blinkCooldownInTicks(UnitType type) {
+        return type == UnitType.STALKER ? 21 : 0;
+    }
+
+    /** Shields restored on blink (capped at maxShields at call site). */
+    public static int blinkShieldRestore(UnitType type) {
+        return type == UnitType.STALKER ? 40 : 0;
+    }
 }
