@@ -147,8 +147,8 @@ class DroolsTacticsTaskIT {
     @Test
     void focusFire_allInRangeUnitsTargetWeakestEnemy() {
         // Arrange: two Stalkers in range (distance ~4 ≤ 5.0), two enemies at different HP
-        Unit weakEnemy   = new Unit("e-weak",   UnitType.ZEALOT, new Point2d(14, 10), 10, 100,  0, 50, 0);
-        Unit strongEnemy = new Unit("e-strong", UnitType.ZEALOT, new Point2d(14, 11), 100, 100, 50, 50, 0);
+        Unit weakEnemy   = new Unit("e-weak",   UnitType.ZEALOT, new Point2d(14, 10), 10, 100,  0, 50, 0, 0);
+        Unit strongEnemy = new Unit("e-strong", UnitType.ZEALOT, new Point2d(14, 11), 100, 100, 50, 50, 0, 0);
         var cf = caseFile("ATTACK",
             List.of(stalker("s-0", new Point2d(10, 10), 80, 80, 0),
                     stalker("s-1", new Point2d(10, 10), 80, 80, 0)),
@@ -168,7 +168,7 @@ class DroolsTacticsTaskIT {
         Point2d enemyPos   = new Point2d(10, 14); // enemy is 4 tiles away (within Stalker range 5.0)
         var cf = caseFile("ATTACK",
             List.of(stalker("s-kite", stalkerPos, 80, 80, 3)), // cooldown = 3
-            List.of(new Unit("e-0", UnitType.ZEALOT, enemyPos, 100, 100, 50, 50, 0)),
+            List.of(new Unit("e-0", UnitType.ZEALOT, enemyPos, 100, 100, 50, 50, 0, 0)),
             enemyPos);
         tacticsTask.execute(cf);
         assertThat(intentQueue.pending()).hasSize(1);
@@ -187,7 +187,7 @@ class DroolsTacticsTaskIT {
         var cf = caseFile("ATTACK",
             List.of(stalker("s-ready",  new Point2d(10, 10), 80, 80, 0),
                     stalker("s-kiting", new Point2d(10, 10), 80, 80, 3)),
-            List.of(new Unit("e-0", UnitType.ZEALOT, enemyPos, 100, 100, 50, 50, 0)),
+            List.of(new Unit("e-0", UnitType.ZEALOT, enemyPos, 100, 100, 50, 50, 0, 0)),
             enemyPos);
         tacticsTask.execute(cf);
         assertThat(intentQueue.pending()).hasSize(2);
@@ -201,8 +201,8 @@ class DroolsTacticsTaskIT {
     void happyPath_attackCycle_focusFiresWeakestEnemy() {
         // Three Stalkers vs two enemies; all in range, all off cooldown
         // All three should target the weakest enemy
-        Unit weak   = new Unit("e-weak",   UnitType.ZEALOT, new Point2d(14, 10),  5, 100,  0, 50, 0);
-        Unit strong = new Unit("e-strong", UnitType.ZEALOT, new Point2d(14, 11), 100, 100, 50, 50, 0);
+        Unit weak   = new Unit("e-weak",   UnitType.ZEALOT, new Point2d(14, 10),  5, 100,  0, 50, 0, 0);
+        Unit strong = new Unit("e-strong", UnitType.ZEALOT, new Point2d(14, 11), 100, 100, 50, 50, 0, 0);
         var cf = caseFile("ATTACK",
             List.of(stalker("s-0", new Point2d(10, 10), 80, 80, 0),
                     stalker("s-1", new Point2d(10, 10), 80, 80, 0),
@@ -232,11 +232,11 @@ class DroolsTacticsTaskIT {
     }
 
     private Unit stalker(String tag, Point2d pos, int health, int maxHealth) {
-        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth, 80, 80, 0);
+        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth, 80, 80, 0, 0);
     }
 
     private Unit stalker(String tag, Point2d pos, int health, int maxHealth, int cooldown) {
-        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth, 80, 80, cooldown);
+        return new Unit(tag, UnitType.STALKER, pos, health, maxHealth, 80, 80, cooldown, 0);
     }
 
     private double distance(Point2d a, Point2d b) {
@@ -244,7 +244,7 @@ class DroolsTacticsTaskIT {
     }
 
     private Unit enemy(Point2d pos) {
-        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100, 50, 50, 0);
+        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100, 50, 50, 0, 0);
     }
 
     private Building nexus(Point2d pos) {

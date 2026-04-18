@@ -92,7 +92,7 @@ class EnemyStrategyTest {
     @Test
     void gameStateIncludesEnemyStagingArea() {
         Unit staged = new Unit("s-1", UnitType.ZEALOT, new Point2d(26, 26),
-            100, 100, 50, 50, 0);
+            100, 100, 50, 50, 0, 0);
         GameState state = new GameState(50, 0, 15, 12,
             List.of(), List.of(), List.of(),
             List.of(staged),   // enemyStagingArea

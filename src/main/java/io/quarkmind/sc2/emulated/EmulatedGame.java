@@ -94,7 +94,7 @@ public class EmulatedGame {
             myUnits.add(new Unit("probe-" + i, UnitType.PROBE,
                 new Point2d(9 + i * 0.5f, 9),
                 SC2Data.maxHealth(UnitType.PROBE), SC2Data.maxHealth(UnitType.PROBE),
-                SC2Data.maxShields(UnitType.PROBE), SC2Data.maxShields(UnitType.PROBE), 0));
+                SC2Data.maxShields(UnitType.PROBE), SC2Data.maxShields(UnitType.PROBE), 0, 0));
         }
         myBuildings.add(new Building("nexus-0", BuildingType.NEXUS,
             new Point2d(8, 8),
@@ -147,7 +147,7 @@ public class EmulatedGame {
                 u.position());
             if (distance(newPos, target) < 0.2) unitTargets.remove(u.tag());
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
-                            u.shields(), u.maxShields(), 0);
+                            u.shields(), u.maxShields(), 0, 0);
         });
     }
 
@@ -172,7 +172,7 @@ public class EmulatedGame {
                     (newPos.x() >= 11f && newPos.x() <= 14f) ? "IN GAP ✓" : "THROUGH WALL ✗");
             }
             return new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
-                            u.shields(), u.maxShields(), 0);
+                            u.shields(), u.maxShields(), 0, 0);
         });
     }
 
@@ -194,7 +194,7 @@ public class EmulatedGame {
                 String tag = "enemy-" + nextTag++;
                 int hp = SC2Data.maxHealth(type);
                 enemyUnits.add(new Unit(tag, type, pos, hp, hp,
-                    SC2Data.maxShields(type), SC2Data.maxShields(type), 0));
+                    SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
                 enemyTargets.put(tag, wave.targetPosition());
             }
             log.infof("[EMULATED] Enemy wave spawned: %dx%s at frame %d",
@@ -272,7 +272,7 @@ public class EmulatedGame {
                     int hp = SC2Data.maxHealth(step.unitType());
                     enemyStagingArea.add(new Unit(tag, step.unitType(),
                         STAGING_POS, hp, hp,
-                        SC2Data.maxShields(step.unitType()), SC2Data.maxShields(step.unitType()), 0));
+                        SC2Data.maxShields(step.unitType()), SC2Data.maxShields(step.unitType()), 0, 0));
                     if (enemyStrategy.loop() || enemyBuildIndex < order.size() - 1)
                         enemyBuildIndex++;
                     else
@@ -340,7 +340,7 @@ public class EmulatedGame {
             String tag = "unit-" + nextTag++;
             int hp = SC2Data.maxHealth(t.unitType());
             myUnits.add(new Unit(tag, t.unitType(), new Point2d(9, 9), hp, hp,
-                SC2Data.maxShields(t.unitType()), SC2Data.maxShields(t.unitType()), 0));
+                SC2Data.maxShields(t.unitType()), SC2Data.maxShields(t.unitType()), 0, 0));
             log.debugf("[EMULATED] Trained %s (tag=%s)", t.unitType(), tag);
         }));
     }
@@ -466,7 +466,7 @@ public class EmulatedGame {
         int overflow    = Math.max(0, damage - u.shields());
         int hpLeft      = Math.max(0, u.health() - overflow);
         return new Unit(u.tag(), u.type(), u.position(), hpLeft, u.maxHealth(),
-                        shieldsLeft, u.maxShields(), 0);
+                        shieldsLeft, u.maxShields(), 0, 0);
     }
 
     /** Package-private for testing — linear interpolation toward target. */
@@ -498,7 +498,7 @@ public class EmulatedGame {
         List<Unit> friendlyWithCooldown = myUnits.stream()
             .map(u -> new Unit(u.tag(), u.type(), u.position(),
                                u.health(), u.maxHealth(), u.shields(), u.maxShields(),
-                               unitCooldowns.getOrDefault(u.tag(), 0)))
+                               unitCooldowns.getOrDefault(u.tag(), 0), 0))
             .toList();
 
         if (terrainGrid != null) {
@@ -563,21 +563,21 @@ public class EmulatedGame {
         int hp = SC2Data.maxHealth(type);
         String tag = "test-enemy-" + nextTag++;
         enemyUnits.add(new Unit(tag, type, position, hp, hp,
-            SC2Data.maxShields(type), SC2Data.maxShields(type), 0));
+            SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
         enemyTargets.put(tag, NEXUS_POS);
     }
 
     /** Sets a friendly unit's health for combat threshold tests. */
     void setHealthForTesting(String tag, int health) {
         myUnits.replaceAll(u -> u.tag().equals(tag)
-            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(), u.shields(), u.maxShields(), 0)
+            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(), u.shields(), u.maxShields(), 0, 0)
             : u);
     }
 
     /** Sets a friendly unit's shields for shield absorption tests. */
     void setShieldsForTesting(String tag, int shields) {
         myUnits.replaceAll(u -> u.tag().equals(tag)
-            ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(), shields, u.maxShields(), 0)
+            ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(), shields, u.maxShields(), 0, 0)
             : u);
     }
 
@@ -586,7 +586,7 @@ public class EmulatedGame {
         String tag = "test-unit-" + nextTag++;
         int hp = SC2Data.maxHealth(type);
         myUnits.add(new Unit(tag, type, position, hp, hp,
-            SC2Data.maxShields(type), SC2Data.maxShields(type), 0));
+            SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
         return tag;
     }
 
@@ -594,7 +594,7 @@ public class EmulatedGame {
     void setEnemyShieldsForTesting(String tag, int shields) {
         enemyUnits.replaceAll(u -> u.tag().equals(tag)
             ? new Unit(u.tag(), u.type(), u.position(), u.health(), u.maxHealth(),
-                       shields, u.maxShields(), 0)
+                       shields, u.maxShields(), 0, 0)
             : u);
     }
 
@@ -608,7 +608,7 @@ public class EmulatedGame {
     void setEnemyHealthForTesting(String tag, int health) {
         enemyUnits.replaceAll(u -> u.tag().equals(tag)
             ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(),
-                       u.shields(), u.maxShields(), 0)
+                       u.shields(), u.maxShields(), 0, 0)
             : u);
     }
 
@@ -624,6 +624,6 @@ public class EmulatedGame {
         String tag = "test-staging-" + nextTag++;
         int hp = SC2Data.maxHealth(type);
         enemyStagingArea.add(new Unit(tag, type, position, hp, hp,
-            SC2Data.maxShields(type), SC2Data.maxShields(type), 0));
+            SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
     }
 }

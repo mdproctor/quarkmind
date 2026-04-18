@@ -74,22 +74,22 @@ class ScoutingSessionManagerTest {
     @Test
     void enemyFarFromEnemyBaseAddsExpansionEvent() {
         // Unit at (64,64) is > 50 tiles from enemyBase at (224,224) — triggers expansion
-        Unit farUnit = new Unit("x-0", UnitType.ROACH, new Point2d(64, 64), 100, 100, 0, 0, 0);
+        Unit farUnit = new Unit("x-0", UnitType.ROACH, new Point2d(64, 64), 100, 100, 0, 0, 0, 0);
         manager.processFrame(List.of(farUnit), 1000L, nexus(), enemyBase());
         assertThat(manager.expansionBufferSize()).isEqualTo(1);
     }
 
     @Test
     void expansionEventNotInsertedTwiceForSameCell() {
-        Unit farUnit  = new Unit("x-0", UnitType.ROACH, new Point2d(64, 64), 100, 100, 0, 0, 0);
-        Unit farUnit2 = new Unit("x-1", UnitType.ROACH, new Point2d(64, 64), 100, 100, 0, 0, 0);
+        Unit farUnit  = new Unit("x-0", UnitType.ROACH, new Point2d(64, 64), 100, 100, 0, 0, 0, 0);
+        Unit farUnit2 = new Unit("x-1", UnitType.ROACH, new Point2d(64, 64), 100, 100, 0, 0, 0, 0);
         manager.processFrame(List.of(farUnit),  1000L, nexus(), enemyBase());
         manager.processFrame(List.of(farUnit2), 2000L, nexus(), enemyBase());
         assertThat(manager.expansionBufferSize()).isEqualTo(1);
     }
 
     private Unit roach(String tag, float x, float y) {
-        return new Unit(tag, UnitType.ROACH, new Point2d(x, y), 100, 100, 0, 0, 0);
+        return new Unit(tag, UnitType.ROACH, new Point2d(x, y), 100, 100, 0, 0, 0, 0);
     }
     private Point2d nexus()     { return new Point2d(8, 8); }
     private Point2d enemyBase() { return new Point2d(224, 224); }

@@ -116,7 +116,8 @@ public final class ObservationTranslator {
             u.getHealthMax().map(Float::intValue).orElse(0),
             u.getShield().map(Float::intValue).orElse(0),
             u.getShieldMax().map(Float::intValue).orElse(0),
-            0   // TODO #70: map (int)(u.getWeaponCooldown().orElse(0f) / 0.5f) when real SC2 mode is exercised
+            0,  // TODO #70: map (int)(u.getWeaponCooldown().orElse(0f) / 0.5f) when real SC2 mode is exercised
+            0   // blinkCooldownTicks — not yet tracked in real SC2 mode
         );
     }
 

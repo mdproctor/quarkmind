@@ -148,7 +148,7 @@ class EconomicsFlowTest {
 
     private List<Unit> workers(int count) {
         return IntStream.range(0, count)
-            .mapToObj(i -> new Unit("probe-" + i, UnitType.PROBE, new Point2d(9, 9), 45, 45, 20, 20, 0))
+            .mapToObj(i -> new Unit("probe-" + i, UnitType.PROBE, new Point2d(9, 9), 45, 45, 20, 20, 0, 0))
             .toList();
     }
 

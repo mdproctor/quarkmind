@@ -15,15 +15,15 @@ class DroolsTacticsTaskTest {
     // ---- Helpers ----
 
     private static Unit unit(String tag, UnitType type, Point2d pos) {
-        return new Unit(tag, type, pos, 80, 80, 80, 80, 0);
+        return new Unit(tag, type, pos, 80, 80, 80, 80, 0, 0);
     }
 
     private static Unit unit(String tag, UnitType type, Point2d pos, int cooldown) {
-        return new Unit(tag, type, pos, 80, 80, 80, 80, cooldown);
+        return new Unit(tag, type, pos, 80, 80, 80, 80, cooldown, 0);
     }
 
     private static Unit enemy(Point2d pos) {
-        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100, 50, 50, 0);
+        return new Unit("e-0", UnitType.ZEALOT, pos, 100, 100, 50, 50, 0, 0);
     }
 
     // ---- computeInRangeTags: per-unit range ----

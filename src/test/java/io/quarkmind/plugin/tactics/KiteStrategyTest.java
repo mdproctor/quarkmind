@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class KiteStrategyTest {
     private static Unit unit(String tag, Point2d pos) {
-        return new Unit(tag, UnitType.STALKER, pos, 80, 80, 80, 80, 0);
+        return new Unit(tag, UnitType.STALKER, pos, 80, 80, 80, 80, 0, 0);
     }
     private static double dist(Point2d a, Point2d b) {
         double dx = a.x()-b.x(), dy = a.y()-b.y();

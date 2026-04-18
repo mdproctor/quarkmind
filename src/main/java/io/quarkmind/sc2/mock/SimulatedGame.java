@@ -45,7 +45,7 @@ public class SimulatedGame {
         for (int i = 0; i < SC2Data.INITIAL_PROBES; i++) {
             myUnits.add(new Unit("probe-" + i, UnitType.PROBE, new Point2d(9 + i * 0.5f, 9),
                 SC2Data.maxHealth(UnitType.PROBE), SC2Data.maxHealth(UnitType.PROBE),
-                SC2Data.maxShields(UnitType.PROBE), SC2Data.maxShields(UnitType.PROBE), 0));
+                SC2Data.maxShields(UnitType.PROBE), SC2Data.maxShields(UnitType.PROBE), 0, 0));
         }
         myBuildings.add(new Building("nexus-0", BuildingType.NEXUS, new Point2d(8, 8),
             SC2Data.maxBuildingHealth(BuildingType.NEXUS), SC2Data.maxBuildingHealth(BuildingType.NEXUS), true));
@@ -72,7 +72,7 @@ public class SimulatedGame {
                 supplyUsed += SC2Data.supplyCost(t.unitType());
                 myUnits.add(new Unit("unit-" + nextTag++, t.unitType(), new Point2d(9, 9),
                     SC2Data.maxHealth(t.unitType()), SC2Data.maxHealth(t.unitType()),
-                    SC2Data.maxShields(t.unitType()), SC2Data.maxShields(t.unitType()), 0));
+                    SC2Data.maxShields(t.unitType()), SC2Data.maxShields(t.unitType()), 0, 0));
             }));
         } else if (intent instanceof BuildIntent b) {
             String bldgTag = "bldg-" + nextTag++;
@@ -100,7 +100,7 @@ public class SimulatedGame {
     public synchronized void addStagedUnitForTesting(UnitType type, Point2d position) {
         testStagingArea.add(new Unit("staging-" + nextTag++, type, position,
             SC2Data.maxHealth(type), SC2Data.maxHealth(type),
-            SC2Data.maxShields(type), SC2Data.maxShields(type), 0));
+            SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
     }
 
     /** Test helper: clears the staging area. */
@@ -111,7 +111,7 @@ public class SimulatedGame {
     public synchronized void spawnEnemyUnit(UnitType type, Point2d position) {
         enemyUnits.add(new Unit("enemy-" + nextTag++, type, position,
             SC2Data.maxHealth(type), SC2Data.maxHealth(type),
-            SC2Data.maxShields(type), SC2Data.maxShields(type), 0));
+            SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
     }
 
     public void setMinerals(int amount) { this.minerals = amount; }
@@ -122,7 +122,7 @@ public class SimulatedGame {
     /** Sets a friendly unit's health — used by VisualizerRenderTest. */
     public void setUnitHealth(String tag, int health) {
         myUnits.replaceAll(u -> u.tag().equals(tag)
-            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(), u.shields(), u.maxShields(), 0)
+            ? new Unit(u.tag(), u.type(), u.position(), health, u.maxHealth(), u.shields(), u.maxShields(), 0, 0)
             : u);
     }
 

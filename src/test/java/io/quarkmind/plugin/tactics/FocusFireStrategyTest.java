@@ -7,10 +7,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class FocusFireStrategyTest {
     private static Unit stalker(String tag, Point2d pos) {
-        return new Unit(tag, UnitType.STALKER, pos, 80, 80, 80, 80, 0);
+        return new Unit(tag, UnitType.STALKER, pos, 80, 80, 80, 80, 0, 0);
     }
     private static Unit enemy(String tag, Point2d pos, int hp, int shields) {
-        return new Unit(tag, UnitType.ZEALOT, pos, hp, 100, shields, 50, 0);
+        return new Unit(tag, UnitType.ZEALOT, pos, hp, 100, shields, 50, 0, 0);
     }
 
     @Test void lowestHp_allAttackLowestHpEnemy() {
