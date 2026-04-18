@@ -48,4 +48,30 @@ class KiteStrategyTest {
         assertThat(s.retreatTarget(unit("u-0", new Point2d(5,5)), enemies, terrain))
             .isEqualTo(s.retreatTarget(unit("u-0", new Point2d(5,5)), enemies, null));
     }
+
+    @Test void terrainAware_openTerrain_sameAsDirect() {
+        TerrainGrid terrain = TerrainGrid.emulatedMap();
+        List<Unit> enemies = List.of(unit("e-0", new Point2d(7, 5)));
+        Unit u = unit("u-0", new Point2d(5, 5));
+        assertThat(new TerrainAwareKiteStrategy().retreatTarget(u, enemies, terrain))
+            .isEqualTo(new DirectKiteStrategy().retreatTarget(u, enemies, null));
+    }
+
+    @Test void terrainAware_wallAhead_findsWalkableAlternative() {
+        // unit at (10,17), enemy at (10,15) → ideal retreat is straight up to (10,18) = WALL at x=10
+        TerrainGrid terrain = TerrainGrid.emulatedMap();
+        Point2d result = new TerrainAwareKiteStrategy().retreatTarget(
+            unit("u-0", new Point2d(10, 17)),
+            List.of(unit("e-0", new Point2d(10, 15))),
+            terrain);
+        assertThat(terrain.isWalkable((int) result.x(), (int) result.y())).isTrue();
+        assertThat(result).isNotEqualTo(new Point2d(10, 18));
+    }
+
+    @Test void terrainAware_nullTerrain_behavesLikeDirect() {
+        List<Unit> enemies = List.of(unit("e-0", new Point2d(7, 5)));
+        Unit u = unit("u-0", new Point2d(5, 5));
+        assertThat(new TerrainAwareKiteStrategy().retreatTarget(u, enemies, null))
+            .isEqualTo(new DirectKiteStrategy().retreatTarget(u, enemies, null));
+    }
 }

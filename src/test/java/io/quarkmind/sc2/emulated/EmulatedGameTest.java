@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import io.quarkmind.sc2.emulated.VisibilityGrid;
 import io.quarkmind.sc2.emulated.TileVisibility;
+import io.quarkmind.plugin.tactics.TerrainAwareKiteStrategy;
 
 class EmulatedGameTest {
 
@@ -926,6 +927,39 @@ class EmulatedGameTest {
         Point2d after = game.snapshot().enemyUnits().get(0).position();
         assertThat(after.x()).as("enemy must move toward nexus (x decreases)").isLessThan(before.x());
         assertThat(after.y()).as("enemy must move toward nexus (y decreases)").isLessThan(before.y());
+    }
+
+    // ---- E11: TerrainAwareKiteStrategy physics ----
+
+    @Test
+    void terrainAwareKiting_doesNotStepIntoWallTile() {
+        // Unit at (10,17), enemy at (10,15) — ideal kite direction is +y toward (10,18) = WALL.
+        // TerrainAwareKiteStrategy must sweep to a walkable alternative.
+        // We drive the kite manually: compute retreat via strategy, issue MoveIntent, tick.
+        game.setTerrainGrid(TerrainGrid.emulatedMap());
+        String tag = game.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10f, 17f));
+        game.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(10f, 15f));
+
+        TerrainAwareKiteStrategy strategy = new TerrainAwareKiteStrategy();
+        TerrainGrid terrain = TerrainGrid.emulatedMap();
+
+        for (int i = 0; i < 8; i++) {
+            GameState state = game.snapshot();
+            Unit stalker = state.myUnits().stream()
+                .filter(u -> u.tag().equals(tag)).findFirst().orElse(null);
+            List<Unit> enemies = state.enemyUnits();
+            if (stalker == null || enemies.isEmpty()) break;
+            Point2d retreat = strategy.retreatTarget(stalker, enemies, terrain);
+            game.applyIntent(new MoveIntent(tag, retreat));
+            game.tick();
+        }
+
+        // No friendly unit should be on a WALL tile after kiting
+        for (Unit u : game.snapshot().myUnits()) {
+            assertThat(terrain.heightAt((int) u.position().x(), (int) u.position().y()))
+                .as("unit %s ended up at %s which is a wall", u.tag(), u.position())
+                .isNotEqualTo(TerrainGrid.Height.WALL);
+        }
     }
 
     @Test
