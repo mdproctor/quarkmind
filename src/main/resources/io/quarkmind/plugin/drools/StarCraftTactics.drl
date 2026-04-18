@@ -1,5 +1,6 @@
 package io.quarkmind.plugin.drools;
 unit TacticsRuleUnit;
+import io.quarkmind.domain.UnitType;
 
 // ---------------------------------------------------------------------------
 // Phase 1 — Group Classification (salience 200+)
@@ -22,6 +23,18 @@ when
 then
     groupDecisions.add("low-health:UNIT_SAFE:" + $u.tag());
     activeGroups.add("low-health");
+end
+
+rule "Group: blinking"
+    salience 205
+when
+    eval(strategyGoal.equals("ATTACK"))
+    $u: /army[ type == UnitType.STALKER, (double) this.health() / this.maxHealth() >= 0.3 ]
+    /blinkReadyTags[ this == $u.tag() ]
+    /shieldsLowTags[ this == $u.tag() ]
+then
+    groupDecisions.add("blinking:BLINKING:" + $u.tag());
+    activeGroups.add("blinking");
 end
 
 rule "Group: kiting"
@@ -73,6 +86,14 @@ when
     /activeGroups[ this == "low-health" ]
 then
     actionDecisions.add("RETREAT:1");
+end
+
+rule "Action: Blink available"
+    salience 105
+when
+    /activeGroups[ this == "blinking" ]
+then
+    actionDecisions.add("BLINK:1");
 end
 
 rule "Action: Kite available"
