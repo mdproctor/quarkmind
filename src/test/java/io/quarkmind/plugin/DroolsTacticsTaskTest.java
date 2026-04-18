@@ -81,4 +81,30 @@ class DroolsTacticsTaskTest {
         assertThat(DroolsTacticsTask.computeOnCooldownTags(List.of(r0, r1))).isEmpty();
     }
 
+    // ---- computeBlinkReadyTags ----
+
+    @Test
+    void computeBlinkReadyTagsReturnsStalkerWithCooldownZero() {
+        List<Unit> army = List.of(
+            new Unit("s-0", UnitType.STALKER, new Point2d(0,0), 80, 80, 80, 80, 0, 0),  // blink ready
+            new Unit("s-1", UnitType.STALKER, new Point2d(0,0), 80, 80, 80, 80, 0, 5),  // on blink cooldown
+            new Unit("z-0", UnitType.ZEALOT,  new Point2d(0,0), 100, 100, 50, 50, 0, 0) // not a Stalker
+        );
+        Set<String> result = DroolsTacticsTask.computeBlinkReadyTags(army);
+        assertThat(result).containsExactly("s-0");
+    }
+
+    // ---- computeShieldsLowTags ----
+
+    @Test
+    void computeShieldsLowTagsReturnsBelowTwentyFivePercent() {
+        List<Unit> army = List.of(
+            new Unit("s-0", UnitType.STALKER, new Point2d(0,0), 80, 80, 19, 80, 0, 0), // 19 < 20 (25% of 80)
+            new Unit("s-1", UnitType.STALKER, new Point2d(0,0), 80, 80, 20, 80, 0, 0), // exactly 25%, NOT low
+            new Unit("s-2", UnitType.STALKER, new Point2d(0,0), 80, 80,  0, 80, 0, 0)  // 0 shields — low
+        );
+        Set<String> result = DroolsTacticsTask.computeShieldsLowTags(army);
+        assertThat(result).containsExactlyInAnyOrder("s-0", "s-2");
+    }
+
 }

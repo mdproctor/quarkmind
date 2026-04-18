@@ -1228,6 +1228,71 @@ class EmulatedGameTest {
         return 60;
     }
 
+    // ---- E12 blink tests ----
+
+    @Test
+    void stalkerThatBlinksRetainsMoreHpThanNonBlinkingControl() {
+        // Run A: Stalker blinks when shields critically low — blink teleports it away and
+        //        restores 40 shields, breaking melee contact with the Zealot.
+        // Run B: same scenario, no blink — Stalker stays in melee and keeps taking hits.
+        // Pre-condition: Stalker shields set to 25 (just above 25% threshold of 80 = 20).
+        //   First Zealot hit (8 - 1 armour = 7 effective) drops shields to 18 < 20 → triggers blink.
+
+        // ----- Run A: with blink -----
+        EmulatedGame runA = new EmulatedGame();
+        runA.configureWave(9999, 1, UnitType.ZEALOT);
+        runA.reset();
+        String stalkerTagA = runA.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10.0f, 10.0f));
+        runA.setShieldsForTesting(stalkerTagA, 25); // near threshold: first hit drops to 18 < 20
+        runA.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(10.0f, 10.3f));
+
+        boolean blinkUsedA = false;
+        for (int t = 0; t < 30; t++) {
+            List<Unit> enemiesA = runA.snapshot().enemyUnits();
+            if (enemiesA.isEmpty()) break;
+            Unit stalkerA = runA.snapshot().myUnits().stream()
+                .filter(u -> u.tag().equals(stalkerTagA)).findFirst().orElse(null);
+            if (stalkerA == null) break;
+            if (!blinkUsedA && stalkerA.shields() < stalkerA.maxShields() * 0.25
+                    && stalkerA.blinkCooldownTicks() == 0) {
+                runA.applyIntent(new BlinkIntent(stalkerTagA));
+                blinkUsedA = true;
+            } else {
+                runA.applyIntent(new AttackIntent(stalkerTagA, enemiesA.get(0).position()));
+            }
+            runA.tick();
+        }
+
+        // ----- Run B: no blink -----
+        EmulatedGame runB = new EmulatedGame();
+        runB.configureWave(9999, 1, UnitType.ZEALOT);
+        runB.reset();
+        String stalkerTagB = runB.spawnFriendlyForTesting(UnitType.STALKER, new Point2d(10.0f, 10.0f));
+        runB.setShieldsForTesting(stalkerTagB, 25); // same starting state
+        runB.spawnEnemyForTesting(UnitType.ZEALOT, new Point2d(10.0f, 10.3f));
+
+        for (int t = 0; t < 30; t++) {
+            List<Unit> enemiesB = runB.snapshot().enemyUnits();
+            if (enemiesB.isEmpty()) break;
+            Unit stalkerB = runB.snapshot().myUnits().stream()
+                .filter(u -> u.tag().equals(stalkerTagB)).findFirst().orElse(null);
+            if (stalkerB == null) break;
+            runB.applyIntent(new AttackIntent(stalkerTagB, enemiesB.get(0).position()));
+            runB.tick();
+        }
+
+        int hpA = runA.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(stalkerTagA))
+            .mapToInt(u -> u.health() + u.shields()).findFirst().orElse(0);
+        int hpB = runB.snapshot().myUnits().stream()
+            .filter(u -> u.tag().equals(stalkerTagB))
+            .mapToInt(u -> u.health() + u.shields()).findFirst().orElse(0);
+
+        assertThat(blinkUsedA).as("blink should have triggered in run A").isTrue();
+        assertThat(hpA).as("blinking Stalker should survive with more total HP+shields")
+            .isGreaterThan(hpB);
+    }
+
     // ---- E10: Kiting physics ----
 
     // At STALKER cooldown=1, kiting fires every other tick:
