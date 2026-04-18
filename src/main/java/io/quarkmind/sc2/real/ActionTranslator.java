@@ -5,6 +5,7 @@ import com.github.ocraft.s2client.protocol.unit.Tag;
 import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.UnitType;
 import io.quarkmind.sc2.intent.AttackIntent;
+import io.quarkmind.sc2.intent.BlinkIntent;
 import io.quarkmind.sc2.intent.BuildIntent;
 import io.quarkmind.sc2.intent.Intent;
 import io.quarkmind.sc2.intent.MoveIntent;
@@ -40,6 +41,7 @@ public final class ActionTranslator {
                     case TrainIntent  t -> train(t);
                     case AttackIntent a -> attack(a);
                     case MoveIntent   m -> move(m);
+                    case BlinkIntent  b -> blink(b);
                 };
                 if (cmd != null) commands.add(cmd);
             } catch (Exception e) {
@@ -91,6 +93,11 @@ public final class ActionTranslator {
             Abilities.MOVE,
             Optional.of(toOcraft(intent.targetLocation()))
         );
+    }
+
+    private static ResolvedCommand blink(BlinkIntent intent) {
+        // implemented in Task 4
+        return null;
     }
 
     private static Tag toTag(String tagStr) {

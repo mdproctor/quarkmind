@@ -307,6 +307,7 @@ public class EmulatedGame {
             case AttackIntent a -> setTarget(a.unitTag(), a.targetLocation(), true);
             case TrainIntent  t -> handleTrain(t);
             case BuildIntent  b -> handleBuild(b);
+            case BlinkIntent  b -> {} // implemented in Task 4
         }
     }
 
