@@ -38,6 +38,7 @@ public class EmulatedGame {
     // E4: per-unit attack cooldowns (absent key = 0 = can attack immediately)
     private final Map<String, Integer> unitCooldowns  = new HashMap<>();
     private final Map<String, Integer> enemyCooldowns = new HashMap<>();
+    private final Map<String, Integer> blinkCooldowns = new HashMap<>();
     // E4: enemy economy
     private EnemyStrategy enemyStrategy;
     private double        enemyMineralAccumulator;
@@ -77,6 +78,7 @@ public class EmulatedGame {
         attackingUnits.clear();
         unitCooldowns.clear();
         enemyCooldowns.clear();
+        blinkCooldowns.clear();
         enemyMineralAccumulator = 0;
         enemyBuildIndex         = 0;
         framesSinceLastAttack   = 0;
@@ -307,7 +309,7 @@ public class EmulatedGame {
             case AttackIntent a -> setTarget(a.unitTag(), a.targetLocation(), true);
             case TrainIntent  t -> handleTrain(t);
             case BuildIntent  b -> handleBuild(b);
-            case BlinkIntent  b -> {} // implemented in Task 4
+            case BlinkIntent  b -> executeBlink(b.unitTag());
         }
     }
 
@@ -375,6 +377,7 @@ public class EmulatedGame {
         // Step 1: decrement all cooldowns (floor 0)
         unitCooldowns.replaceAll((tag, cd) -> Math.max(0, cd - 1));
         enemyCooldowns.replaceAll((tag, cd) -> Math.max(0, cd - 1));
+        blinkCooldowns.replaceAll((tag, cd) -> Math.max(0, cd - 1));
 
         Map<String, Integer> pending       = new HashMap<>();
         Set<String>          firedFriendly = new HashSet<>();
@@ -412,6 +415,7 @@ public class EmulatedGame {
                 unitTargets.remove(u.tag());
                 attackingUnits.remove(u.tag());
                 unitCooldowns.remove(u.tag());
+                blinkCooldowns.remove(u.tag());
                 movementStrategy.clearUnit(u.tag());
                 return true;
             }
@@ -445,6 +449,44 @@ public class EmulatedGame {
             .filter(u -> distance(from, u.position()) <= range)
             .min(Comparator.comparingDouble(u ->
                 distance(from, u.position()) * 1000 + u.health() + u.shields()));
+    }
+
+    private Point2d blinkRetreatTarget(Unit unit) {
+        Unit nearest = enemyUnits.stream()
+            .min(Comparator.comparingDouble(e -> distance(unit.position(), e.position())))
+            .orElse(null);
+        if (nearest == null) return unit.position();
+        double dx = unit.position().x() - nearest.position().x();
+        double dy = unit.position().y() - nearest.position().y();
+        double len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 0.001) return unit.position();
+        float step = SC2Data.blinkRange(unit.type());
+        double baseAngle = Math.atan2(dy, dx);
+        // Try direct direction first, then sweep ±45° increments if wall
+        for (int i = 0; i <= 4; i++) {
+            for (int sign : new int[]{1, -1}) {
+                double angle = baseAngle + sign * i * Math.PI / 4;
+                Point2d candidate = new Point2d(
+                    (float)(unit.position().x() + Math.cos(angle) * step),
+                    (float)(unit.position().y() + Math.sin(angle) * step));
+                if (terrainGrid == null || terrainGrid.isWalkable((int) candidate.x(), (int) candidate.y())) return candidate;
+                if (i == 0) break; // only one attempt for direct direction
+            }
+        }
+        return unit.position(); // all directions blocked — stay put
+    }
+
+    void executeBlink(String tag) {
+        myUnits.replaceAll(u -> {
+            if (!u.tag().equals(tag)) return u;
+            Point2d dest = blinkRetreatTarget(u);
+            int restored = Math.min(u.shields() + SC2Data.blinkShieldRestore(u.type()), u.maxShields());
+            unitTargets.put(tag, dest);
+            blinkCooldowns.put(tag, SC2Data.blinkCooldownInTicks(u.type()));
+            attackingUnits.remove(tag); // blink cancels attack mode
+            return new Unit(u.tag(), u.type(), dest,
+                            u.health(), u.maxHealth(), restored, u.maxShields(), 0, 0);
+        });
     }
 
     /**
@@ -499,7 +541,8 @@ public class EmulatedGame {
         List<Unit> friendlyWithCooldown = myUnits.stream()
             .map(u -> new Unit(u.tag(), u.type(), u.position(),
                                u.health(), u.maxHealth(), u.shields(), u.maxShields(),
-                               unitCooldowns.getOrDefault(u.tag(), 0), 0))
+                               unitCooldowns.getOrDefault(u.tag(), 0),
+                               blinkCooldowns.getOrDefault(u.tag(), 0)))
             .toList();
 
         if (terrainGrid != null) {
@@ -626,5 +669,13 @@ public class EmulatedGame {
         int hp = SC2Data.maxHealth(type);
         enemyStagingArea.add(new Unit(tag, type, position, hp, hp,
             SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
+    }
+
+    /** Test helper — adds a friendly unit directly to myUnits. Package-private. */
+    void spawnFriendlyUnitForTesting(UnitType type, Point2d position) {
+        int hp  = SC2Data.maxHealth(type);
+        int sh  = SC2Data.maxShields(type);
+        String tag = "test-friendly-" + nextTag++;
+        myUnits.add(new Unit(tag, type, position, hp, hp, sh, sh, 0, 0));
     }
 }
