@@ -16,6 +16,7 @@ import io.quarkmind.plugin.tactics.WorldState;
 import io.quarkmind.sc2.IntentQueue;
 import io.quarkmind.sc2.TerrainProvider;
 import io.quarkmind.sc2.intent.AttackIntent;
+import io.quarkmind.sc2.intent.BlinkIntent;
 import io.quarkmind.sc2.intent.MoveIntent;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.inject.Instance;
@@ -60,7 +61,10 @@ public class DroolsTacticsTask implements TacticsTask {
             Map.of("inRange", true), 1),
         "KITE",           new GoapAction("KITE",
             Map.of("inRange", true, "onCooldown", true, "enemyVisible", true),
-            Map.of("onCooldown", false), 1)
+            Map.of("onCooldown", false), 1),
+        "BLINK",          new GoapAction("BLINK",
+            Map.of("shieldsLow", true, "blinkReady", true, "enemyVisible", true),
+            Map.of("shieldsLow", false, "inRange", false, "blinkReady", false), 1)
     );
 
     private static final Logger log = Logger.getLogger(DroolsTacticsTask.class);
@@ -123,8 +127,10 @@ public class DroolsTacticsTask implements TacticsTask {
 
         Set<String> inRangeSet    = computeInRangeTags(army, enemies);
         Set<String> onCooldownSet = computeOnCooldownTags(army);
+        Set<String> blinkReadySet  = computeBlinkReadyTags(army);
+        Set<String> shieldsLowSet  = computeShieldsLowTags(army);
 
-        TacticsRuleUnit data = buildRuleUnit(army, enemies, inRangeSet, onCooldownSet, strategy);
+        TacticsRuleUnit data = buildRuleUnit(army, enemies, inRangeSet, onCooldownSet, blinkReadySet, shieldsLowSet, strategy);
         try (RuleUnitInstance<TacticsRuleUnit> instance = ruleUnit.createInstance(data)) {
             instance.fire();
         }
@@ -177,8 +183,23 @@ public class DroolsTacticsTask implements TacticsTask {
             .collect(Collectors.toSet());
     }
 
+    static Set<String> computeBlinkReadyTags(List<Unit> army) {
+        return army.stream()
+            .filter(u -> u.type() == UnitType.STALKER && u.blinkCooldownTicks() == 0)
+            .map(Unit::tag)
+            .collect(Collectors.toSet());
+    }
+
+    static Set<String> computeShieldsLowTags(List<Unit> army) {
+        return army.stream()
+            .filter(u -> u.shields() < u.maxShields() * 0.25)
+            .map(Unit::tag)
+            .collect(Collectors.toSet());
+    }
+
     private TacticsRuleUnit buildRuleUnit(List<Unit> army, List<Unit> enemies,
                                            Set<String> inRangeTags, Set<String> onCooldownTags,
+                                           Set<String> blinkReadyTags, Set<String> shieldsLowTags,
                                            String strategy) {
         TacticsRuleUnit data = new TacticsRuleUnit();
         data.setStrategyGoal(strategy);
@@ -186,6 +207,8 @@ public class DroolsTacticsTask implements TacticsTask {
         enemies.forEach(data.getEnemies()::add);
         inRangeTags.forEach(data.getInRangeTags()::add);
         onCooldownTags.forEach(data.getOnCooldownTags()::add);
+        blinkReadyTags.forEach(data.getBlinkReadyTags()::add);
+        shieldsLowTags.forEach(data.getShieldsLowTags()::add);
         return data;
     }
 
@@ -211,6 +234,7 @@ public class DroolsTacticsTask implements TacticsTask {
             case "UNIT_SAFE"        -> "unitSafe";
             case "ENEMY_ELIMINATED" -> "enemyEliminated";
             case "KITING"           -> "enemyEliminated"; // plan: KITE → ATTACK
+            case "BLINKING"         -> "enemyEliminated"; // plan: BLINK → MOVE_TO_ENGAGE → ATTACK
             default                 -> goalName.toLowerCase();
         };
     }
@@ -241,6 +265,15 @@ public class DroolsTacticsTask implements TacticsTask {
                 "enemyVisible",    true,
                 "inRange",         true,
                 "onCooldown",      true,
+                "unitSafe",        false,
+                "enemyEliminated", false));
+            case "blinking" -> new WorldState(Map.of(
+                "shieldsLow",      true,
+                "blinkReady",      true,
+                "enemyVisible",    enemyVisible,
+                "inRange",         true,
+                "onCooldown",      false,
+                "lowHealth",       false,
                 "unitSafe",        false,
                 "enemyEliminated", false));
             default             -> new WorldState(Map.of("enemyEliminated", false));
@@ -278,6 +311,9 @@ public class DroolsTacticsTask implements TacticsTask {
                     army.stream().filter(u -> u.tag().equals(tag)).findFirst()
                         .ifPresent(unit -> intentQueue.add(
                             new MoveIntent(tag, kiteStrategy.retreatTarget(unit, enemies, terrain)))));
+            }
+            case "BLINK" -> {
+                unitTags.forEach(tag -> intentQueue.add(new BlinkIntent(tag)));
             }
         }
     }
