@@ -139,8 +139,11 @@ public final class ActionTranslator {
             // Archon requires two Templar — single-tag TrainIntent cannot express this
             case ARCHON       -> null;
             // Zerg and Terran types exist for scouting recognition, not Protoss training
-            case ZERGLING, ROACH, HYDRALISK,
-                 MARINE, MARAUDER, MEDIVAC,
+            case ZERGLING, ROACH, HYDRALISK, MUTALISK, ULTRALISK,
+                 BROOD_LORD, CORRUPTOR, INFESTOR, SWARM_HOST, VIPER, QUEEN, RAVAGER, LURKER,
+                 MARINE, MARAUDER, MEDIVAC, SIEGE_TANK, THOR, VIKING,
+                 GHOST, RAVEN, BANSHEE, BATTLECRUISER, CYCLONE, LIBERATOR, WIDOW_MINE,
+                 ADEPT, DISRUPTOR, SENTRY,
                  UNKNOWN      -> null;
         };
     }

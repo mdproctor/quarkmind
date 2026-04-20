@@ -212,20 +212,52 @@ public class ReplaySimulatedGame extends SimulatedGame {
         return "r-" + index + "-" + recycle;
     }
 
-    private static UnitType toUnitType(String name) {
+    static UnitType toUnitType(String name) {
         return switch (name) {
-            case "Probe"        -> UnitType.PROBE;
-            case "Zealot"       -> UnitType.ZEALOT;
-            case "Stalker"      -> UnitType.STALKER;
-            case "Immortal"     -> UnitType.IMMORTAL;
-            case "Colossus"     -> UnitType.COLOSSUS;
-            case "Carrier"      -> UnitType.CARRIER;
-            case "DarkTemplar"  -> UnitType.DARK_TEMPLAR;
-            case "HighTemplar"  -> UnitType.HIGH_TEMPLAR;
-            case "Archon"       -> UnitType.ARCHON;
-            case "Observer"     -> UnitType.OBSERVER;
-            case "VoidRay"      -> UnitType.VOID_RAY;
-            default             -> UnitType.UNKNOWN;
+            // Protoss
+            case "Probe"          -> UnitType.PROBE;
+            case "Zealot"         -> UnitType.ZEALOT;
+            case "Stalker"        -> UnitType.STALKER;
+            case "Immortal"       -> UnitType.IMMORTAL;
+            case "Colossus"       -> UnitType.COLOSSUS;
+            case "Carrier"        -> UnitType.CARRIER;
+            case "DarkTemplar"    -> UnitType.DARK_TEMPLAR;
+            case "HighTemplar"    -> UnitType.HIGH_TEMPLAR;
+            case "Archon"         -> UnitType.ARCHON;
+            case "Observer"       -> UnitType.OBSERVER;
+            case "VoidRay"        -> UnitType.VOID_RAY;
+            case "Adept"          -> UnitType.ADEPT;
+            case "Disruptor"      -> UnitType.DISRUPTOR;
+            case "Sentry"         -> UnitType.SENTRY;
+            // Terran
+            case "Marine"         -> UnitType.MARINE;
+            case "Marauder"       -> UnitType.MARAUDER;
+            case "Medivac"        -> UnitType.MEDIVAC;
+            case "SiegeTank", "SiegeTankSieged" -> UnitType.SIEGE_TANK;
+            case "Thor", "ThorAP" -> UnitType.THOR;
+            case "VikingFighter", "VikingAssault" -> UnitType.VIKING;
+            case "Ghost"          -> UnitType.GHOST;
+            case "Raven"          -> UnitType.RAVEN;
+            case "Banshee"        -> UnitType.BANSHEE;
+            case "Battlecruiser"  -> UnitType.BATTLECRUISER;
+            case "Cyclone"        -> UnitType.CYCLONE;
+            case "Liberator", "LiberatorAG" -> UnitType.LIBERATOR;
+            case "WidowMine", "WidowMineBurrowed" -> UnitType.WIDOW_MINE;
+            // Zerg
+            case "Zergling"       -> UnitType.ZERGLING;
+            case "Roach"          -> UnitType.ROACH;
+            case "Hydralisk"      -> UnitType.HYDRALISK;
+            case "Mutalisk"       -> UnitType.MUTALISK;
+            case "Ultralisk"      -> UnitType.ULTRALISK;
+            case "BroodLord"      -> UnitType.BROOD_LORD;
+            case "Corruptor"      -> UnitType.CORRUPTOR;
+            case "Infestor"       -> UnitType.INFESTOR;
+            case "SwarmHostMP"    -> UnitType.SWARM_HOST;
+            case "Viper"          -> UnitType.VIPER;
+            case "Queen"          -> UnitType.QUEEN;
+            case "Ravager"        -> UnitType.RAVAGER;
+            case "Lurker", "LurkerMP" -> UnitType.LURKER;
+            default               -> UnitType.UNKNOWN;
         };
     }
 
