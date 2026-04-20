@@ -77,7 +77,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Unit tests** (no Quarkus, fast):
 - Instantiate classes directly via `new` — no CDI
-- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `BasicStrategyTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`, `DroolsTacticsTaskTest`, `DroolsScoutingTaskTest`, `BlinkMechanicsTest`
+- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `IEM10JsonSimulatedGameTest`, `ReplaySimulatedGameUnitTypeTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `BasicStrategyTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`, `DroolsTacticsTaskTest`, `DroolsScoutingTaskTest`, `BlinkMechanicsTest`
 - Package-private static methods on CDI beans (e.g. `DroolsTacticsTask.computeInRangeTags`, `computeOnCooldownTags`) are tested from the same package without CDI — make them `static` (not `private`) to enable this. Strategy classes (`DirectKiteStrategy`, `LowestHpFocusFireStrategy`) follow the same pattern
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
@@ -193,9 +193,11 @@ Blog posts are Jekyll posts published at `mdproctor.github.io/quarkmind/blog/`. 
 
 ## Performance Benchmarking
 
-A game loop benchmark (`@Tag("benchmark")`) measures per-phase tick timings across the full plugin chain. Run it **before and after** any change that could affect game loop latency, then paste the result into `docs/benchmarks/` with a date and commit reference.
+Two benchmark tests run via `mvn test -Pbenchmark`:
+- `GameLoopBenchmarkTest` — per-phase tick timings across the full plugin chain. Run before/after any change that could affect game loop latency; paste results into `docs/benchmarks/`.
+- `ScoutingCalibrationTest` — runs all replay datasets to 3-min mark and prints enemy unit count statistics per matchup. Re-run after adding new replay data or changing scouting CEP windows.
 
-**When to run:**
+**When to run `GameLoopBenchmarkTest`:**
 - Adding or modifying a plugin (`StrategyTask`, `EconomicsTask`, `TacticsTask`, `ScoutingTask`)
 - Changing `AgentOrchestrator.gameTick()` or `caseEngine.createAndSolve()` timeout
 - Adding new Drools rules or growing the fact base significantly
@@ -208,7 +210,7 @@ A game loop benchmark (`@Tag("benchmark")`) measures per-phase tick timings acro
 mvn test -Pbenchmark
 ```
 
-Output is a timing table (mean/p95/max per phase). Paste it into `docs/benchmarks/YYYY-MM-DD-<context>.md` when recording a snapshot. The assertion thresholds are generous guards against catastrophic regressions — the real signal is the table, not a passing test.
+`GameLoopBenchmarkTest` output is a timing table (mean/p95/max per phase). Paste it into `docs/benchmarks/YYYY-MM-DD-<context>.md` when recording a snapshot. The assertion thresholds are generous guards against catastrophic regressions — the real signal is the table, not a passing test.
 
 ## Key Conventions
 
@@ -230,7 +232,7 @@ Output is a timing table (mean/p95/max per phase). Paste it into `docs/benchmark
 **When a new image is found** (during blog writing, research, or web fetches) — add it to the index with URL, style notes, and relevance. Keep it growing.
 
 ### Replay Index
-`replays/replay-index.md` is a living index of SC2 replay datasets for testing and `ReplaySimulatedGame`. Two datasets available: IEM10 Taipei 2016 (30 games, pre-processed JSON) and AI Arena bot replays (29 `.SC2Replay` files, 22 parseable).
+`replays/replay-index.md` is a living index of SC2 replay datasets. Two datasets available: IEM10 Taipei 2016 (30 games, pre-processed JSON — use `IEM10JsonSimulatedGame`) and AI Arena bot replays (29 `.SC2Replay` files, 22 parseable — use `ReplaySimulatedGame`).
 
 **Check it before downloading new replays.** When a new dataset is added, update the index with metadata, labels, and scenario recommendations.
 

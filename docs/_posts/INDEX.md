@@ -15,3 +15,4 @@
 | [2026-04-17-mdp01-kiting-and-the-planners-mistakes.md](2026-04-17-mdp01-kiting-and-the-planners-mistakes.md) | 2026-04-17 | E10 — range fix, focus-fire, kiting, and two silent GOAP planner bugs |
 | [2026-04-18-mdp01-e11-the-strategy-question.md](2026-04-18-mdp01-e11-the-strategy-question.md) | 2026-04-18 | E11 — CDI strategy pattern, terrain kiting, overkill focus-fire, timing fix, Blink deferred |
 | [2026-04-20-mdp01-e12-stalker-blink.md](2026-04-20-mdp01-e12-stalker-blink.md) | 2026-04-20 | E12 — Stalker Blink: sealed interface gotcha, Drools salience ≠ mutual exclusion, 446 tests |
+| [2026-04-20-mdp02-e13-scouting-calibration.md](2026-04-20-mdp02-e13-scouting-calibration.md) | 2026-04-20 | E13 — two replay parsers, BZip2 surprise, calibration reveals ROACH_RUSH threshold was set without replays |
