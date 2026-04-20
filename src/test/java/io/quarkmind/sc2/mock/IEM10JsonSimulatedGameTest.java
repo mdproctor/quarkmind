@@ -114,7 +114,7 @@ class IEM10JsonSimulatedGameTest {
         int initialUnits = game.snapshot().myUnits().size();
         for (int i = 0; i < 183; i++) game.tick(); // 3 min
         assertThat(game.snapshot().myUnits().size())
-            .as("More units after 3 min").isGreaterThanOrEqualTo(initialUnits);
+            .as("More units after 3 min").isGreaterThan(initialUnits);
     }
 
     // ---- isComplete() ----
@@ -158,7 +158,7 @@ class IEM10JsonSimulatedGameTest {
             probeTag, BuildingType.PYLON, new Point2d(20, 20)));
         game.tick();
         assertThat(game.snapshot().myBuildings().size())
-            .as("applyIntent is a no-op").isGreaterThanOrEqualTo(buildingsBeforeIntent);
+            .as("applyIntent is a no-op").isEqualTo(buildingsBeforeIntent);
     }
 
     // ---- enemy unit tracking ----

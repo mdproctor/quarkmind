@@ -14,7 +14,6 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A SimulatedGame variant that drives state from real replay tracker events.
@@ -30,14 +29,7 @@ import java.util.Set;
 public class ReplaySimulatedGame extends SimulatedGame {
 
     /** Game loops per tick — 22.4/sec at Faster speed, rounded to 22. */
-    static final int LOOPS_PER_TICK = 22;
-
-    private static final Set<String> BUILDING_NAMES = Set.of(
-        "Nexus", "Pylon", "Gateway", "CyberneticsCore", "Assimilator",
-        "RoboticsFacility", "Stargate", "Forge", "TwilightCouncil",
-        "PhotonCannon", "ShieldBattery", "RoboticsBay", "FleetBeacon",
-        "TemplarArchives", "DarkShrine", "WarpGate"
-    );
+    static final int LOOPS_PER_TICK = Sc2ReplayShared.LOOPS_PER_TICK;
 
     private final Event[] trackerEvents;
     private final int watchedPlayerId;
@@ -137,7 +129,7 @@ public class ReplaySimulatedGame extends SimulatedGame {
         String tag      = makeTag(event.getUnitTagIndex(), event.getUnitTagRecycle());
         Integer ctrlId  = event.getControlPlayerId();
 
-        if (BUILDING_NAMES.contains(unitName)) {
+        if (Sc2ReplayShared.BUILDING_NAMES.contains(unitName)) {
             // Initial structures (Nexus at loop 0) arrive as UnitBorn, already complete
             if (ctrlId != null && ctrlId == watchedPlayerId) {
                 BuildingType bt = toBuildingType(unitName);
@@ -212,94 +204,10 @@ public class ReplaySimulatedGame extends SimulatedGame {
         return "r-" + index + "-" + recycle;
     }
 
-    static UnitType toUnitType(String name) {
-        return switch (name) {
-            // Protoss
-            case "Probe"          -> UnitType.PROBE;
-            case "Zealot"         -> UnitType.ZEALOT;
-            case "Stalker"        -> UnitType.STALKER;
-            case "Immortal"       -> UnitType.IMMORTAL;
-            case "Colossus"       -> UnitType.COLOSSUS;
-            case "Carrier"        -> UnitType.CARRIER;
-            case "DarkTemplar"    -> UnitType.DARK_TEMPLAR;
-            case "HighTemplar"    -> UnitType.HIGH_TEMPLAR;
-            case "Archon"         -> UnitType.ARCHON;
-            case "Observer"       -> UnitType.OBSERVER;
-            case "VoidRay"        -> UnitType.VOID_RAY;
-            case "Adept"          -> UnitType.ADEPT;
-            case "Disruptor"      -> UnitType.DISRUPTOR;
-            case "Sentry"         -> UnitType.SENTRY;
-            // Terran
-            case "Marine"         -> UnitType.MARINE;
-            case "Marauder"       -> UnitType.MARAUDER;
-            case "Medivac"        -> UnitType.MEDIVAC;
-            case "SiegeTank", "SiegeTankSieged" -> UnitType.SIEGE_TANK;
-            case "Thor", "ThorAP" -> UnitType.THOR;
-            case "VikingFighter", "VikingAssault" -> UnitType.VIKING;
-            case "Ghost"          -> UnitType.GHOST;
-            case "Raven"          -> UnitType.RAVEN;
-            case "Banshee"        -> UnitType.BANSHEE;
-            case "Battlecruiser"  -> UnitType.BATTLECRUISER;
-            case "Cyclone"        -> UnitType.CYCLONE;
-            case "Liberator", "LiberatorAG" -> UnitType.LIBERATOR;
-            case "WidowMine", "WidowMineBurrowed" -> UnitType.WIDOW_MINE;
-            // Zerg
-            case "Zergling"       -> UnitType.ZERGLING;
-            case "Roach"          -> UnitType.ROACH;
-            case "Hydralisk"      -> UnitType.HYDRALISK;
-            case "Mutalisk"       -> UnitType.MUTALISK;
-            case "Ultralisk"      -> UnitType.ULTRALISK;
-            case "BroodLord"      -> UnitType.BROOD_LORD;
-            case "Corruptor"      -> UnitType.CORRUPTOR;
-            case "Infestor"       -> UnitType.INFESTOR;
-            case "SwarmHostMP"    -> UnitType.SWARM_HOST;
-            case "Viper"          -> UnitType.VIPER;
-            case "Queen"          -> UnitType.QUEEN;
-            case "Ravager"        -> UnitType.RAVAGER;
-            case "Lurker", "LurkerMP" -> UnitType.LURKER;
-            default               -> UnitType.UNKNOWN;
-        };
-    }
+    /** Thin delegate — preserves package-private accessibility for {@link ReplaySimulatedGameUnitTypeTest}. */
+    static UnitType toUnitType(String name) { return Sc2ReplayShared.toUnitType(name); }
 
-    private static BuildingType toBuildingType(String name) {
-        return switch (name) {
-            case "Nexus"             -> BuildingType.NEXUS;
-            case "Pylon"             -> BuildingType.PYLON;
-            case "Gateway", "WarpGate" -> BuildingType.GATEWAY;
-            case "CyberneticsCore"   -> BuildingType.CYBERNETICS_CORE;
-            case "Assimilator"       -> BuildingType.ASSIMILATOR;
-            case "RoboticsFacility"  -> BuildingType.ROBOTICS_FACILITY;
-            case "Stargate"          -> BuildingType.STARGATE;
-            case "Forge"             -> BuildingType.FORGE;
-            case "TwilightCouncil"   -> BuildingType.TWILIGHT_COUNCIL;
-            default                  -> BuildingType.UNKNOWN;
-        };
-    }
-
-    private static int defaultUnitHealth(UnitType type) {
-        return switch (type) {
-            case PROBE        -> 45;
-            case ZEALOT       -> 100;
-            case STALKER      -> 80;
-            case IMMORTAL     -> 200;
-            case COLOSSUS     -> 200;
-            case OBSERVER     -> 40;
-            default           -> 100;
-        };
-    }
-
-    private static int defaultBuildingHealth(BuildingType type) {
-        return switch (type) {
-            case NEXUS             -> 1500;
-            case PYLON             -> 200;
-            case GATEWAY           -> 500;
-            case CYBERNETICS_CORE  -> 550;
-            case ASSIMILATOR       -> 450;
-            case ROBOTICS_FACILITY -> 500;
-            case STARGATE          -> 600;
-            case FORGE             -> 400;
-            case TWILIGHT_COUNCIL  -> 500;
-            default                -> 400;
-        };
-    }
+    private static BuildingType toBuildingType(String name)       { return Sc2ReplayShared.toBuildingType(name); }
+    private static int defaultUnitHealth(UnitType type)           { return Sc2ReplayShared.defaultUnitHealth(type); }
+    private static int defaultBuildingHealth(BuildingType type)   { return Sc2ReplayShared.defaultBuildingHealth(type); }
 }

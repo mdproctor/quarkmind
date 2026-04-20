@@ -13,6 +13,7 @@ Status: JVM mode only (Phase 0)
 | ocraft-s2client-bot | 0.4.21 | 🔲 Not added yet | Added in Phase 1; uses RxJava + Protobuf |
 | drools-goap-tactics | — | ✅ Native-safe | Pure Java A* planner; no new dependency introduced. Drools tracked via casehub-core. |
 | drools-cep-scouting | — | ✅ Native-safe | Rule unit model with DataStore accumulation; no runtime bytecode gen. Drools Executable Model handles AOT compilation. |
+| commons-compress | 1.27.1 | 🔲 Not verified | Used only in `IEM10JsonSimulatedGame.enumerate()` for BZip2 outer ZIP reading. Confined to `sc2/mock/`. No bundled GraalVM metadata — would need manual reflection config if native build is attempted. |
 
 ## Rules (enforce these always)
 - No dynamic class loading or runtime code generation
