@@ -1,49 +1,49 @@
 # Handover — 2026-04-20
 
-**Head commit:** `2bfcac3` — fix(e12): kiting guard prevents double-classification with blinking
+**Head commit:** `f0161c8` — docs: E13 blog entry + CLAUDE.md updates
 
 ## What Changed This Session
 
-**Post-E11 housekeeping:** benchmark baseline recorded (`docs/benchmarks/2026-04-18-post-e11.md` — p95 1ms, max 1ms, unchanged from E10). Stale issues #69–#73 (E10 work landed but never closed) — all closed.
+**E13 complete — Scouting CEP Calibration (closes #16)**
 
-**E12 complete — Stalker Blink (closes #82)**
+- `UnitType` extended with full Terran/Zerg roster: SIEGE_TANK, THOR, VIKING, GHOST, RAVEN, BANSHEE, BATTLECRUISER, CYCLONE, LIBERATOR, WIDOW_MINE + MUTALISK, ULTRALISK, BROOD_LORD, CORRUPTOR, INFESTOR, SWARM_HOST, VIPER, QUEEN, RAVAGER, LURKER + ADEPT, DISRUPTOR, SENTRY
+- `Sc2ReplayShared` — package-private utility class in `sc2/mock/` holding shared lookup tables (`toUnitType`, `toBuildingType`, `defaultUnitHealth`, `defaultBuildingHealth`, `BUILDING_NAMES`, `LOOPS_PER_TICK`); both replay runners delegate to it
+- `IEM10JsonSimulatedGame extends SimulatedGame` — reads SC2EGSet JSON from nested BZip2 ZIP (outer requires `commons-compress`, inner uses standard DEFLATE); auto-detects Protoss player; `enumerate(Path)` returns all 30 IEM10 games; 18 tests
+- `ReplaySimulatedGame.toUnitType()` — now package-private, full Terran/Zerg cases added
+- `ScoutingCalibrationTest @Tag("benchmark")` — runs 59 replays to 3-min mark, prints unit count table by matchup; output to `target/scouting-calibration.txt`
+- DRL thresholds calibrated: ROACH_RUSH 6→4, TERRAN_3RAX 12→5, PROTOSS_4GATE 8→4
+- 478 tests, 0 failures
 
-- `blinkCooldownTicks` added as 9th field to `Unit` — 70 call sites migrated across 24 files
-- `SC2Data`: `blinkRange(STALKER)=8f`, `blinkCooldownInTicks(STALKER)=21`, `blinkShieldRestore(STALKER)=40`
-- `BlinkIntent` sealed type; `Intent` permits updated; `EmulatedGame.applyIntent()` and `ActionTranslator` dispatch updated
-- `EmulatedGame`: `blinkCooldowns` map (decrement/cleanup matching `unitCooldowns`), `executeBlink()` (8-tile teleport + shield restore capped at maxShields + cooldown reset), `blinkRetreatTarget()` (angular sweep, terrain-aware), `snapshot()` stamps real value, `spawnFriendlyUnitForTesting()` helper added
-- `TacticsRuleUnit`: `blinkReadyTags` + `shieldsLowTags` DataStores
-- `StarCraftTactics.drl`: BLINKING group (salience 205) + Blink action (salience 105); `not /shieldsLowTags` guard on kiting rule prevents double-classification
-- `DroolsTacticsTask`: BLINK GoapAction, `computeBlinkReadyTags/ShieldsLowTags`, `buildWorldState("blinking")`, dispatch BLINK case
-- Tests: `BlinkMechanicsTest` (6 unit), survival E2E in `EmulatedGameTest`, static helper tests in `DroolsTacticsTaskTest`
-- 446 tests, 0 failures
+**Calibration finding:** ROACH=0 at 3-min across all PvZ games — Roach Rushes peak after the 3-min CEP window. Threshold lowered to 4 as a sensitive lower bound with a DRL comment noting the timing constraint.
 
-**Garden:** 2 gotchas submitted — PR #77 on Hortora/garden (sealed interface exhaustiveness mid-plan, Drools salience ≠ mutual exclusion).
+**Garden:** 4 gotchas submitted — PR #80 on Hortora/garden (BZip2 in ZIP, exhaustive enum switch, Python ZIP inspection, SC2EGSet food encoding).
 
-**Blog:** `docs/_posts/2026-04-20-mdp01-e12-stalker-blink.md`
+**Blog:** `docs/_posts/2026-04-20-mdp02-e13-scouting-calibration.md`
 
 ## Immediate Next Step
 
-**Start #16: Scouting CEP calibration.** Read the issue first — needs replay data context.
+No clear next epic — #16 done, remaining issues are either parked or blocked. Run:
 
 ```bash
-gh issue view 16
+gh issue list --state open
 ```
+
+Then pick from: #74 (unit genericisation / configurable YAML — parked, platform direction) or define a new epic.
 
 ## Key Technical Notes
 
-*E11 notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
+*E12 and earlier notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
 
-**E12 additions:**
-- **Drools salience ≠ mutual exclusion** — all matching rules fire in salience order; enforce exclusivity with `not` guards between classification groups
-- **`blinkCooldowns` follows `unitCooldowns` pattern** — Unit records store 0; maps are authoritative; `snapshot()` stamps both at read time
-- **Sealed interface exhaustiveness is codebase-wide** — adding a permitted type breaks all existing switches immediately; add placeholder cases in the same commit as the type
+**E13 additions:**
+- **BZip2 in ZIP rejects `java.util.zip`** — `ZipArchiveInputStream` (commons-compress) needed for outer ZIP; inner ZIP is DEFLATE and fine with stdlib
+- **SC2EGSet JSON food values are raw integers** — NOT ×4096 like Scelight binary; `scoreValueFoodUsed=12` means 12 supply
+- **`IEM10JsonSimulatedGame` tag prefix is `"j-"`** — `ReplaySimulatedGame` uses `"r-"` — avoids tag collisions between the two in mixed scenarios
+- **commons-compress in NATIVE.md** — tracked as not-yet-verified for GraalVM native; confined to `sc2/mock/`
 
 ## Open Issues
 
 | # | What | Status |
 |---|------|--------|
-| #16 | Scouting CEP calibration | **Next** |
 | #74 | Unit genericisation / configurable YAML | Parked — platform direction |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
@@ -52,9 +52,9 @@ gh issue view 16
 
 | Context | Where |
 |---------|-------|
-| E12 implementation plan | `docs/superpowers/plans/2026-04-18-e12-stalker-blink.md` |
-| E12 design spec | `docs/superpowers/specs/2026-04-17-e11-strategy-pattern-tactics-extensions-design.md` § Section 5 |
-| E11 handover (prior) | `git show HEAD~1:HANDOFF.md` |
-| Blog entry | `docs/_posts/2026-04-20-mdp01-e12-stalker-blink.md` |
-| Post-E11 benchmark | `docs/benchmarks/2026-04-18-post-e11.md` |
-| GitHub | mdproctor/quarkmind (#82 closed; #16 next) |
+| E13 design spec | `docs/superpowers/specs/2026-04-20-e13-scouting-cep-calibration-design.md` |
+| E13 implementation plan | `docs/superpowers/plans/2026-04-20-e13-scouting-cep-calibration.md` |
+| Calibration output | `docs/benchmarks/2026-04-20-e13-scouting-calibration.txt` |
+| E12 handover (prior) | `git show HEAD~1:HANDOFF.md` |
+| Blog entry | `docs/_posts/2026-04-20-mdp02-e13-scouting-calibration.md` |
+| GitHub | mdproctor/quarkmind (#16 closed; next: `gh issue list`) |
