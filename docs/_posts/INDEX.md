@@ -13,3 +13,5 @@
 | [2026-04-16-mdp02-high-ground.md](2026-04-16-mdp02-high-ground.md) | 2026-04-16 | E8 — TerrainGrid, 25% miss chance from low→high ground, topographic visualizer shading |
 | [2026-04-16-mdp03-what-the-probe-sees.md](2026-04-16-mdp03-what-the-probe-sees.md) | 2026-04-16 | E9 fog of war — VisibilityGrid, server-side filtering, CDI bridge, three-state visualizer overlay |
 | [2026-04-17-mdp01-kiting-and-the-planners-mistakes.md](2026-04-17-mdp01-kiting-and-the-planners-mistakes.md) | 2026-04-17 | E10 — range fix, focus-fire, kiting, and two silent GOAP planner bugs |
+| [2026-04-18-mdp01-e11-the-strategy-question.md](2026-04-18-mdp01-e11-the-strategy-question.md) | 2026-04-18 | E11 — CDI strategy pattern, terrain kiting, overkill focus-fire, timing fix, Blink deferred |
+| [2026-04-20-mdp01-e12-stalker-blink.md](2026-04-20-mdp01-e12-stalker-blink.md) | 2026-04-20 | E12 — Stalker Blink: sealed interface gotcha, Drools salience ≠ mutual exclusion, 446 tests |

@@ -77,7 +77,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Unit tests** (no Quarkus, fast):
 - Instantiate classes directly via `new` — no CDI
-- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `BasicStrategyTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`, `DroolsTacticsTaskTest`, `DroolsScoutingTaskTest`
+- Tests: `SimulatedGameTest`, `ReplaySimulatedGameTest`, `ReplayEngineTest`, `BasicEconomicsTaskTest`, `BasicStrategyTaskTest`, `IntentQueueTest`, `MockPipelineTest`, `ScenarioLibraryTest`, `GameStateTranslatorTest`, `GameStateTest`, `DroolsTacticsTaskTest`, `DroolsScoutingTaskTest`, `BlinkMechanicsTest`
 - Package-private static methods on CDI beans (e.g. `DroolsTacticsTask.computeInRangeTags`, `computeOnCooldownTags`) are tested from the same package without CDI — make them `static` (not `private`) to enable this. Strategy classes (`DirectKiteStrategy`, `LowestHpFocusFireStrategy`) follow the same pattern
 
 **Integration tests** (`@QuarkusTest`, full CDI context):
@@ -97,6 +97,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **EmulatedGame test helpers** (package-private, for combat tests in `EmulatedGameTest`):
 - `spawnEnemyForTesting(UnitType, Point2d)` — places an enemy unit at a specific position
+- `spawnFriendlyUnitForTesting(UnitType, Point2d)` — adds a friendly unit directly to `myUnits` (for blink and per-unit-type combat tests)
 - `setHealthForTesting(String tag, int health)` — sets a friendly unit's HP directly
 - `setShieldsForTesting(String tag, int shields)` — sets a friendly unit's shields directly
 - `setEnemyStrategy(EnemyStrategy)` — sets the active enemy AI strategy for economy/attack tests
@@ -135,7 +136,7 @@ See `NATIVE.md` for the per-dependency compatibility tracker.
 ```
 src/main/java/io/quarkmind/
   domain/              Plain Java records — no framework deps, always native-safe
-  sc2/                 SC2Engine seam — IntentQueue, GameStarted/GameStopped events, sealed Intent interface
+  sc2/                 SC2Engine seam — IntentQueue, GameStarted/GameStopped events, sealed Intent interface, TerrainProvider (CDI bean routing terrain from engine to tactics)
   sc2/real/            Live SC2 implementation — RealSC2Engine, SC2BotAgent, ObservationTranslator, ActionTranslator
   sc2/intent/          Intent types (BuildIntent, TrainIntent, AttackIntent, MoveIntent)
   sc2/mock/            Mock SC2 implementation — SimulatedGame, MockGameObserver, MockCommandDispatcher
@@ -144,7 +145,7 @@ src/main/java/io/quarkmind/
   agent/plugin/        Plugin seam interfaces (StrategyTask, EconomicsTask, TacticsTask, ScoutingTask)
   plugin/              Active plugin implementations (DroolsStrategyTask, FlowEconomicsTask, DroolsTacticsTask, BasicScoutingTask)
   plugin/scouting/     Drools CEP scouting — DroolsScoutingTask, ScoutingSessionManager, event records
-  plugin/tactics/      Pure-Java GOAP planning — WorldState, GoapAction, GoapPlanner (no framework deps)
+  plugin/tactics/      GOAP planning + CDI strategy interfaces — WorldState, GoapAction, GoapPlanner; KiteStrategy, FocusFireStrategy and @Named implementations (DirectKiteStrategy, TerrainAwareKiteStrategy, LowestHpFocusFireStrategy, OverkillRedirectFocusFireStrategy)
   plugin/flow/         Quarkus Flow integration — EconomicsFlow, EconomicsDecisionService, EconomicsLifecycle
   qa/                  QA REST endpoints — dev/test only (@UnlessBuildProfile("prod"))
 ```

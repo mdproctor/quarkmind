@@ -1,56 +1,60 @@
-# Handover — 2026-04-17
+# Handover — 2026-04-20
 
-**Head commit:** `e077a90` — docs(e10): add blog entry 2026-04-17
+**Head commit:** `2bfcac3` — fix(e12): kiting guard prevents double-classification with blinking
 
 ## What Changed This Session
 
-**Scouting fix committed (recovered from working tree):**
-- `DroolsTacticsTask.estimatedEnemyBase` parameterised by `mapWidth`; `%emulated.scouting.map.width=64` config; 7 unit tests + 1 IT regression guard. Closes #68.
+**Post-E11 housekeeping:** benchmark baseline recorded (`docs/benchmarks/2026-04-18-post-e11.md` — p95 1ms, max 1ms, unchanged from E10). Stale issues #69–#73 (E10 work landed but never closed) — all closed.
 
-**E10: Kiting, focus-fire, per-unit range — complete (closes #69–#73)**
-- `weaponCooldownTicks` added to `Unit` record (8th field); stamped from `unitCooldowns` map in `EmulatedGame.snapshot()`. Matches SC2 protobuf `weapon_cooldown`.
-- Range fix: `STALKER_RANGE=6.0` deleted; `SC2Data.attackRange(unit.type())` per unit.
-- Focus-fire: `selectFocusTarget()` picks lowest HP+shields enemy; all attacking units target same position.
-- Kiting: `onCooldownTags` DataStore in `TacticsRuleUnit`; Drools `"kiting"` group; GOAP `KITE` action; `kiteRetreatTarget()` steps 1.0 tile away from nearest enemy.
-- Two GOAP correctness bugs caught mid-flight: kiting goal was `"unitSafe"` (unreachable) → fixed to `"enemyEliminated"`; ATTACK missing `"onCooldown", false` precondition allowed planner to bypass KITE at cost 2 vs 3.
-- 430 tests, 0 failures.
+**E12 complete — Stalker Blink (closes #82)**
 
-**Garden:** 5 entries submitted — PRs #70–74 on Hortora/garden (GOAP silent plan, ATTACK precondition bypass, handover commit gap, GOAP two-condition correctness check, WorldState open-world semantics).
+- `blinkCooldownTicks` added as 9th field to `Unit` — 70 call sites migrated across 24 files
+- `SC2Data`: `blinkRange(STALKER)=8f`, `blinkCooldownInTicks(STALKER)=21`, `blinkShieldRestore(STALKER)=40`
+- `BlinkIntent` sealed type; `Intent` permits updated; `EmulatedGame.applyIntent()` and `ActionTranslator` dispatch updated
+- `EmulatedGame`: `blinkCooldowns` map (decrement/cleanup matching `unitCooldowns`), `executeBlink()` (8-tile teleport + shield restore capped at maxShields + cooldown reset), `blinkRetreatTarget()` (angular sweep, terrain-aware), `snapshot()` stamps real value, `spawnFriendlyUnitForTesting()` helper added
+- `TacticsRuleUnit`: `blinkReadyTags` + `shieldsLowTags` DataStores
+- `StarCraftTactics.drl`: BLINKING group (salience 205) + Blink action (salience 105); `not /shieldsLowTags` guard on kiting rule prevents double-classification
+- `DroolsTacticsTask`: BLINK GoapAction, `computeBlinkReadyTags/ShieldsLowTags`, `buildWorldState("blinking")`, dispatch BLINK case
+- Tests: `BlinkMechanicsTest` (6 unit), survival E2E in `EmulatedGameTest`, static helper tests in `DroolsTacticsTaskTest`
+- 446 tests, 0 failures
 
-**Blog:** `docs/_posts/2026-04-17-mdp01-kiting-and-the-planners-mistakes.md`
+**Garden:** 2 gotchas submitted — PR #77 on Hortora/garden (sealed interface exhaustiveness mid-plan, Drools salience ≠ mutual exclusion).
+
+**Blog:** `docs/_posts/2026-04-20-mdp01-e12-stalker-blink.md`
 
 ## Immediate Next Step
 
-**Run the post-E10 benchmark baseline before E11:**
-```bash
-mvn test -Pbenchmark
-```
-Paste output to `docs/benchmarks/2026-04-17-post-e10.md`.
+**Start #16: Scouting CEP calibration.** Read the issue first — needs replay data context.
 
-**Then brainstorm E11.** Deferred from E10: kiting with terrain avoidance (kite step may land on wall tile), Stalker Blink micro, multi-target focus-fire split, timing fidelity (`attackCooldownInTicks(STALKER)` → 1 tick). Full deferred list in `docs/superpowers/specs/2026-04-17-e10-tactics-kiting-focusfire-design.md` § Out of Scope.
+```bash
+gh issue view 16
+```
 
 ## Key Technical Notes
 
-- **GOAP goal key must be reachable** — wrong goal = empty plan, no error, units idle. Check: can any action chain reach the goal from the starting WorldState? See GE-20260417-c6e3db.
-- **GOAP ATTACK precondition now includes `"onCooldown", false`** — without it, planner bypasses KITE (cost 2 < 3). See GE-20260417-a7f7fc.
-- **`WorldState.get()` returns false for absent keys** — open-world semantics; actions only check keys they declare. See GE-20260417-988839.
-- **`weaponCooldownTicks` internal units always 0** — cooldown lives in `unitCooldowns` map; stamped onto `Unit` only at `snapshot()` time.
-- **Package-private static pattern for CDI bean unit testing** — make pure methods `static` (not `private`) so same-package test classes can call them. Now in CLAUDE.md.
+*E11 notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
+
+**E12 additions:**
+- **Drools salience ≠ mutual exclusion** — all matching rules fire in salience order; enforce exclusivity with `not` guards between classification groups
+- **`blinkCooldowns` follows `unitCooldowns` pattern** — Unit records store 0; maps are authoritative; `snapshot()` stamps both at read time
+- **Sealed interface exhaustiveness is codebase-wide** — adding a permitted type breaks all existing switches immediately; add placeholder cases in the same commit as the type
 
 ## Open Issues
 
 | # | What | Status |
-|---|---|---|
+|---|------|--------|
+| #16 | Scouting CEP calibration | **Next** |
+| #74 | Unit genericisation / configurable YAML | Parked — platform direction |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
-| #16 | Scouting CEP threshold calibration | Needs replay data |
 
 ## References
 
 | Context | Where |
-|---|---|
-| E10 design spec | `docs/superpowers/specs/2026-04-17-e10-tactics-kiting-focusfire-design.md` |
-| E10 implementation plan | `docs/superpowers/plans/2026-04-17-e10-tactics-kiting-focusfire.md` |
-| E9 handover (prior) | `git show 79b7424:HANDOVER.md` |
-| Blog entry | `docs/_posts/2026-04-17-mdp01-kiting-and-the-planners-mistakes.md` |
-| GitHub | mdproctor/quarkmind (issues #68–#73 closed) |
+|---------|-------|
+| E12 implementation plan | `docs/superpowers/plans/2026-04-18-e12-stalker-blink.md` |
+| E12 design spec | `docs/superpowers/specs/2026-04-17-e11-strategy-pattern-tactics-extensions-design.md` § Section 5 |
+| E11 handover (prior) | `git show HEAD~1:HANDOFF.md` |
+| Blog entry | `docs/_posts/2026-04-20-mdp01-e12-stalker-blink.md` |
+| Post-E11 benchmark | `docs/benchmarks/2026-04-18-post-e11.md` |
+| GitHub | mdproctor/quarkmind (#82 closed; #16 next) |
