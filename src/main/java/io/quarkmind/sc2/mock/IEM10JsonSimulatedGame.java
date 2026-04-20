@@ -1,0 +1,339 @@
+package io.quarkmind.sc2.mock;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkmind.domain.*;
+import io.quarkmind.sc2.intent.Intent;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+/**
+ * A SimulatedGame variant that drives state from SC2EGSet pre-processed JSON replays.
+ * Reads from the nested ZIP structure: outer ZIP → *_data.zip → *.SC2Replay.json.
+ *
+ * <p>Mirrors ReplaySimulatedGame in tick model and interface. applyIntent() is a no-op.
+ * Enemy units accumulate (not removed on death) — matches ReplaySimulatedGame behaviour
+ * and gives calibration data for the full 0–3 min sighting window.
+ */
+public class IEM10JsonSimulatedGame extends SimulatedGame {
+
+    static final int LOOPS_PER_TICK = 22;
+
+    private static final Set<String> BUILDING_NAMES = Set.of(
+        "Nexus", "Pylon", "Gateway", "CyberneticsCore", "Assimilator",
+        "RoboticsFacility", "Stargate", "Forge", "TwilightCouncil",
+        "PhotonCannon", "ShieldBattery", "RoboticsBay", "FleetBeacon",
+        "TemplarArchives", "DarkShrine", "WarpGate"
+    );
+
+    private final String          replayName;
+    private final String          matchup;
+    private final int             watchedPlayerId;
+    private final List<JsonNode>  events;
+    private final Map<String, Building> pendingBuildings = new HashMap<>();
+
+    private int  cursor;
+    private long currentLoop;
+
+    public IEM10JsonSimulatedGame(byte[] jsonBytes, String replayName) throws IOException {
+        this.replayName = replayName;
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(jsonBytes);
+
+        JsonNode playerMap = root.get("ToonPlayerDescMap");
+        int protossId  = 1;
+        String enemyRace = "Prot";
+
+        for (JsonNode player : playerMap) {
+            if (player.get("race").asText().equals("Prot")) {
+                protossId = player.get("playerID").asInt();
+                break;
+            }
+        }
+        for (JsonNode player : playerMap) {
+            if (player.get("playerID").asInt() != protossId) {
+                enemyRace = player.get("race").asText();
+                break;
+            }
+        }
+
+        this.watchedPlayerId = protossId;
+        this.matchup         = "Pv" + raceInitial(enemyRace);
+
+        List<JsonNode> list = new ArrayList<>();
+        for (JsonNode e : root.get("trackerEvents")) list.add(e);
+        this.events = Collections.unmodifiableList(list);
+
+        reset();
+    }
+
+    // ---- SimulatedGame contract ----
+
+    @Override
+    public synchronized void reset() {
+        setMinerals(0); setVespene(0); setSupply(0); setSupplyUsed(0);
+        clearAll();
+        setGameFrame(0);
+        pendingBuildings.clear();
+        cursor      = 0;
+        currentLoop = 0;
+        drainEventsUpTo(0);
+    }
+
+    @Override
+    public synchronized void tick() {
+        currentLoop += LOOPS_PER_TICK;
+        setGameFrame(currentLoop / LOOPS_PER_TICK);
+        drainEventsUpTo(currentLoop);
+    }
+
+    @Override
+    public synchronized void applyIntent(Intent intent) { /* no-op */ }
+
+    // ---- Navigation ----
+
+    public boolean isComplete()  { return cursor >= events.size(); }
+    public String  matchup()     { return matchup; }
+    public String  replayName()  { return replayName; }
+
+    // ---- Static factory ----
+
+    /**
+     * Enumerates all 30 games from the nested ZIP structure.
+     * The outer ZIP uses BZip2 compression (method 12) — handled by Apache Commons Compress.
+     * The inner _data.zip uses standard DEFLATE (method 8) — handled by java.util.zip.
+     */
+    public static List<IEM10JsonSimulatedGame> enumerate(Path outerZip) throws IOException {
+        List<IEM10JsonSimulatedGame> games = new ArrayList<>();
+        try (ZipArchiveInputStream outer = new ZipArchiveInputStream(
+                Files.newInputStream(outerZip), "UTF-8", true, true)) {
+            ZipArchiveEntry outerEntry;
+            while ((outerEntry = outer.getNextEntry()) != null) {
+                if (outerEntry.getName().endsWith("_data.zip")) {
+                    byte[] innerZipBytes = outer.readAllBytes();
+                    try (ZipInputStream inner = new ZipInputStream(
+                            new ByteArrayInputStream(innerZipBytes))) {
+                        ZipEntry innerEntry;
+                        while ((innerEntry = inner.getNextEntry()) != null) {
+                            if (innerEntry.getName().endsWith(".SC2Replay.json")) {
+                                byte[] jsonBytes = inner.readAllBytes();
+                                games.add(new IEM10JsonSimulatedGame(
+                                    jsonBytes, innerEntry.getName()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return games;
+    }
+
+    // ---- Event processing ----
+
+    private void drainEventsUpTo(long targetLoop) {
+        while (cursor < events.size()) {
+            JsonNode e = events.get(cursor);
+            if (e.get("loop").asLong() > targetLoop) break;
+            cursor++;
+            applyTrackerEvent(e);
+        }
+    }
+
+    private void applyTrackerEvent(JsonNode e) {
+        switch (e.get("evtTypeName").asText()) {
+            case "UnitBorn"    -> applyUnitBorn(e);
+            case "PlayerStats" -> applyPlayerStats(e);
+            case "UnitDied"    -> applyUnitDied(e);
+            case "UnitInit"    -> applyUnitInit(e);
+            case "UnitDone"    -> applyUnitDone(e);
+        }
+    }
+
+    private void applyUnitBorn(JsonNode e) {
+        String unitName = e.get("unitTypeName").asText();
+        String tag      = makeTag(e.get("unitTagIndex").asInt(), e.get("unitTagRecycle").asInt());
+        int    ctrlId   = e.get("controlPlayerId").asInt();
+
+        if (BUILDING_NAMES.contains(unitName)) {
+            if (ctrlId == watchedPlayerId) {
+                BuildingType bt = toBuildingType(unitName);
+                if (bt != BuildingType.UNKNOWN) {
+                    Point2d pos = pos(e);
+                    addBuilding(new Building(tag, bt, pos,
+                        defaultBuildingHealth(bt), defaultBuildingHealth(bt), true));
+                }
+            }
+        } else {
+            UnitType ut = toUnitType(unitName);
+            if (ut == UnitType.UNKNOWN) return;
+            Point2d pos = pos(e);
+            if (ctrlId == watchedPlayerId) {
+                addUnit(new Unit(tag, ut, pos,
+                    defaultUnitHealth(ut), defaultUnitHealth(ut), 0, 0, 0, 0));
+            } else if (ctrlId != 0) {
+                spawnEnemyUnit(ut, pos);
+            }
+        }
+    }
+
+    private void applyPlayerStats(JsonNode e) {
+        if (e.get("playerId").asInt() != watchedPlayerId) return;
+        JsonNode stats = e.get("stats");
+        setMinerals(stats.get("scoreValueMineralsCurrent").asInt());
+        setVespene(stats.get("scoreValueVespeneCurrent").asInt());
+        // SC2EGSet JSON food values are raw integers — no ×4096 fixed-point unlike Scelight binary
+        setSupplyUsed(stats.get("scoreValueFoodUsed").asInt());
+        setSupply(stats.get("scoreValueFoodMade").asInt());
+    }
+
+    private void applyUnitDied(JsonNode e) {
+        String tag = makeTag(e.get("unitTagIndex").asInt(), e.get("unitTagRecycle").asInt());
+        removeUnitByTag(tag);
+        removeBuildingByTag(tag);
+        pendingBuildings.remove(tag);
+        // Enemy units are NOT removed — accumulate for calibration (matches ReplaySimulatedGame)
+    }
+
+    private void applyUnitInit(JsonNode e) {
+        int ctrlId = e.get("controlPlayerId").asInt();
+        if (ctrlId != watchedPlayerId) return;
+        String       unitName = e.get("unitTypeName").asText();
+        String       tag      = makeTag(e.get("unitTagIndex").asInt(), e.get("unitTagRecycle").asInt());
+        BuildingType bt       = toBuildingType(unitName);
+        Point2d      pos      = pos(e);
+        Building b = new Building(tag, bt, pos,
+            defaultBuildingHealth(bt), defaultBuildingHealth(bt), false);
+        pendingBuildings.put(tag, b);
+        addBuilding(b);
+    }
+
+    private void applyUnitDone(JsonNode e) {
+        String tag = makeTag(e.get("unitTagIndex").asInt(), e.get("unitTagRecycle").asInt());
+        if (pendingBuildings.remove(tag) != null) markBuildingComplete(tag);
+    }
+
+    // ---- Helpers ----
+
+    private static Point2d pos(JsonNode e) {
+        return new Point2d(e.get("x").floatValue(), e.get("y").floatValue());
+    }
+
+    private static String makeTag(int index, int recycle) {
+        return "j-" + index + "-" + recycle;
+    }
+
+    private static String raceInitial(String race) {
+        return switch (race) {
+            case "Terr" -> "T";
+            case "Zerg" -> "Z";
+            default     -> "P";
+        };
+    }
+
+    static UnitType toUnitType(String name) {
+        return switch (name) {
+            // Protoss
+            case "Probe"          -> UnitType.PROBE;
+            case "Zealot"         -> UnitType.ZEALOT;
+            case "Stalker"        -> UnitType.STALKER;
+            case "Immortal"       -> UnitType.IMMORTAL;
+            case "Colossus"       -> UnitType.COLOSSUS;
+            case "Carrier"        -> UnitType.CARRIER;
+            case "DarkTemplar"    -> UnitType.DARK_TEMPLAR;
+            case "HighTemplar"    -> UnitType.HIGH_TEMPLAR;
+            case "Archon"         -> UnitType.ARCHON;
+            case "Observer"       -> UnitType.OBSERVER;
+            case "VoidRay"        -> UnitType.VOID_RAY;
+            case "Adept"          -> UnitType.ADEPT;
+            case "Disruptor"      -> UnitType.DISRUPTOR;
+            case "Sentry"         -> UnitType.SENTRY;
+            // Terran
+            case "Marine"         -> UnitType.MARINE;
+            case "Marauder"       -> UnitType.MARAUDER;
+            case "Medivac"        -> UnitType.MEDIVAC;
+            case "SiegeTank", "SiegeTankSieged" -> UnitType.SIEGE_TANK;
+            case "Thor", "ThorAP" -> UnitType.THOR;
+            case "VikingFighter", "VikingAssault" -> UnitType.VIKING;
+            case "Ghost"          -> UnitType.GHOST;
+            case "Raven"          -> UnitType.RAVEN;
+            case "Banshee"        -> UnitType.BANSHEE;
+            case "Battlecruiser"  -> UnitType.BATTLECRUISER;
+            case "Cyclone"        -> UnitType.CYCLONE;
+            case "Liberator", "LiberatorAG" -> UnitType.LIBERATOR;
+            case "WidowMine", "WidowMineBurrowed" -> UnitType.WIDOW_MINE;
+            // Zerg
+            case "Zergling"       -> UnitType.ZERGLING;
+            case "Roach"          -> UnitType.ROACH;
+            case "Hydralisk"      -> UnitType.HYDRALISK;
+            case "Mutalisk"       -> UnitType.MUTALISK;
+            case "Ultralisk"      -> UnitType.ULTRALISK;
+            case "BroodLord"      -> UnitType.BROOD_LORD;
+            case "Corruptor"      -> UnitType.CORRUPTOR;
+            case "Infestor"       -> UnitType.INFESTOR;
+            case "SwarmHostMP"    -> UnitType.SWARM_HOST;
+            case "Viper"          -> UnitType.VIPER;
+            case "Queen"          -> UnitType.QUEEN;
+            case "Ravager"        -> UnitType.RAVAGER;
+            case "Lurker", "LurkerMP" -> UnitType.LURKER;
+            default               -> UnitType.UNKNOWN;
+        };
+    }
+
+    private static BuildingType toBuildingType(String name) {
+        return switch (name) {
+            case "Nexus"             -> BuildingType.NEXUS;
+            case "Pylon"             -> BuildingType.PYLON;
+            case "Gateway", "WarpGate" -> BuildingType.GATEWAY;
+            case "CyberneticsCore"   -> BuildingType.CYBERNETICS_CORE;
+            case "Assimilator"       -> BuildingType.ASSIMILATOR;
+            case "RoboticsFacility"  -> BuildingType.ROBOTICS_FACILITY;
+            case "Stargate"          -> BuildingType.STARGATE;
+            case "Forge"             -> BuildingType.FORGE;
+            case "TwilightCouncil"   -> BuildingType.TWILIGHT_COUNCIL;
+            default                  -> BuildingType.UNKNOWN;
+        };
+    }
+
+    private static int defaultUnitHealth(UnitType type) {
+        return switch (type) {
+            case PROBE        ->  45;
+            case ZEALOT       -> 100;
+            case STALKER      ->  80;
+            case IMMORTAL     -> 200;
+            case COLOSSUS     -> 200;
+            case OBSERVER     ->  40;
+            case MARINE       ->  45;
+            case MARAUDER     -> 125;
+            case MEDIVAC      -> 150;
+            case SIEGE_TANK   -> 175;
+            case ROACH        -> 145;
+            case HYDRALISK    ->  90;
+            case ZERGLING     ->  35;
+            case MUTALISK     -> 120;
+            case QUEEN        -> 175;
+            default           -> 100;
+        };
+    }
+
+    private static int defaultBuildingHealth(BuildingType type) {
+        return switch (type) {
+            case NEXUS             -> 1500;
+            case PYLON             ->  200;
+            case GATEWAY           ->  500;
+            case CYBERNETICS_CORE  ->  550;
+            case ASSIMILATOR       ->  450;
+            case ROBOTICS_FACILITY ->  500;
+            case STARGATE          ->  600;
+            case FORGE             ->  400;
+            case TWILIGHT_COUNCIL  ->  500;
+            default                ->  400;
+        };
+    }
+}
