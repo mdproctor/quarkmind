@@ -1,0 +1,27 @@
+=== Scouting CEP Calibration — enemy unit counts at 3-min mark ===
+AI Arena binary replays: 29 loaded, 0 skipped (unparseable)
+IEM10 JSON replays: 30 loaded
+
+PvZ (Zerg enemies) (11 games):
+  ROACH        min=0  max=0  mean=0.0
+  ZERGLING     min=2  max=22  mean=6.0
+  HYDRALISK    min=0  max=0  mean=0.0
+  MUTALISK     min=0  max=0  mean=0.0
+  QUEEN        min=1  max=3  mean=2.0
+  → ZERG_ROACH_RUSH threshold (current: 6) ← ROACH
+
+PvT (Terran enemies) (11 games):
+  MARINE       min=0  max=6  mean=4.4
+  MARAUDER     min=0  max=0  mean=0.0
+  MEDIVAC      min=0  max=0  mean=0.0
+  SIEGE_TANK   min=0  max=0  mean=0.0
+  → TERRAN_3RAX threshold (current: 12) ← MARINE
+
+PvP (Protoss enemies) (37 games):
+  STALKER      min=0  max=4  mean=0.6
+  ZEALOT       min=0  max=4  mean=0.3
+  IMMORTAL     min=0  max=0  mean=0.0
+  ADEPT        min=0  max=2  mean=0.2
+  combined     min=0  max=4  mean=0.8
+  → PROTOSS_4GATE threshold (current: 8) ← STALKER+ZEALOT combined
+
