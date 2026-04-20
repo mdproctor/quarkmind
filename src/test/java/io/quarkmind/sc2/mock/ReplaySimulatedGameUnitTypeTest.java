@@ -18,7 +18,7 @@ class ReplaySimulatedGameUnitTypeTest {
     @Test void roachIsMapped()     { assertThat(ReplaySimulatedGame.toUnitType("Roach")).isEqualTo(UnitType.ROACH); }
     @Test void hydraliskIsMapped() { assertThat(ReplaySimulatedGame.toUnitType("Hydralisk")).isEqualTo(UnitType.HYDRALISK); }
     @Test void queenIsMapped()     { assertThat(ReplaySimulatedGame.toUnitType("Queen")).isEqualTo(UnitType.QUEEN); }
-    @Test void mutalisklIsMapped() { assertThat(ReplaySimulatedGame.toUnitType("Mutalisk")).isEqualTo(UnitType.MUTALISK); }
+    @Test void mutaliskIsMapped()  { assertThat(ReplaySimulatedGame.toUnitType("Mutalisk")).isEqualTo(UnitType.MUTALISK); }
     @Test void ultraliskIsMapped() { assertThat(ReplaySimulatedGame.toUnitType("Ultralisk")).isEqualTo(UnitType.ULTRALISK); }
 
     @Test void unknownPassesThrough() { assertThat(ReplaySimulatedGame.toUnitType("MineralField")).isEqualTo(UnitType.UNKNOWN); }
