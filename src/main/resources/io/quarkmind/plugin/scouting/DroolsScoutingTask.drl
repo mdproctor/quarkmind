@@ -12,37 +12,41 @@ import io.quarkmind.domain.UnitType;
 // Thresholds are R&D estimates — calibrate against replay data.
 // ---------------------------------------------------------------------------
 
+// Calibration: IEM10 Taipei 2016 + AI Arena (11 PvZ games) | threshold=4 | observed ROACH mean=0.0 | observed range=[0, 0]
+// Note: no roach rushes observed at 3-min mark in dataset; threshold set at sensitive lower bound
 rule "Zerg Roach Rush"
     salience 100
 when
     accumulate(
         /unitEvents[ this.type() == UnitType.ROACH ];
         $count : count();
-        $count >= 6
+        $count >= 4
     )
 then
     detectedBuilds.add("ZERG_ROACH_RUSH");
 end
 
+// Calibration: IEM10 Taipei 2016 + AI Arena (11 PvT games) | threshold=5 | observed MARINE mean=4.4 | observed range=[0, 6]
 rule "Terran 3-Rax"
     salience 100
 when
     accumulate(
         /unitEvents[ this.type() == UnitType.MARINE ];
         $count : count();
-        $count >= 12
+        $count >= 5
     )
 then
     detectedBuilds.add("TERRAN_3RAX");
 end
 
+// Calibration: IEM10 Taipei 2016 + AI Arena (37 PvP games) | threshold=4 | observed STALKER+ZEALOT mean=0.8 | observed range=[0, 4]
 rule "Protoss 4-Gate"
     salience 100
 when
     accumulate(
         /unitEvents[ this.type() == UnitType.STALKER || this.type() == UnitType.ZEALOT ];
         $count : count();
-        $count >= 8
+        $count >= 4
     )
 then
     detectedBuilds.add("PROTOSS_4GATE");

@@ -28,50 +28,50 @@ class DroolsScoutingRulesTest {
     // ---- Build-order rules ----
 
     @Test
-    void sixRoachesDetectsZergRoachRush() {
+    void fourRoachesDetectsZergRoachRush() {
         ScoutingRuleUnit data = new ScoutingRuleUnit();
-        for (int i = 0; i < 6; i++) data.getUnitEvents().add(unit(UnitType.ROACH, i * 1000L));
+        for (int i = 0; i < 4; i++) data.getUnitEvents().add(unit(UnitType.ROACH, i * 1000L));
         fire(data);
         assertThat(data.getDetectedBuilds()).contains("ZERG_ROACH_RUSH");
     }
 
     @Test
-    void fiveRoachesDoesNotDetectRoachRush() {
+    void threeRoachesDoesNotDetectRoachRush() {
         ScoutingRuleUnit data = new ScoutingRuleUnit();
-        for (int i = 0; i < 5; i++) data.getUnitEvents().add(unit(UnitType.ROACH, i * 1000L));
+        for (int i = 0; i < 3; i++) data.getUnitEvents().add(unit(UnitType.ROACH, i * 1000L));
         fire(data);
         assertThat(data.getDetectedBuilds()).doesNotContain("ZERG_ROACH_RUSH");
     }
 
     @Test
-    void twelveMarinesDetectsTerran3Rax() {
+    void fiveMarinesDetectsTerran3Rax() {
         ScoutingRuleUnit data = new ScoutingRuleUnit();
-        for (int i = 0; i < 12; i++) data.getUnitEvents().add(unit(UnitType.MARINE, i * 1000L));
+        for (int i = 0; i < 5; i++) data.getUnitEvents().add(unit(UnitType.MARINE, i * 1000L));
         fire(data);
         assertThat(data.getDetectedBuilds()).contains("TERRAN_3RAX");
     }
 
     @Test
-    void elevenMarinesDoesNotDetect3Rax() {
+    void fourMarinesDoesNotDetect3Rax() {
         ScoutingRuleUnit data = new ScoutingRuleUnit();
-        for (int i = 0; i < 11; i++) data.getUnitEvents().add(unit(UnitType.MARINE, i * 1000L));
+        for (int i = 0; i < 4; i++) data.getUnitEvents().add(unit(UnitType.MARINE, i * 1000L));
         fire(data);
         assertThat(data.getDetectedBuilds()).doesNotContain("TERRAN_3RAX");
     }
 
     @Test
-    void eightStalkersDetectsProtoss4Gate() {
+    void fourStalkersDetectsProtoss4Gate() {
         ScoutingRuleUnit data = new ScoutingRuleUnit();
-        for (int i = 0; i < 8; i++) data.getUnitEvents().add(unit(UnitType.STALKER, i * 1000L));
+        for (int i = 0; i < 4; i++) data.getUnitEvents().add(unit(UnitType.STALKER, i * 1000L));
         fire(data);
         assertThat(data.getDetectedBuilds()).contains("PROTOSS_4GATE");
     }
 
     @Test
-    void mixedStalkerZealotCountsTowardFourGate() {
+    void mixedTwoStalkersAndTwoZealotsDetects4Gate() {
         ScoutingRuleUnit data = new ScoutingRuleUnit();
-        for (int i = 0; i < 4; i++) data.getUnitEvents().add(unit(UnitType.STALKER, i * 1000L));
-        for (int i = 0; i < 4; i++) data.getUnitEvents().add(unit(UnitType.ZEALOT, i * 1000L));
+        for (int i = 0; i < 2; i++) data.getUnitEvents().add(unit(UnitType.STALKER, i * 1000L));
+        for (int i = 0; i < 2; i++) data.getUnitEvents().add(unit(UnitType.ZEALOT, i * 1000L));
         fire(data);
         assertThat(data.getDetectedBuilds()).contains("PROTOSS_4GATE");
     }
