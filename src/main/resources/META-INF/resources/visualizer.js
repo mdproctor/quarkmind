@@ -770,7 +770,9 @@ function initConfigPanel() {
   });
 
   document.getElementById('cfg-apply').addEventListener('click', () => {
-    sendConfig(currentConfig()).then(() => showStatus('Applied — restart to activate wave'));
+    sendConfig(currentConfig())
+      .then(() => showStatus('Applied — restart to activate wave'))
+      .catch(() => showStatus('Failed', true));
   });
 
   document.getElementById('cfg-restart').addEventListener('click', () => {
