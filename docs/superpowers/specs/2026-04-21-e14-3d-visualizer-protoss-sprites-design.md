@@ -56,7 +56,7 @@ Minerals: small `BoxGeometry(0.5, 0.4, 0.5)` with emissive glow.
 
 **Lighting:** `AmbientLight(0x223355, 0.9)` + `DirectionalLight(0xaabbff, 1.3)` at (20, 40, 20) with shadow mapping (2048×2048 shadow map). Fill light from (-10, 20, -10).
 
-Tile size: `TILE = 1.4` world units. Grid: 20×20. `HALF = GRID × TILE / 2` used to centre at origin.
+Tile size: `TILE = 0.7` world units. Grid: 64×64 (read from terrain endpoint; `GRID_W`/`GRID_H` override defaults). `HALF_W = GRID_W × TILE / 2`, `HALF_H = GRID_H × TILE / 2` centre the grid at the origin.
 
 ---
 
@@ -73,9 +73,11 @@ Angle presets:
 
 | Preset | phi | dist |
 |---|---|---|
-| Top-down | 0.12 | 32 |
-| Isometric | π/3.5 | 24 |
-| Low angle | π/2.3 | 20 |
+| Top-down | 0.12 | `GRID × TILE × 0.9` |
+| Isometric | π/3.5 | `GRID × TILE × 0.7` |
+| Low angle | π/2.3 | `GRID × TILE × 0.5` |
+
+Dist is dynamic so the camera adapts to variable terrain sizes from the endpoint.
 
 ---
 
