@@ -86,7 +86,10 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - Flow integration tests emit to a SmallRye channel and assert after `Thread.sleep(300)` — the flow processes asynchronously
 
 **Playwright render tests** (`@QuarkusTest` + `@Tag("browser")`, excluded from default surefire run — need Chromium installed):
-- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, on-screen position projection via `window.__test` API (Three.js renderer; `window.__test` exposes: `threeReady()`, `terrainReady()`, `wsConnected()`, `hudText()`, `unitCount()`, `enemyCount()`, `buildingCount()`, `stagingCount()`, `geyserCount()`, `fogOpacity(x,z)`, `worldToScreen(wx,wz)`)
+- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, on-screen position projection via `window.__test` API (Three.js renderer; `window.__test` exposes: `threeReady()`, `terrainReady()`, `wsConnected()`, `hudText()`, `unitCount()`, `enemyCount()`, `buildingCount()`, `stagingCount()`, `geyserCount()`, `fogOpacity(x,z)`, `worldToScreen(wx,wz)`, `unitMatsKeys()`, `allEnemyWorldY()`, `smokeTestDrawFn(name,dir,teamColor)`)
+  - `unitMatsKeys()` — array of all registered UNIT_MATS keys (e.g. `'MARINE_F'`, `'MARINE_E'`)
+  - `allEnemyWorldY()` — array of Three.js world Y positions for all current enemy sprites
+  - `smokeTestDrawFn(name, dir, teamColor)` — invokes named draw fn on a temp 128×128 canvas, returns centre pixel alpha (0–255), or -1 if function not found
 - `VisualizerFogRenderTest` — asserts Three.js fog plane state via `window.__test.fogOpacity(x,z)` and correct `GameStateBroadcast` envelope parsing (HUD shows minerals, not undefined)
 - Install Chromium once: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`
 - Run with: `mvn test -Pplaywright` (profile configured in pom.xml, runs `@Tag("browser")` tests)

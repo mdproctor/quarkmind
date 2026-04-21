@@ -85,6 +85,28 @@ window.__test = {
     const sz = renderer.getSize(new THREE.Vector2());
     return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
   },
+
+  unitMatsKeys: () => Object.keys(UNIT_MATS),
+
+  allEnemyWorldY: () => Array.from(enemySprites.values()).map(sp => sp.position.y),
+
+  smokeTestDrawFn: (name, dir, teamColor) => {
+    // typeof on an undeclared identifier returns 'undefined' — safe even before fn is defined
+    const lookup = {};
+    if (typeof drawProbe    !== 'undefined') lookup.drawProbe    = drawProbe;
+    if (typeof drawZealot   !== 'undefined') lookup.drawZealot   = drawZealot;
+    if (typeof drawStalker  !== 'undefined') lookup.drawStalker  = drawStalker;
+    if (typeof drawEnemy    !== 'undefined') lookup.drawEnemy    = drawEnemy;
+    if (typeof drawMarine   !== 'undefined') lookup.drawMarine   = drawMarine;
+    if (typeof drawMarauder !== 'undefined') lookup.drawMarauder = drawMarauder;
+    if (typeof drawMedivac  !== 'undefined') lookup.drawMedivac  = drawMedivac;
+    const fn = lookup[name];
+    if (!fn) return -1;
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    fn(c.getContext('2d'), 128, dir, teamColor);
+    return c.getContext('2d').getImageData(64, 64, 1, 1).data[3]; // alpha at centre
+  },
 };
 
 async function init() {
