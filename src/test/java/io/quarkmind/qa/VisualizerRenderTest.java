@@ -741,6 +741,10 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    /**
+     * Smoke test: drawMarauder must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawMarauder is defined.
+     */
     @Test
     @Tag("browser")
     void marauderDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
@@ -761,6 +765,10 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    /**
+     * Happy path: Marauder enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['MARAUDER_E'] must be registered and dispatch must resolve it.
+     */
     @Test
     @Tag("browser")
     void marauderEnemySpawnsAndRendersInVisualizer() throws Exception {

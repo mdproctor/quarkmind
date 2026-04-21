@@ -929,7 +929,7 @@ function initSpriteMaterials() {
   UNIT_MATS['MARAUDER_F']  = makeDirTextures(drawMarauder,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['MARAUDER_E']  = makeDirTextures(drawMarauder,  TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']   = makeDirTextures(drawEnemy,    TEAM_COLOR_FRIENDLY);
-  UNIT_MATS['UNKNOWN_E']  = makeDirTextures(drawEnemy,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['UNKNOWN_E']   = makeDirTextures(drawEnemy,    TEAM_COLOR_ENEMY);
 }
 
 function updateSpriteDirs() {
