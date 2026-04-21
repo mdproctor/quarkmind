@@ -271,6 +271,10 @@ async function loadTerrain() {
   terrainLoaded = true;
 }
 
+function gw(gx, gz) {
+  return { x: gx * TILE - HALF_W, z: gz * TILE - HALF_H };
+}
+
 function connectWebSocket() {
   const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
   ws.onopen  = () => { wsConnected = true; };
@@ -319,7 +323,136 @@ function updateFog(visibility) {
   }
 }
 
-function syncUnits(state) {}       // stub — implemented in Task 6
+const BUILDING_H = { NEXUS: 1.4, PYLON: 1.7, GATEWAY: 1.1 };
+const BUILDING_W = { NEXUS: 2.5, PYLON: 0.8, GATEWAY: 1.8 };
+const BUILDING_COLOUR = {
+  NEXUS:   [0x2255aa, 0x112244],
+  PYLON:   [0x553399, 0x221144],
+  GATEWAY: [0x336688, 0x112233],
+};
+
+function syncUnits(state) {
+  syncBuildings(state.myBuildings   || []);
+  syncGeysers(state.geysers         || []);
+  syncUnitLayer(unitSprites,   unit3dMeshes,  state.myUnits          || [], false);
+  syncUnitLayer(enemySprites,  enemy3dMeshes, state.enemyUnits        || [], true);
+  syncUnitLayer(stagingSprites, new Map(),    state.enemyStagingArea  || [], true);
+}
+
+function syncBuildings(buildings) {
+  const seen = new Set();
+  buildings.forEach(b => {
+    seen.add(b.tag);
+    if (!buildingMeshes.has(b.tag)) {
+      const h = BUILDING_H[b.type] ?? 1.0;
+      const w = BUILDING_W[b.type] ?? 1.5;
+      const [color, emissive] = BUILDING_COLOUR[b.type] ?? [0x334455, 0x111122];
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(w * TILE * 0.7, h, w * TILE * 0.7),
+        new THREE.MeshLambertMaterial({ color, emissive })
+      );
+      mesh.castShadow = mesh.receiveShadow = true;
+      const wp = gw(b.position.x, b.position.y);
+      mesh.position.set(wp.x, h/2, wp.z);
+      scene.add(mesh);
+      buildingMeshes.set(b.tag, mesh);
+    }
+  });
+  buildingMeshes.forEach((m, tag) => {
+    if (!seen.has(tag)) { scene.remove(m); buildingMeshes.delete(tag); }
+  });
+}
+
+function syncGeysers(geysers) {
+  const seen = new Set();
+  geysers.forEach(g => {
+    seen.add(g.tag);
+    if (!geyserMeshes.has(g.tag)) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(TILE*0.6, TILE*0.25, TILE*0.6),
+        new THREE.MeshLambertMaterial({ color: 0x224422, emissive: 0x001100 })
+      );
+      const wp = gw(g.position.x, g.position.y);
+      mesh.position.set(wp.x, TILE*0.125, wp.z);
+      scene.add(mesh);
+      geyserMeshes.set(g.tag, mesh);
+    }
+  });
+  geyserMeshes.forEach((m, tag) => {
+    if (!seen.has(tag)) { scene.remove(m); geyserMeshes.delete(tag); }
+  });
+}
+
+function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
+  const seen = new Set();
+  units.forEach(u => {
+    seen.add(u.tag);
+    const wp = gw(u.position.x, u.position.y);
+
+    // Update facing from position delta
+    const prev = prevPositions.get(u.tag);
+    if (prev) {
+      const dx = wp.x - prev.x, dz = wp.z - prev.z;
+      if (dx*dx + dz*dz > 0.0001) {
+        unitFacings.set(u.tag, Math.atan2(-dx, dz));
+      }
+    }
+    prevPositions.set(u.tag, { x: wp.x, z: wp.z });
+
+    if (!spriteMap.has(u.tag)) {
+      // 2D sprite — placeholder material until art tasks complete
+      const mat = new THREE.SpriteMaterial({ color: isEnemy ? 0xcc3322 : 0x4488dd, transparent: true, depthWrite: true, alphaTest: 0.1 });
+      const sp = new THREE.Sprite(mat);
+      sp.userData.mats = null; // filled once sprite materials are ready
+      sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
+      sp.position.set(wp.x, TILE * 0.65, wp.z);
+      group2d.add(sp);
+      spriteMap.set(u.tag, sp);
+
+      // 3D sphere model
+      const g = make3dModel(isEnemy ? 0xcc3322 : 0x4488dd, isEnemy ? 0x330000 : 0x112244);
+      g.position.set(wp.x, 0, wp.z);
+      group3d.add(g);
+      if (meshMap instanceof Map) meshMap.set(u.tag, g);
+    } else {
+      const sp = spriteMap.get(u.tag);
+      sp.position.x = wp.x; sp.position.z = wp.z;
+      const g = meshMap instanceof Map ? meshMap.get(u.tag) : null;
+      if (g) { g.position.x = wp.x; g.position.z = wp.z; }
+    }
+  });
+
+  spriteMap.forEach((sp, tag) => {
+    if (!seen.has(tag)) {
+      group2d.remove(sp);
+      spriteMap.delete(tag);
+      prevPositions.delete(tag);
+      unitFacings.delete(tag);
+      if (meshMap instanceof Map) {
+        const g = meshMap.get(tag);
+        if (g) { group3d.remove(g); meshMap.delete(tag); }
+      }
+    }
+  });
+}
+
+function make3dModel(color, emissive) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(TILE*0.38, 16, 12),
+    new THREE.MeshLambertMaterial({ color, emissive })
+  );
+  body.position.y = TILE*0.42; body.castShadow = true; g.add(body);
+  const eyeM = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const pupM = new THREE.MeshLambertMaterial({ color: 0x111122 });
+  [-0.14, 0.14].forEach(ex => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(TILE*0.1, 8, 8), eyeM);
+    eye.position.set(ex*TILE, TILE*0.52, TILE*0.32); g.add(eye);
+    const pup = new THREE.Mesh(new THREE.SphereGeometry(TILE*0.055, 8, 8), pupM);
+    pup.position.set(ex*TILE, TILE*0.52, TILE*0.37); g.add(pup);
+  });
+  return g;
+}
 
 function initConfigPanel() {}
 

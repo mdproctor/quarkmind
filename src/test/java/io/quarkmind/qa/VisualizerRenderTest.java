@@ -616,6 +616,25 @@ class VisualizerRenderTest {
     }
 
     /**
+     * Building count test: after a gameTick(), buildingMeshes must contain at least
+     * one entry — the initial Nexus. Validates that syncUnits() → syncBuildings()
+     * correctly populates buildingMeshes from state.myBuildings.
+     */
+    @Test
+    void buildingCountMatchesGameState() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        orchestrator.gameTick();
+        page.waitForTimeout(400);
+        Number buildings = (Number) page.evaluate("() => window.__test.buildingCount()");
+        assertTrue(buildings.intValue() >= 1,
+            "Expected at least 1 building (Nexus), got " + buildings);
+        page.close();
+    }
+
+    /**
      * Three.js bootstrap test: the WebGLRenderer must be initialised and
      * window.__test.threeReady() must return true after page load.
      */
