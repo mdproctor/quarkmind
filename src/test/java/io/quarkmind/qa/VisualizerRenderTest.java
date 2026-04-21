@@ -653,6 +653,22 @@ class VisualizerRenderTest {
 
     @Test
     @Tag("browser")
+    void enemyUnitsRenderWhenPresent() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        simulatedGame.spawnEnemyUnit(UnitType.ZERGLING,
+            new Point2d(20, 20));
+        orchestrator.gameTick();
+        page.waitForTimeout(400);
+        Number enemies = (Number) page.evaluate("() => window.__test.enemyCount()");
+        assertTrue(enemies.intValue() >= 1, "Expected ≥1 enemy unit, got " + enemies);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
     void getDir4ReturnsFrontWhenCameraAlignedWithFacing() throws Exception {
         Page page = browser.newPage();
         page.navigate(pageUrl.toString());
