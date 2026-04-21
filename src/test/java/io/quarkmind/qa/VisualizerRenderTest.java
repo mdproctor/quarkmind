@@ -907,6 +907,70 @@ class VisualizerRenderTest {
     }
 
     /**
+     * UNIT_MATS must always include UNKNOWN_F and UNKNOWN_E fallback entries.
+     * These are used when an unrecognised unit type reaches syncUnitLayer.
+     */
+    @Test
+    @Tag("browser")
+    void unitMatsContainsUnknownFallbacks() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        @SuppressWarnings("unchecked")
+        List<String> keys = (List<String>) page.evaluate("() => window.__test.unitMatsKeys()");
+        assertThat(keys).contains("UNKNOWN_F", "UNKNOWN_E");
+        page.close();
+    }
+
+    /**
+     * Robustness: UNKNOWN_E must be a 4-element SpriteMaterial array.
+     * This ensures the fallback dispatch never returns null or an incomplete array.
+     */
+    @Test
+    @Tag("browser")
+    void unknownUnitTypeFallbackIsA4ElementArray() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        Number len = (Number) page.evaluate(
+            "() => (UNIT_MATS['UNKNOWN_E'] ?? []).length");
+        assertThat(len.intValue())
+            .as("UNKNOWN_E must be a 4-element SpriteMaterial array")
+            .isEqualTo(4);
+        page.close();
+    }
+
+    /**
+     * Coverage: all 7 unit types × 2 teams must be registered after initSpriteMaterials().
+     * This catches any unit type missing from initSpriteMaterials registrations.
+     */
+    @Test
+    @Tag("browser")
+    void unitMatsCoversAllSevenTypesWithBothTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        @SuppressWarnings("unchecked")
+        List<String> keys = (List<String>) page.evaluate("() => window.__test.unitMatsKeys()");
+        assertThat(keys).contains(
+            "PROBE_F",    "PROBE_E",
+            "ZEALOT_F",   "ZEALOT_E",
+            "STALKER_F",  "STALKER_E",
+            "MARINE_F",   "MARINE_E",
+            "MARAUDER_F", "MARAUDER_E",
+            "MEDIVAC_F",  "MEDIVAC_E",
+            "UNKNOWN_F",  "UNKNOWN_E"
+        );
+        page.close();
+    }
+
+    /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
      * updating throughout.
