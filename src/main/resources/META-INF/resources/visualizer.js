@@ -178,6 +178,7 @@ async function loadTerrain() {
   const highSet = new Set(highGround.map(([x,z]) => `${x},${z}`));
   const rampSet = new Set(ramps.map(([x,z])      => `${x},${z}`));
 
+  const sharedEdgesGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(TILE, 0.01, TILE));
   for (let gz = 0; gz < GRID_H; gz++) {
     for (let gx = 0; gx < GRID_W; gx++) {
       const key = `${gx},${gz}`;
@@ -195,10 +196,7 @@ async function loadTerrain() {
       if (mat === mWall) tile.castShadow = true;
       scene.add(tile);
 
-      const el = new THREE.LineSegments(
-        new THREE.EdgesGeometry(new THREE.BoxGeometry(TILE, 0.01, TILE)),
-        lineMat
-      );
+      const el = new THREE.LineSegments(sharedEdgesGeo, lineMat);
       el.position.set(cx, h + 0.01, cz);
       scene.add(el);
     }
