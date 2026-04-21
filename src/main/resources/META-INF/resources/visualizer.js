@@ -526,8 +526,64 @@ function drawProbe(ctx, S, dir) {
   ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
 }
 function drawZealot(ctx, S, dir) {
-  ctx.fillStyle = '#7755cc';
-  ctx.beginPath(); ctx.arc(S/2, S/2, S*0.4, 0, Math.PI*2); ctx.fill();
+  const cx = S/2, cy = S/2 + 2;
+  const grd = ctx.createRadialGradient(cx,cy,S*.1,cx,cy,S*.48);
+  grd.addColorStop(0,'rgba(140,80,255,0.25)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.48,S*.48,0,0,Math.PI*2); ctx.fill();
+
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.08,cy-S*.08,S*.02,cx,cy,S*.3);
+    b.addColorStop(0,'#aa88dd'); b.addColorStop(.7,'#5533aa'); b.addColorStop(1,'#331177');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#8855cc';
+    ctx.beginPath(); ctx.moveTo(cx-S*.08,cy-S*.28); ctx.lineTo(cx,cy-S*.44); ctx.lineTo(cx+S*.08,cy-S*.28); ctx.fill();
+    const bg1 = ctx.createLinearGradient(cx-S*.36,cy,cx-S*.28,cy);
+    bg1.addColorStop(0,'rgba(0,180,255,0)'); bg1.addColorStop(1,'#44ccff');
+    ctx.fillStyle=bg1; ctx.beginPath(); ctx.ellipse(cx-S*.33,cy,S*.06,S*.18,0,0,Math.PI*2); ctx.fill();
+    const bg2 = ctx.createLinearGradient(cx+S*.28,cy,cx+S*.36,cy);
+    bg2.addColorStop(0,'#44ccff'); bg2.addColorStop(1,'rgba(0,180,255,0)');
+    ctx.fillStyle=bg2; ctx.beginPath(); ctx.ellipse(cx+S*.33,cy,S*.06,S*.18,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5533aa';
+    ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    const bg = ctx.createLinearGradient(cx+flip*S*.22,cy,cx+flip*S*.42,cy);
+    bg.addColorStop(flip>0?0:1,'#44ccff'); bg.addColorStop(flip>0?1:0,'rgba(0,180,255,0)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(cx+flip*S*.36,cy,S*.07,S*.2,0,0,Math.PI*2); ctx.fill();
+    const b = ctx.createRadialGradient(cx+flip*S*.06,cy-S*.08,S*.02,cx,cy,S*.26);
+    b.addColorStop(0,'#ccaaff'); b.addColorStop(.5,'#7755cc'); b.addColorStop(1,'#441199');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.26,S*.24,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.15,cy-S*.07,S*.08,S*.08,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#221144'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.17,cy-S*.06,S*.046,S*.046,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.14,cy-S*.1,S*.02,S*.02,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5533aa';
+    ctx.beginPath(); ctx.ellipse(cx,cy+S*.26,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  // FRONT
+  function blade(bx) {
+    const bg = ctx.createLinearGradient(bx-8,cy-S*.2,bx+8,cy+S*.2);
+    bg.addColorStop(0,'#88ffff'); bg.addColorStop(.5,'#44ccff'); bg.addColorStop(1,'rgba(0,180,255,0.2)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(bx,cy,S*.07,S*.2,0,0,Math.PI*2); ctx.fill();
+  }
+  blade(cx-S*.36); blade(cx+S*.36);
+  const b = ctx.createRadialGradient(cx-S*.08,cy-S*.1,S*.04,cx,cy,S*.3);
+  b.addColorStop(0,'#ccaaff'); b.addColorStop(.5,'#7755cc'); b.addColorStop(1,'#441199');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.07,cy-S*.1,S*.12,S*.08,-.4,0,Math.PI*2); ctx.fill();
+  [[-S*.11],[S*.11]].forEach(([ex]) => {
+    const exx=cx+ex, eyy=cy-S*.07;
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx,eyy,S*.075,S*.075,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#221144'; ctx.beginPath(); ctx.ellipse(exx+1,eyy+1,S*.042,S*.042,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx-1,eyy-2,S*.018,S*.018,0,0,Math.PI*2); ctx.fill();
+  });
+  ctx.fillStyle='#5533aa';
+  ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
 }
 function drawStalker(ctx, S, dir) {
   ctx.fillStyle = '#334455';
