@@ -621,16 +621,13 @@ class VisualizerRenderTest {
      */
     @Test
     @Tag("browser")
-    void threeJsCanvasExists() throws Exception {
-        try (Playwright pw = Playwright.create()) {
-            Browser browser = pw.chromium().launch();
-            Page page = browser.newPage();
-            page.navigate(pageUrl.toString());
-            page.waitForFunction("() => window.__test?.threeReady?.() === true",
-                null, new Page.WaitForFunctionOptions().setTimeout(8000));
-            Object ready = page.evaluate("() => window.__test.threeReady()");
-            assertTrue((Boolean) ready, "Three.js renderer not initialised");
-            browser.close();
-        }
+    void threeJsCanvasExists() {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Object ready = page.evaluate("() => window.__test.threeReady()");
+        assertTrue((Boolean) ready, "Three.js renderer not initialised");
+        page.close();
     }
 }
