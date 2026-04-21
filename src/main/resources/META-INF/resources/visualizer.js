@@ -404,7 +404,7 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
 
     if (!spriteMap.has(u.tag)) {
       // 2D sprite — directional canvas texture material
-      const mats = isEnemy ? enemyMats : (UNIT_MATS()[u.type] ?? enemyMats);
+      const mats = isEnemy ? enemyMats : (UNIT_MATS[u.type] ?? enemyMats);
       const sp = new THREE.Sprite(mats[0]);
       sp.userData.mats = mats;
       sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
@@ -490,11 +490,14 @@ function initSpriteMaterials() {
   zealotMats  = makeDirTextures(drawZealot);
   stalkerMats = makeDirTextures(drawStalker);
   enemyMats   = makeDirTextures(drawEnemy);
+  populateUnitMats();
 }
 
-const UNIT_MATS = () => ({
-  PROBE: probeMats, ZEALOT: zealotMats, STALKER: stalkerMats
-});
+// Populated by initSpriteMaterials() — do not read before init() runs
+const UNIT_MATS = {};
+function populateUnitMats() {
+  UNIT_MATS.PROBE = probeMats; UNIT_MATS.ZEALOT = zealotMats; UNIT_MATS.STALKER = stalkerMats;
+}
 
 function updateSpriteDirs() {
   [unitSprites, enemySprites, stagingSprites].forEach(map => {
