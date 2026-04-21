@@ -29,6 +29,7 @@ import java.net.URL;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -632,6 +633,41 @@ class VisualizerRenderTest {
         Number buildings = (Number) page.evaluate("() => window.__test.buildingCount()");
         assertTrue(buildings.intValue() >= 1,
             "Expected at least 1 building (Nexus), got " + buildings);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void unitCountMatchesGameState() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        orchestrator.gameTick();
+        page.waitForTimeout(400);
+        Number units = (Number) page.evaluate("() => window.__test.unitCount()");
+        assertTrue(units.intValue() >= 12,
+            "Expected ≥12 units (SimulatedGame default), got " + units);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void getDir4ReturnsFrontWhenCameraAlignedWithFacing() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        // Unit facing angle=0 (south/+z), camera at (0,10,10) — in front of unit
+        Number dir = (Number) page.evaluate("""
+            () => {
+              const unitPos = new THREE.Vector3(0, 0, 0);
+              const camPos  = new THREE.Vector3(0, 10, 10);
+              return getDir4(0, unitPos, camPos);
+            }
+        """);
+        assertEquals(0, dir.intValue(),
+            "Camera in front of unit (facing angle=0, cam at +z) should give dir=0 (front)");
         page.close();
     }
 

@@ -105,6 +105,7 @@ async function init() {
   window._three = { scene, camera, renderer };
 
   initMaterials();
+  initSpriteMaterials();  // ← directional canvas texture materials
   setupCamera();
   setupLighting();
   await loadTerrain();
@@ -123,6 +124,7 @@ window.addEventListener('resize', () => {
 function animate() {
   requestAnimationFrame(animate);
   smoothCamera();
+  updateSpriteDirs();
   renderer.render(scene, camera);
 }
 
@@ -401,10 +403,10 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
     prevPositions.set(u.tag, { x: wp.x, z: wp.z });
 
     if (!spriteMap.has(u.tag)) {
-      // 2D sprite — placeholder material until art tasks complete
-      const mat = new THREE.SpriteMaterial({ color: isEnemy ? 0xcc3322 : 0x4488dd, transparent: true, depthWrite: true, alphaTest: 0.1 });
-      const sp = new THREE.Sprite(mat);
-      sp.userData.mats = null; // filled once sprite materials are ready
+      // 2D sprite — directional canvas texture material
+      const mats = isEnemy ? enemyMats : (UNIT_MATS()[u.type] ?? enemyMats);
+      const sp = new THREE.Sprite(mats[0]);
+      sp.userData.mats = mats;
       sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
       sp.position.set(wp.x, TILE * 0.65, wp.z);
       group2d.add(sp);
@@ -434,6 +436,74 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
         if (g) { group3d.remove(g); meshMap.delete(tag); }
       }
     }
+  });
+}
+
+// ── Sprite direction system ───────────────────────────────────────────────────
+
+// Returns 0=front, 1=right, 2=back, 3=left relative to unit facing.
+// Negated dx corrects for Three.js screen-space handedness.
+function getDir4(facingAngle, unitPos, camPos) {
+  const camAngle = Math.atan2(-(camPos.x - unitPos.x), camPos.z - unitPos.z);
+  let rel = camAngle - facingAngle;
+  while (rel < 0)          rel += Math.PI * 2;
+  while (rel >= Math.PI*2) rel -= Math.PI * 2;
+  return Math.round(rel / (Math.PI/2)) % 4;
+}
+
+function makeDirTextures(drawFn, size = 128) {
+  return [0, 1, 2, 3].map(dir => {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    drawFn(c.getContext('2d'), size, dir);
+    const tex = new THREE.CanvasTexture(c);
+    tex.premultiplyAlpha = true;
+    return new THREE.SpriteMaterial({
+      map: tex, transparent: true,
+      depthWrite: true, alphaTest: 0.1
+    });
+  });
+}
+
+// Art stubs — replaced in Tasks 8-11
+function drawProbe(ctx, S, dir) {
+  ctx.fillStyle = '#4488dd';
+  ctx.beginPath(); ctx.arc(S/2, S/2, S*0.4, 0, Math.PI*2); ctx.fill();
+}
+function drawZealot(ctx, S, dir) {
+  ctx.fillStyle = '#7755cc';
+  ctx.beginPath(); ctx.arc(S/2, S/2, S*0.4, 0, Math.PI*2); ctx.fill();
+}
+function drawStalker(ctx, S, dir) {
+  ctx.fillStyle = '#334455';
+  ctx.beginPath(); ctx.arc(S/2, S/2, S*0.4, 0, Math.PI*2); ctx.fill();
+}
+function drawEnemy(ctx, S, dir) {
+  ctx.fillStyle = '#cc3322';
+  ctx.beginPath(); ctx.arc(S/2, S/2, S*0.4, 0, Math.PI*2); ctx.fill();
+}
+
+let probeMats, zealotMats, stalkerMats, enemyMats;
+
+function initSpriteMaterials() {
+  probeMats   = makeDirTextures(drawProbe);
+  zealotMats  = makeDirTextures(drawZealot);
+  stalkerMats = makeDirTextures(drawStalker);
+  enemyMats   = makeDirTextures(drawEnemy);
+}
+
+const UNIT_MATS = () => ({
+  PROBE: probeMats, ZEALOT: zealotMats, STALKER: stalkerMats
+});
+
+function updateSpriteDirs() {
+  [unitSprites, enemySprites, stagingSprites].forEach(map => {
+    map.forEach((sp, tag) => {
+      const mats = sp.userData.mats;
+      if (!mats) return;
+      const facing = unitFacings.get(tag) ?? 0;
+      sp.material = mats[getDir4(facing, sp.position, camera.position)];
+    });
   });
 }
 
