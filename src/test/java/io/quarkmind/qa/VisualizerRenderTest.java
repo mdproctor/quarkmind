@@ -630,4 +630,23 @@ class VisualizerRenderTest {
         assertTrue((Boolean) ready, "Three.js renderer not initialised");
         page.close();
     }
+
+    /**
+     * Terrain tiles test: loadTerrain() must populate the Three.js scene with
+     * grid tile meshes (BoxGeometry + EdgesGeometry). A 64x64 grid produces
+     * 64*64*2 = 8192 scene children (tiles + edge lines), far above the threshold
+     * of 10 used here as a conservative smoke check.
+     */
+    @Test
+    @Tag("browser")
+    void terrainRendersGridTiles() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.terrainReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        Number count = (Number) page.evaluate("() => window._three.scene.children.length");
+        assertTrue(count.intValue() > 10,
+            "Expected terrain tiles in scene, got " + count);
+        page.close();
+    }
 }
