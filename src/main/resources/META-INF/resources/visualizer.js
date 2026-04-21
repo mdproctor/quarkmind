@@ -13,6 +13,17 @@ let renderer, scene, camera;
 let wsConnected = false;
 let group2d, group3d;
 
+const unitSprites    = new Map();
+const unit3dMeshes   = new Map();
+const enemySprites   = new Map();
+const enemy3dMeshes  = new Map();
+const buildingMeshes = new Map();
+const geyserMeshes   = new Map();
+const stagingSprites = new Map();
+const fogPlanes      = new Map();
+const prevPositions  = new Map();
+const unitFacings    = new Map();
+
 let mGround, mWall, mHigh, mRamp, lineMat;
 function initMaterials() {
   mGround = new THREE.MeshLambertMaterial({ color: 0x1a2233 });
@@ -29,13 +40,44 @@ window.__test = {
   terrainReady:  () => terrainLoaded,
   wsConnected:   () => wsConnected,
   hudText:       () => document.getElementById('hud')?.textContent ?? '',
-  unitCount:     () => group2d?.children.length ?? 0,
-  enemyCount:    () => 0,
-  buildingCount: () => 0,
-  stagingCount:  () => 0,
-  geyserCount:   () => 0,
-  fogOpacity:    (x, z) => -1,
-  fogVisible:    (x, z) => false,
+  unitCount:     () => unitSprites.size,
+  enemyCount:    () => enemySprites.size,
+  buildingCount: () => buildingMeshes.size,
+  stagingCount:  () => stagingSprites.size,
+  geyserCount:   () => geyserMeshes.size,
+  fogOpacity:    (x, z) => {
+    const p = fogPlanes.get(`${x},${z}`);
+    return p ? (p.visible ? p.material.opacity : 0) : -1;
+  },
+  fogVisible:    (x, z) => fogPlanes.get(`${x},${z}`)?.visible ?? false,
+  spriteCount: prefix => {
+    if (prefix === 'unit')     return unitSprites.size;
+    if (prefix === 'enemy')    return enemySprites.size;
+    if (prefix === 'building') return buildingMeshes.size;
+    if (prefix === 'geyser')   return geyserMeshes.size;
+    if (prefix === 'staging')  return stagingSprites.size;
+    return 0;
+  },
+  sprite: key => {
+    // key format: "unit:tag", "enemy:tag", "building:tag", "geyser:tag", "staging:tag"
+    const [prefix, tag] = key.split(':');
+    let obj = null;
+    if (prefix === 'unit')     obj = unitSprites.get(tag);
+    if (prefix === 'enemy')    obj = enemySprites.get(tag);
+    if (prefix === 'building') obj = buildingMeshes.get(tag);
+    if (prefix === 'geyser')   obj = geyserMeshes.get(tag);
+    if (prefix === 'staging')  obj = stagingSprites.get(tag);
+    if (!obj) return null;
+    // Return a plain serialisable object for Playwright to receive
+    return {
+      x:       Math.round(obj.position.x),
+      y:       Math.round(obj.position.z),
+      visible: obj.visible,
+      alpha:   obj.material?.opacity ?? 1,
+      tint:    obj.userData?.tint ?? 0xffffff,
+      hasMask: obj.userData?.hasMask ?? false,
+    };
+  },
   worldToScreen: (wx, wz) => {
     if (!camera || !renderer) return { x: 0, y: 0 };
     const v = new THREE.Vector3(wx, 0, wz).project(camera);
@@ -207,7 +249,41 @@ async function loadTerrain() {
   terrainLoaded = true;
 }
 
-function connectWebSocket() {}
+function connectWebSocket() {
+  const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
+  ws.onopen  = () => { wsConnected = true; };
+  ws.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      onFrame(msg.state, msg.visibility);
+    } catch (err) { console.warn('Bad WS message', err); }
+  };
+  ws.onerror = () => ws.close();
+  ws.onclose = () => {
+    wsConnected = false;
+    document.getElementById('hud').textContent = 'Disconnected — reconnecting...';
+    setTimeout(connectWebSocket, RECONNECT_MS);
+  };
+}
+
+function onFrame(state, visibility) {
+  if (!state) return;
+  updateHud(state);
+  updateFog(visibility);
+  syncUnits(state);
+}
+
+function updateHud(state) {
+  document.getElementById('hud').textContent =
+    `Minerals: ${state.minerals}   Gas: ${state.vespene}` +
+    `   Supply: ${state.supplyUsed}/${state.supply}` +
+    `   Frame: ${state.gameFrame}`;
+}
+
+function updateFog(visibility) {}  // stub — implemented in Task 5
+
+function syncUnits(state) {}       // stub — implemented in Task 6
+
 function initConfigPanel() {}
 
 init();
