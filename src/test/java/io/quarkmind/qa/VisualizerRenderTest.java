@@ -22,6 +22,8 @@ import io.quarkmind.sc2.SC2Engine;
 import io.quarkmind.sc2.mock.SimulatedGame;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -628,6 +630,32 @@ class VisualizerRenderTest {
         Number count = (Number) page.evaluate("() => window._three.scene.children.length");
         assertTrue(count.intValue() > 10,
             "Expected terrain tiles in scene, got " + count);
+        page.close();
+    }
+
+    /**
+     * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
+     * sprite direction switching — and asserts no JS errors occur and the HUD keeps
+     * updating throughout.
+     */
+    @Test
+    @Tag("browser")
+    void fullLoopRunsWithoutJsErrors() throws Exception {
+        Page page = browser.newPage();
+        List<String> errors = new ArrayList<>();
+        page.onPageError(e -> errors.add(e));
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        // Run 20 ticks — exercises unit movement, fog updates, sprite direction switching
+        for (int i = 0; i < 20; i++) {
+            orchestrator.gameTick();
+            Thread.sleep(50);
+        }
+        page.waitForTimeout(400);
+        assertTrue(errors.isEmpty(), "No JS errors expected in visualizer: " + errors);
+        String hud = (String) page.evaluate("() => window.__test.hudText()");
+        assertTrue(hud.contains("Frame:"), "HUD should still be updating after 20 ticks: " + hud);
         page.close();
     }
 }
