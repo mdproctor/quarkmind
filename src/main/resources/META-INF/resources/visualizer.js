@@ -258,6 +258,7 @@ async function loadTerrain() {
       plane.rotation.x = -Math.PI/2;
       plane.position.set(cx, 0.18, cz);
       plane.renderOrder = 5;
+      plane.userData.isFog = true;
       plane.visible = true;
       plane.material.opacity = 1.0; // start fully UNSEEN
       scene.add(plane);
