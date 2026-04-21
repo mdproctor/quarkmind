@@ -29,6 +29,7 @@ import java.net.URL;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
@@ -612,5 +613,24 @@ class VisualizerRenderTest {
             .isNotEqualTo(BACKGROUND.getRed());
 
         page.close();
+    }
+
+    /**
+     * Three.js bootstrap test: the WebGLRenderer must be initialised and
+     * window.__test.threeReady() must return true after page load.
+     */
+    @Test
+    @Tag("browser")
+    void threeJsCanvasExists() throws Exception {
+        try (Playwright pw = Playwright.create()) {
+            Browser browser = pw.chromium().launch();
+            Page page = browser.newPage();
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test?.threeReady?.() === true",
+                null, new Page.WaitForFunctionOptions().setTimeout(8000));
+            Object ready = page.evaluate("() => window.__test.threeReady()");
+            assertTrue((Boolean) ready, "Three.js renderer not initialised");
+            browser.close();
+        }
     }
 }
