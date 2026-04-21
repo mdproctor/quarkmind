@@ -745,6 +745,84 @@ function drawEnemy(ctx, S, dir, teamColor) {
   });
 }
 
+function drawMarine(ctx, S, dir, teamColor) {
+  const cx = S/2, cy = S/2 + 4;
+  // Outer glow
+  const grd = ctx.createRadialGradient(cx, cy, S*.05, cx, cy, S*.44);
+  grd.addColorStop(0, 'rgba(100,120,140,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.44,S*.44,0,0,Math.PI*2); ctx.fill();
+
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.06,cy-S*.06,S*.02,cx,cy,S*.3);
+    b.addColorStop(0,'#8899aa'); b.addColorStop(.6,'#556677'); b.addColorStop(1,'#223344');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+    // Shoulder pads in teamColor
+    ctx.fillStyle=teamColor;
+    ctx.beginPath(); ctx.ellipse(cx-S*.24,cy-S*.08,S*.1,S*.07,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.24,cy-S*.08,S*.1,S*.07,0,0,Math.PI*2); ctx.fill();
+    // Backpack power cell
+    ctx.fillStyle='#334455';
+    ctx.fillRect(cx-S*.06,cy-S*.28,S*.12,S*.18);
+    ctx.fillStyle='#445566'; ctx.beginPath(); ctx.ellipse(cx,cy-S*.28,S*.06,S*.05,0,0,Math.PI*2); ctx.fill();
+    // Boots
+    ctx.fillStyle='#223344';
+    ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.28,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.28,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    // Body
+    const b = ctx.createRadialGradient(cx+flip*S*.04,cy-S*.04,S*.02,cx,cy,S*.28);
+    b.addColorStop(0,'#8899aa'); b.addColorStop(.5,'#556677'); b.addColorStop(1,'#223344');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.28,S*.26,0,0,Math.PI*2); ctx.fill();
+    // Helmet
+    const h = ctx.createRadialGradient(cx+flip*S*.04,cy-S*.2,S*.02,cx,cy-S*.14,S*.18);
+    h.addColorStop(0,'#6677aa'); h.addColorStop(.6,'#334466'); h.addColorStop(1,'#0d1822');
+    ctx.fillStyle=h; ctx.beginPath(); ctx.ellipse(cx,cy-S*.14,S*.18,S*.18,0,0,Math.PI*2); ctx.fill();
+    // Visor in teamColor (side — small slit)
+    ctx.fillStyle=hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.1,cy-S*.16,S*.08,S*.04,0,0,Math.PI*2); ctx.fill();
+    // Shoulder pad on visible side
+    ctx.fillStyle=teamColor;
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.22,cy-S*.08,S*.09,S*.065,0,0,Math.PI*2); ctx.fill();
+    // Rifle barrel
+    ctx.fillStyle='#222';
+    ctx.fillRect(cx+flip*S*.2,cy-S*.02,flip*S*.26,S*.07);
+    // Boot
+    ctx.fillStyle='#223344';
+    ctx.beginPath(); ctx.ellipse(cx,cy+S*.28,S*.12,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  // FRONT
+  const b = ctx.createRadialGradient(cx-S*.06,cy-S*.04,S*.04,cx,cy,S*.32);
+  b.addColorStop(0,'#8899aa'); b.addColorStop(.5,'#556677'); b.addColorStop(1,'#223344');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.02,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+  // Shoulder pads in teamColor
+  ctx.fillStyle=teamColor;
+  ctx.beginPath(); ctx.ellipse(cx-S*.26,cy-S*.06,S*.11,S*.07,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.26,cy-S*.06,S*.11,S*.07,0,0,Math.PI*2); ctx.fill();
+  // Helmet dome
+  const h = ctx.createRadialGradient(cx-S*.06,cy-S*.2,S*.02,cx,cy-S*.16,S*.2);
+  h.addColorStop(0,'#6677aa'); h.addColorStop(.5,'#334466'); h.addColorStop(1,'#0d1822');
+  ctx.fillStyle=h; ctx.beginPath(); ctx.ellipse(cx,cy-S*.16,S*.2,S*.2,0,0,Math.PI*2); ctx.fill();
+  // Visor in teamColor
+  ctx.fillStyle=hexToRgba(teamColor, 0.75);
+  ctx.beginPath(); ctx.ellipse(cx,cy-S*.17,S*.13,S*.065,0,0,Math.PI*2); ctx.fill();
+  // Visor highlight
+  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.04,cy-S*.19,S*.055,S*.025,-0.3,0,Math.PI*2); ctx.fill();
+  // Right arm + rifle
+  ctx.fillStyle='#445566';
+  ctx.fillRect(cx+S*.2,cy-S*.03,S*.22,S*.08);
+  ctx.fillStyle='#222';
+  ctx.fillRect(cx+S*.3,cy-S*.01,S*.18,S*.05);
+  // Boots
+  ctx.fillStyle='#223344';
+  ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.28,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.28,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -755,6 +833,8 @@ function initSpriteMaterials() {
   UNIT_MATS['ZEALOT_E']   = makeDirTextures(drawZealot,  TEAM_COLOR_ENEMY);
   UNIT_MATS['STALKER_F']  = makeDirTextures(drawStalker, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['STALKER_E']  = makeDirTextures(drawStalker, TEAM_COLOR_ENEMY);
+  UNIT_MATS['MARINE_F']   = makeDirTextures(drawMarine,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MARINE_E']   = makeDirTextures(drawMarine,   TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']  = makeDirTextures(drawEnemy,   TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']  = makeDirTextures(drawEnemy,   TEAM_COLOR_ENEMY);
 }

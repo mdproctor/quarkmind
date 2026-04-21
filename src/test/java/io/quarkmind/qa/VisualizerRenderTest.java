@@ -695,6 +695,53 @@ class VisualizerRenderTest {
 
 
     /**
+     * drawMarine must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawMarine is defined.
+     */
+    @Test
+    @Tag("browser")
+    void marineDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawMarine', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue())
+                .as("drawMarine dir=" + dir + " team=" + color)
+                .isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    /**
+     * Happy path: Marine enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['MARINE_E'] must be registered and dispatch must resolve it.
+     */
+    @Test
+    @Tag("browser")
+    void marineEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Marine enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
      * updating throughout.
