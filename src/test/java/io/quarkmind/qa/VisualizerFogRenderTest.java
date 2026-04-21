@@ -1,101 +1,86 @@
 package io.quarkmind.qa;
 
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import org.junit.jupiter.api.*;
+
 import jakarta.inject.Inject;
 import io.quarkmind.agent.AgentOrchestrator;
 import io.quarkmind.sc2.SC2Engine;
-import org.junit.jupiter.api.*;
 
 import java.net.URL;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Playwright browser tests for the E9 fog of war overlay.
- *
- * Verifies: fog layer exists in the PixiJS scene; the GameStateBroadcast
- * envelope is correctly unwrapped (updateScene receives msg.state, so the
- * HUD text shows real mineral values rather than undefined).
- *
- * Run with: mvn test -Pplaywright
- * Requires Chromium: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI
- *                                  -D exec.args="install chromium"
- */
-@Tag("browser")
 @QuarkusTest
+@Tag("browser")
 class VisualizerFogRenderTest {
 
-    @TestHTTPResource("/visualizer.html")
-    URL pageUrl;
-
+    @TestHTTPResource("/visualizer.html") URL pageUrl;
     @Inject AgentOrchestrator orchestrator;
     @Inject SC2Engine engine;
 
-    static Playwright playwright;
-    static Browser    browser;
+    private static Playwright playwright;
+    private static Browser browser;
 
     @BeforeAll
     static void launchBrowser() {
         playwright = Playwright.create();
-        try {
-            browser = playwright.chromium().launch(
-                new BrowserType.LaunchOptions().setHeadless(true));
-        } catch (PlaywrightException e) {
-            playwright.close();
-            playwright = null;
-            assumeTrue(false,
-                "Chromium not installed — skipping fog render tests.\n" +
-                "Install: mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI" +
-                " -D exec.args=\"install chromium\"");
-        }
+        browser = playwright.chromium().launch();
     }
 
     @AfterAll
     static void closeBrowser() {
-        if (browser    != null) browser.close();
-        if (playwright != null) playwright.close();
-    }
-
-    @BeforeEach
-    void startGame() {
-        orchestrator.startGame();
-    }
-
-    /** Open page and wait for WebSocket connection + first frame, mirroring VisualizerRenderTest. */
-    private Page openPage() {
-        Page page = browser.newPage();
-        page.navigate(pageUrl.toString());
-        page.waitForFunction("() => window.__test && window.__test.wsConnected()",
-            null, new Page.WaitForFunctionOptions().setTimeout(10_000));
-        engine.observe();
-        page.waitForFunction("() => window.__test.hudText() !== 'Connecting...'",
-            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
-        return page;
+        browser.close();
+        playwright.close();
     }
 
     @Test
-    void fogLayerExistsInScene() {
-        Page page = openPage();
-        // window._layers.fog must be initialised by visualizer.js
-        Object fogExists = page.evaluate("() => window._layers != null && window._layers.fog != null");
-        assertThat(fogExists).isEqualTo(Boolean.TRUE);
+    void unseenTilesHaveSolidFogOverlay() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.terrainReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(10000));
+        orchestrator.gameTick();
+        page.waitForTimeout(400);
+        // Tile (0,0) is at the map corner — always UNSEEN in mock/emulated mode
+        Number opacity = (Number) page.evaluate("() => window.__test.fogOpacity(0, 0)");
+        assertEquals(1.0, opacity.doubleValue(), 0.01,
+            "Corner tile (0,0) should be fully fogged (UNSEEN), got opacity=" + opacity);
         page.close();
     }
 
     @Test
-    void broadcastEnvelopeUnwrappedCorrectly_hudShowsMinerals() {
-        // If the visualizer incorrectly reads msg.minerals (raw envelope) instead of
-        // msg.state.minerals, the HUD text would show 'undefined' or 'NaN'.
-        Page page = openPage();
+    void broadcastEnvelopeUnwrappedCorrectly_hudShowsMinerals() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        // engine.observe() proves end-to-end WS connectivity before asserting HUD
+        engine.observe();
+        page.waitForFunction("() => window.__test.hudText() !== 'Connecting...'",
+            null, new Page.WaitForFunctionOptions().setTimeout(5000));
         String hud = (String) page.evaluate("() => window.__test.hudText()");
-        assertThat(hud)
-            .as("HUD must contain 'Minerals:' — confirms updateScene(msg.state) is working")
-            .contains("Minerals:");
-        // Minerals value must be a number, not NaN/undefined
-        assertThat(hud).doesNotContain("NaN").doesNotContain("undefined");
+        assertFalse(hud.contains("undefined"),
+            "HUD should not contain 'undefined' — state must be unwrapped from envelope: " + hud);
+        assertTrue(hud.contains("Minerals:"),
+            "HUD should show minerals from unwrapped state, not raw envelope: " + hud);
+        page.close();
+    }
+
+    @Test
+    void fogPlanesPopulatedAfterTerrainLoad() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.terrainReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(10000));
+        // fogOpacity(0,0) returns -1 if fogPlanes Map is empty (plane not found)
+        Number opacity = (Number) page.evaluate("() => window.__test.fogOpacity(0, 0)");
+        assertNotEquals(-1.0, opacity.doubleValue(),
+            "fogPlanes Map should be populated after terrainReady — got -1 (not found)");
         page.close();
     }
 }

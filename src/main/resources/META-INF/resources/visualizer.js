@@ -244,6 +244,27 @@ async function loadTerrain() {
     }
   }
 
+  // Fog planes — one per tile, updated from visibility string each frame
+  const fogMat = new THREE.MeshBasicMaterial({
+    color: 0x000000, transparent: true,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  const fogGeo = new THREE.PlaneGeometry(TILE*0.98, TILE*0.98);
+  for (let gz = 0; gz < GRID_H; gz++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const cx = gx * TILE - HALF_W + TILE/2;
+      const cz = gz * TILE - HALF_H + TILE/2;
+      const plane = new THREE.Mesh(fogGeo, fogMat.clone());
+      plane.rotation.x = -Math.PI/2;
+      plane.position.set(cx, 0.18, cz);
+      plane.renderOrder = 5;
+      plane.visible = true;
+      plane.material.opacity = 1.0; // start fully UNSEEN
+      scene.add(plane);
+      fogPlanes.set(`${gx},${gz}`, plane);
+    }
+  }
+
   tDist = camDist = Math.max(GRID_W, GRID_H) * TILE * 0.7;
   updateCamera();
   terrainLoaded = true;
@@ -280,7 +301,22 @@ function updateHud(state) {
     `   Frame: ${state.gameFrame}`;
 }
 
-function updateFog(visibility) {}  // stub — implemented in Task 5
+function updateFog(visibility) {
+  if (!visibility) return;
+  for (let gz = 0; gz < GRID_H; gz++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const plane = fogPlanes.get(`${gx},${gz}`);
+      if (!plane) continue;
+      const ch = visibility.charAt(gz * 64 + gx);
+      if (ch === '2') {
+        plane.visible = false;
+      } else {
+        plane.visible = true;
+        plane.material.opacity = ch === '1' ? 0.45 : 1.0;
+      }
+    }
+  }
+}
 
 function syncUnits(state) {}       // stub — implemented in Task 6
 
