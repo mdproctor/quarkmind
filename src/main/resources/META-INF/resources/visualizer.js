@@ -91,7 +91,8 @@ window.__test = {
   allEnemyWorldY: () => Array.from(enemySprites.values()).map(sp => sp.position.y),
 
   smokeTestDrawFn: (name, dir, teamColor) => {
-    // typeof on an undeclared identifier returns 'undefined' — safe even before fn is defined
+    // typeof guard works for `function` declarations (hoisted to scope).
+    // Does NOT work for const/let — add those after their declaration point instead.
     const lookup = {};
     if (typeof drawProbe    !== 'undefined') lookup.drawProbe    = drawProbe;
     if (typeof drawZealot   !== 'undefined') lookup.drawZealot   = drawZealot;
@@ -104,8 +105,9 @@ window.__test = {
     if (!fn) return -1;
     const c = document.createElement('canvas');
     c.width = c.height = 128;
-    fn(c.getContext('2d'), 128, dir, teamColor);
-    return c.getContext('2d').getImageData(64, 64, 1, 1).data[3]; // alpha at centre
+    const ctx2d = c.getContext('2d');
+    fn(ctx2d, 128, dir, teamColor);
+    return ctx2d.getImageData(64, 64, 1, 1).data[3]; // alpha at centre
   },
 };
 
