@@ -1,49 +1,56 @@
-# Handover — 2026-04-20
+# Handover — 2026-04-21
 
-**Head commit:** `f0161c8` — docs: E13 blog entry + CLAUDE.md updates
+**Head commit:** `022242e` — docs: E14 blog entry, CLAUDE.md window.__test API, spec update + screenshots
 
 ## What Changed This Session
 
-**E13 complete — Scouting CEP Calibration (closes #16)**
+**E14 complete — 3D Visualizer + Protoss Cartoon Sprites (closes #84, refs epic #83)**
 
-- `UnitType` extended with full Terran/Zerg roster: SIEGE_TANK, THOR, VIKING, GHOST, RAVEN, BANSHEE, BATTLECRUISER, CYCLONE, LIBERATOR, WIDOW_MINE + MUTALISK, ULTRALISK, BROOD_LORD, CORRUPTOR, INFESTOR, SWARM_HOST, VIPER, QUEEN, RAVAGER, LURKER + ADEPT, DISRUPTOR, SENTRY
-- `Sc2ReplayShared` — package-private utility class in `sc2/mock/` holding shared lookup tables (`toUnitType`, `toBuildingType`, `defaultUnitHealth`, `defaultBuildingHealth`, `BUILDING_NAMES`, `LOOPS_PER_TICK`); both replay runners delegate to it
-- `IEM10JsonSimulatedGame extends SimulatedGame` — reads SC2EGSet JSON from nested BZip2 ZIP (outer requires `commons-compress`, inner uses standard DEFLATE); auto-detects Protoss player; `enumerate(Path)` returns all 30 IEM10 games; 18 tests
-- `ReplaySimulatedGame.toUnitType()` — now package-private, full Terran/Zerg cases added
-- `ScoutingCalibrationTest @Tag("benchmark")` — runs 59 replays to 3-min mark, prints unit count table by matchup; output to `target/scouting-calibration.txt`
-- DRL thresholds calibrated: ROACH_RUSH 6→4, TERRAN_3RAX 12→5, PROTOSS_4GATE 8→4
-- 478 tests, 0 failures
+- PixiJS replaced with Three.js client-side only — server WebSocket protocol unchanged
+- 3D terrain: BoxGeometry tiles (walls raised, ramps, grid lines), shadow mapping, orbit camera (drag/scroll/pan, angle presets)
+- Fog of war: per-tile PlaneGeometry overlays, `renderOrder=5`, `depthWrite:false`, driven by `visibility` string from `GameStateBroadcast`
+- 4-direction directional cartoon sprites: Probe, Zealot, Stalker, enemy — Canvas 2D draw functions, `getDir4()` with negated dx for Three.js handedness
+- `SpriteMaterial` must use `depthWrite:true` + `alphaTest:0.1` — default `depthWrite:false` causes fog planes to render through sprites at low angles
+- Buildings/geysers as BoxGeometry (always-visible anchors, not in group2d/group3d)
+- 3D sphere+eyes model toggle (`group2d`/`group3d`)
+- Config panel gated on `EmulatedConfig.active` (`%emulated.emulated.active=true`) — HTTP status alone insufficient (returns 200 in `%test` too)
+- 17 Playwright tests (6 disabled as PixiJS-specific), 475 non-Playwright tests, all green
+- `window.__test` API: `threeReady()`, `terrainReady()`, `wsConnected()`, `hudText()`, `unitCount()`, `enemyCount()`, `buildingCount()`, `stagingCount()`, `geyserCount()`, `fogOpacity(x,z)`, `worldToScreen(wx,wz)`
 
-**Calibration finding:** ROACH=0 at 3-min across all PvZ games — Roach Rushes peak after the 3-min CEP window. Threshold lowered to 4 as a sensitive lower bound with a DRL comment noting the timing constraint.
+**Issue cleanup:** Closed 12 previously-implemented issues (#49, #50, #51, #54, #58, #59, #60, #66, #75, #76, #77, #81)
 
-**Garden:** 4 gotchas submitted — PR #80 on Hortora/garden (BZip2 in ZIP, exhaustive enum switch, Python ZIP inspection, SC2EGSet food encoding).
+**Garden:** 8 entries submitted — PR #90 on Hortora/garden (Three.js depthWrite gotcha, Object.assign position, Quarkus %test profile, getDir4 handedness, transient Map leak, directional sprite technique, terrainReady flag, brainstorm /files/ undocumented)
 
-**Blog:** `docs/_posts/2026-04-20-mdp02-e13-scouting-calibration.md`
+**Blog:** `docs/_posts/2026-04-21-mdp01-e14-a-new-visualizer.md`
 
 ## Immediate Next Step
 
-No clear next epic — #16 done, remaining issues are either parked or blocked. Run:
+No active epic. Open issues:
 
 ```bash
 gh issue list --state open
 ```
 
-Then pick from: #74 (unit genericisation / configurable YAML — parked, platform direction) or define a new epic.
+Options: E15 (Terran cartoon art, depends on E14 ✓), E16 (Zerg), E17 (combat indicators), E18 (replay controls), or #74 (YAML genericisation — platform direction).
+
+**Recommended:** E15 Terran cartoon art — follows directly from E14 foundation, no new architecture needed.
 
 ## Key Technical Notes
 
-*E12 and earlier notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
+*E13 and earlier notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
 
-**E13 additions:**
-- **BZip2 in ZIP rejects `java.util.zip`** — `ZipArchiveInputStream` (commons-compress) needed for outer ZIP; inner ZIP is DEFLATE and fine with stdlib
-- **SC2EGSet JSON food values are raw integers** — NOT ×4096 like Scelight binary; `scoreValueFoodUsed=12` means 12 supply
-- **`IEM10JsonSimulatedGame` tag prefix is `"j-"`** — `ReplaySimulatedGame` uses `"r-"` — avoids tag collisions between the two in mixed scenarios
-- **commons-compress in NATIVE.md** — tracked as not-yet-verified for GraalVM native; confined to `sc2/mock/`
+**E14 additions:**
+- **`getDir4` negated dx** — `Math.atan2(-(camPos.x - unitPos.x), camPos.z - unitPos.z)` — positive dx inverts left/right without the negation
+- **`SpriteMaterial` depthWrite** — must set `depthWrite:true, alphaTest:0.1` explicitly; default is false unlike all other Three.js materials
+- **Fog stride** — `visibility.charAt(gz * GRID_W + gx)` not `gz * 64` — hardcoded 64 works today but breaks if grid width changes
+- **`stagingMeshes`** — module-level Map for staging unit 3D models; passing `new Map()` per call was a silent leak
+- **`EmulatedConfig.active`** — profile-gate pattern: `@ConfigProperty(name="emulated.active", defaultValue="false")` with `%emulated.emulated.active=true` in properties
 
 ## Open Issues
 
 | # | What | Status |
 |---|------|--------|
+| #83 | Epic E14: 3D Visualizer + Cartoon Sprites | Open — sub-epics E15/E16/E17/E18 remain |
 | #74 | Unit genericisation / configurable YAML | Parked — platform direction |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
@@ -52,9 +59,8 @@ Then pick from: #74 (unit genericisation / configurable YAML — parked, platfor
 
 | Context | Where |
 |---------|-------|
-| E13 design spec | `docs/superpowers/specs/2026-04-20-e13-scouting-cep-calibration-design.md` |
-| E13 implementation plan | `docs/superpowers/plans/2026-04-20-e13-scouting-cep-calibration.md` |
-| Calibration output | `docs/benchmarks/2026-04-20-e13-scouting-calibration.txt` |
-| E12 handover (prior) | `git show HEAD~1:HANDOFF.md` |
-| Blog entry | `docs/_posts/2026-04-20-mdp02-e13-scouting-calibration.md` |
-| GitHub | mdproctor/quarkmind (#16 closed; next: `gh issue list`) |
+| E14 design spec | `docs/superpowers/specs/2026-04-21-e14-3d-visualizer-protoss-sprites-design.md` |
+| E14 implementation plan | `docs/superpowers/plans/2026-04-21-e14-3d-visualizer.md` |
+| Blog entry | `docs/_posts/2026-04-21-mdp01-e14-a-new-visualizer.md` |
+| E13 handover (prior) | `git show HEAD~1:HANDOFF.md` |
+| GitHub | mdproctor/quarkmind (#84 closed; epic #83 open) |
