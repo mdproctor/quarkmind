@@ -503,21 +503,22 @@ function makeDirTextures(drawFn, teamColor, size = 128) {
 }
 
 // Art stubs — replaced in Tasks 8-11
-function drawProbe(ctx, S, dir) {
+function drawProbe(ctx, S, dir, teamColor) {
   const cx = S/2, cy = S/2 + 4;
-  // outer glow
   const grd = ctx.createRadialGradient(cx, cy, S*.05, cx, cy, S*.46);
-  grd.addColorStop(0, 'rgba(80,160,255,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  grd.addColorStop(0, hexToRgba(teamColor, 0.3)); grd.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.46,S*.46,0,0,Math.PI*2); ctx.fill();
 
   if (dir === 2) { // BACK
     const b = ctx.createRadialGradient(cx+S*.08,cy-S*.08,S*.02,cx,cy,S*.3);
-    b.addColorStop(0,'#6699cc'); b.addColorStop(.7,'#2255aa'); b.addColorStop(1,'#112244');
+    b.addColorStop(0, hexToRgba(teamColor, 0.9));
+    b.addColorStop(.7, teamColor);
+    b.addColorStop(1, hexToRgba(teamColor, 0.25));
     ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#4477aa'; ctx.lineWidth=3;
+    ctx.strokeStyle=hexToRgba(teamColor, 0.7); ctx.lineWidth=3;
     ctx.beginPath(); ctx.moveTo(cx,cy-S*.28); ctx.lineTo(cx,cy-S*.42); ctx.stroke();
-    ctx.fillStyle='#88bbff'; ctx.beginPath(); ctx.ellipse(cx,cy-S*.44,S*.04,S*.04,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#2255aa';
+    ctx.fillStyle=hexToRgba(teamColor, 0.8); ctx.beginPath(); ctx.ellipse(cx,cy-S*.44,S*.04,S*.04,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=teamColor;
     ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
     return;
@@ -525,25 +526,29 @@ function drawProbe(ctx, S, dir) {
   if (dir === 1 || dir === 3) { // SIDE
     const flip = dir===3 ? -1 : 1;
     const b = ctx.createRadialGradient(cx+flip*S*.06,cy-S*.08,S*.02,cx,cy,S*.28);
-    b.addColorStop(0,'#88ccff'); b.addColorStop(.6,'#4488dd'); b.addColorStop(1,'#224499');
+    b.addColorStop(0, hexToRgba(teamColor, 0.9));
+    b.addColorStop(.6, teamColor);
+    b.addColorStop(1, hexToRgba(teamColor, 0.3));
     ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.28,S*.24,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='rgba(255,255,255,0.12)';
     ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.1,S*.1,S*.07,-.3,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.16,cy-S*.04,S*.08,S*.08,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#112244'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.18,cy-S*.03,S*.046,S*.046,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.15,cy-S*.07,S*.02,S*.02,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#6699bb'; ctx.lineWidth=2;
+    ctx.strokeStyle=hexToRgba(teamColor, 0.7); ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(cx+flip*S*.24,cy-S*.02); ctx.lineTo(cx+flip*S*.37,cy-S*.14); ctx.stroke();
     const eg = ctx.createRadialGradient(cx+flip*S*.4,cy-S*.17,0,cx+flip*S*.4,cy-S*.17,S*.09);
     eg.addColorStop(0,'#ffff88'); eg.addColorStop(.5,'#ffcc00'); eg.addColorStop(1,'rgba(255,180,0,0)');
     ctx.fillStyle=eg; ctx.beginPath(); ctx.ellipse(cx+flip*S*.4,cy-S*.17,S*.09,S*.09,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#336699';
+    ctx.fillStyle=teamColor;
     ctx.beginPath(); ctx.ellipse(cx,cy+S*.26,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
     return;
   }
   // FRONT
   const b = ctx.createRadialGradient(cx-S*.08,cy-S*.1,S*.04,cx,cy,S*.3);
-  b.addColorStop(0,'#88ccff'); b.addColorStop(.6,'#4488dd'); b.addColorStop(1,'#224499');
+  b.addColorStop(0, hexToRgba(teamColor, 0.9));
+  b.addColorStop(.6, teamColor);
+  b.addColorStop(1, hexToRgba(teamColor, 0.3));
   ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
   ctx.fillStyle='rgba(255,255,255,0.15)';
   ctx.beginPath(); ctx.ellipse(cx-S*.06,cy-S*.1,S*.12,S*.08,-.4,0,Math.PI*2); ctx.fill();
@@ -553,16 +558,16 @@ function drawProbe(ctx, S, dir) {
     ctx.fillStyle='#112244'; ctx.beginPath(); ctx.ellipse(exx+1,eyy+1,S*.04,S*.04,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx-1,eyy-2,S*.018,S*.018,0,0,Math.PI*2); ctx.fill();
   });
-  ctx.strokeStyle='#6699bb'; ctx.lineWidth=2;
+  ctx.strokeStyle=hexToRgba(teamColor, 0.7); ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(cx+S*.22,cy-S*.04); ctx.lineTo(cx+S*.35,cy-S*.16); ctx.stroke();
   const eg = ctx.createRadialGradient(cx+S*.38,cy-S*.19,0,cx+S*.38,cy-S*.19,S*.09);
   eg.addColorStop(0,'#ffff88'); eg.addColorStop(.5,'#ffcc00'); eg.addColorStop(1,'rgba(255,180,0,0)');
   ctx.fillStyle=eg; ctx.beginPath(); ctx.ellipse(cx+S*.38,cy-S*.19,S*.09,S*.09,0,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#336699';
+  ctx.fillStyle=teamColor;
   ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
 }
-function drawZealot(ctx, S, dir) {
+function drawZealot(ctx, S, dir, teamColor) {
   const cx = S/2, cy = S/2 + 2;
   const grd = ctx.createRadialGradient(cx,cy,S*.1,cx,cy,S*.48);
   grd.addColorStop(0,'rgba(140,80,255,0.25)'); grd.addColorStop(1,'rgba(0,0,0,0)');
@@ -575,10 +580,10 @@ function drawZealot(ctx, S, dir) {
     ctx.fillStyle='#8855cc';
     ctx.beginPath(); ctx.moveTo(cx-S*.08,cy-S*.28); ctx.lineTo(cx,cy-S*.44); ctx.lineTo(cx+S*.08,cy-S*.28); ctx.fill();
     const bg1 = ctx.createLinearGradient(cx-S*.36,cy,cx-S*.28,cy);
-    bg1.addColorStop(0,'rgba(0,180,255,0)'); bg1.addColorStop(1,'#44ccff');
+    bg1.addColorStop(0,'rgba(0,0,0,0)'); bg1.addColorStop(1, teamColor);
     ctx.fillStyle=bg1; ctx.beginPath(); ctx.ellipse(cx-S*.33,cy,S*.06,S*.18,0,0,Math.PI*2); ctx.fill();
     const bg2 = ctx.createLinearGradient(cx+S*.28,cy,cx+S*.36,cy);
-    bg2.addColorStop(0,'#44ccff'); bg2.addColorStop(1,'rgba(0,180,255,0)');
+    bg2.addColorStop(0, teamColor); bg2.addColorStop(1,'rgba(0,0,0,0)');
     ctx.fillStyle=bg2; ctx.beginPath(); ctx.ellipse(cx+S*.33,cy,S*.06,S*.18,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#5533aa';
     ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
@@ -588,7 +593,8 @@ function drawZealot(ctx, S, dir) {
   if (dir === 1 || dir === 3) { // SIDE
     const flip = dir===3 ? -1 : 1;
     const bg = ctx.createLinearGradient(cx+flip*S*.22,cy,cx+flip*S*.42,cy);
-    bg.addColorStop(flip>0?0:1,'#44ccff'); bg.addColorStop(flip>0?1:0,'rgba(0,180,255,0)');
+    bg.addColorStop(flip>0?0:1, hexToRgba(teamColor, 0.9));
+    bg.addColorStop(flip>0?1:0, hexToRgba(teamColor, 0.0));
     ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(cx+flip*S*.36,cy,S*.07,S*.2,0,0,Math.PI*2); ctx.fill();
     const b = ctx.createRadialGradient(cx+flip*S*.06,cy-S*.08,S*.02,cx,cy,S*.26);
     b.addColorStop(0,'#ccaaff'); b.addColorStop(.5,'#7755cc'); b.addColorStop(1,'#441199');
@@ -603,7 +609,9 @@ function drawZealot(ctx, S, dir) {
   // FRONT
   function blade(bx) {
     const bg = ctx.createLinearGradient(bx-8,cy-S*.2,bx+8,cy+S*.2);
-    bg.addColorStop(0,'#88ffff'); bg.addColorStop(.5,'#44ccff'); bg.addColorStop(1,'rgba(0,180,255,0.2)');
+    bg.addColorStop(0, hexToRgba(teamColor, 0.9));
+    bg.addColorStop(.5, teamColor);
+    bg.addColorStop(1, hexToRgba(teamColor, 0.2));
     ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(bx,cy,S*.07,S*.2,0,0,Math.PI*2); ctx.fill();
   }
   blade(cx-S*.36); blade(cx+S*.36);
@@ -622,7 +630,7 @@ function drawZealot(ctx, S, dir) {
   ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
   ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
 }
-function drawStalker(ctx, S, dir) {
+function drawStalker(ctx, S, dir, teamColor) {
   const cx = S/2, cy = S/2 + 2;
   const grd = ctx.createRadialGradient(cx,cy,S*.05,cx,cy,S*.44);
   grd.addColorStop(0,'rgba(50,100,150,0.22)'); grd.addColorStop(1,'rgba(0,0,0,0)');
@@ -631,9 +639,9 @@ function drawStalker(ctx, S, dir) {
   function drawEye(ex, ey, r) {
     r = r ?? S*.09;
     ctx.fillStyle='#001122'; ctx.beginPath(); ctx.ellipse(ex,ey,r*1.3,r*1.3,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#0066cc'; ctx.beginPath(); ctx.ellipse(ex,ey,r,r,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#44aaff'; ctx.beginPath(); ctx.ellipse(ex,ey,r*.6,r*.6,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='white';   ctx.beginPath(); ctx.ellipse(ex-r*.4,ey-r*.4,r*.22,r*.22,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=teamColor;  ctx.beginPath(); ctx.ellipse(ex,ey,r,r,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=hexToRgba(teamColor, 0.7); ctx.beginPath(); ctx.ellipse(ex,ey,r*.6,r*.6,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white';    ctx.beginPath(); ctx.ellipse(ex-r*.4,ey-r*.4,r*.22,r*.22,0,0,Math.PI*2); ctx.fill();
   }
 
   function legs4(ox) {
@@ -681,14 +689,14 @@ function drawStalker(ctx, S, dir) {
   ctx.beginPath(); ctx.ellipse(cx,cy-S*.4,S*.07,S*.07,0,0,Math.PI*2); ctx.fill();
   drawEye(cx, cy-S*.04, S*.1);
 }
-function drawEnemy(ctx, S, dir) {
+function drawEnemy(ctx, S, dir, teamColor) {
   const cx = S/2, cy = S/2 + 2;
   const grd = ctx.createRadialGradient(cx,cy,S*.05,cx,cy,S*.44);
   grd.addColorStop(0,'rgba(255,60,30,0.28)'); grd.addColorStop(1,'rgba(0,0,0,0)');
   ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.44,S*.44,0,0,Math.PI*2); ctx.fill();
 
   function spikes(num, startAngle) {
-    ctx.fillStyle='#dd2211';
+    ctx.fillStyle = teamColor;
     for (let i=0; i<num; i++) {
       const a = startAngle + i*(Math.PI*2/num);
       ctx.beginPath();
@@ -712,7 +720,7 @@ function drawEnemy(ctx, S, dir) {
     const b = ctx.createRadialGradient(cx-S*.06,cy-S*.08,S*.04,cx,cy,S*.28);
     b.addColorStop(0,'#ff9966'); b.addColorStop(.5,'#cc3322'); b.addColorStop(1,'#881111');
     ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.02,S*.22,S*.26,0,0,Math.PI*2); ctx.fill();
-    ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.05,S*.075,S*.065,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=teamColor; ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.05,S*.075,S*.065,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#220000'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.04,S*.04,S*.05,0,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle='#881111'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.moveTo(cx+flip*S*.01,cy-S*.12); ctx.lineTo(cx+flip*S*.13,cy-S*.08); ctx.stroke();
@@ -727,7 +735,7 @@ function drawEnemy(ctx, S, dir) {
   ctx.beginPath(); ctx.ellipse(cx-S*.06,cy-S*.08,S*.12,S*.08,-.4,0,Math.PI*2); ctx.fill();
   [[-S*.1],[S*.1]].forEach(([ex],i) => {
     const exx=cx+ex, eyy=cy-S*.05;
-    ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.ellipse(exx,eyy,S*.075,S*.065,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=teamColor; ctx.beginPath(); ctx.ellipse(exx,eyy,S*.075,S*.065,0,0,Math.PI*2); ctx.fill();
     ctx.fillStyle='#220000'; ctx.beginPath(); ctx.ellipse(exx,eyy+1,S*.04,S*.05,0,0,Math.PI*2); ctx.fill();
     ctx.strokeStyle='#881111'; ctx.lineWidth=2.5;
     ctx.beginPath();

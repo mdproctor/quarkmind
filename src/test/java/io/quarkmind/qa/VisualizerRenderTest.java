@@ -661,6 +661,40 @@ class VisualizerRenderTest {
     }
 
     /**
+     * Each existing draw function must produce non-transparent output for all
+     * 4 directions and both team colours. Catches regressions when teamColor
+     * parameter is added to existing draw function signatures.
+     */
+    @Test
+    @Tag("browser")
+    void existingDrawFunctionsProduceNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        String[] fns     = {"drawProbe", "drawZealot", "drawStalker", "drawEnemy"};
+        String[] colors  = {TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY};
+        int[]    dirs    = {0, 1, 2, 3};
+
+        for (String fn : fns) {
+          for (String color : colors) {
+            for (int dir : dirs) {
+              Number alpha = (Number) page.evaluate(
+                  "() => window.__test.smokeTestDrawFn('" + fn + "', " + dir + ", '" + color + "')");
+              assertThat(alpha.intValue())
+                  .as(fn + " dir=" + dir + " team=" + color + " centre alpha")
+                  .isGreaterThan(0);
+            }
+          }
+        }
+        page.close();
+    }
+
+    private static final String TEAM_COLOR_FRIENDLY = "#4488ff";
+    private static final String TEAM_COLOR_ENEMY    = "#ff4422";
+
+    /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
      * updating throughout.
