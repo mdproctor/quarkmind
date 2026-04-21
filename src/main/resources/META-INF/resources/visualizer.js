@@ -823,6 +823,97 @@ function drawMarine(ctx, S, dir, teamColor) {
   ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.28,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
 }
 
+function drawMarauder(ctx, S, dir, teamColor) {
+  const cx = S/2, cy = S/2 + 2;
+  // Outer glow — heavier green-grey
+  const grd = ctx.createRadialGradient(cx,cy,S*.06,cx,cy,S*.46);
+  grd.addColorStop(0,'rgba(90,110,90,0.3)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.46,S*.46,0,0,Math.PI*2); ctx.fill();
+
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.08,cy-S*.06,S*.04,cx,cy,S*.34);
+    b.addColorStop(0,'#778866'); b.addColorStop(.6,'#445544'); b.addColorStop(1,'#1a221a');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.04,S*.34,S*.3,0,0,Math.PI*2); ctx.fill();
+    // Wide shoulder pads
+    ctx.fillStyle='#556644';
+    ctx.beginPath(); ctx.ellipse(cx-S*.3,cy-S*.06,S*.12,S*.09,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.3,cy-S*.06,S*.12,S*.09,0,0,Math.PI*2); ctx.fill();
+    // Knee plates in teamColor
+    ctx.fillStyle=teamColor;
+    ctx.beginPath(); ctx.ellipse(cx-S*.12,cy+S*.22,S*.1,S*.06,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.12,cy+S*.22,S*.1,S*.06,0,0,Math.PI*2); ctx.fill();
+    // Dual grenade launchers visible from back
+    ctx.fillStyle='#222';
+    ctx.fillRect(cx-S*.06,cy-S*.34,S*.12,S*.18);
+    // Boots
+    ctx.fillStyle='#223311';
+    ctx.beginPath(); ctx.ellipse(cx-S*.12,cy+S*.3,S*.12,S*.06,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.12,cy+S*.3,S*.12,S*.06,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    // Heavy body
+    const b = ctx.createRadialGradient(cx+flip*S*.06,cy-S*.04,S*.04,cx,cy,S*.32);
+    b.addColorStop(0,'#778866'); b.addColorStop(.5,'#445544'); b.addColorStop(1,'#1a221a');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.32,S*.28,0,0,Math.PI*2); ctx.fill();
+    // Angular helmet
+    const h = ctx.createRadialGradient(cx+flip*S*.04,cy-S*.2,S*.02,cx,cy-S*.14,S*.2);
+    h.addColorStop(0,'#778866'); h.addColorStop(.6,'#445544'); h.addColorStop(1,'#1a221a');
+    ctx.fillStyle=h; ctx.beginPath(); ctx.ellipse(cx,cy-S*.14,S*.2,S*.18,0,0,Math.PI*2); ctx.fill();
+    // Visor slit in teamColor
+    ctx.fillStyle=hexToRgba(teamColor, 0.8);
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.1,cy-S*.16,S*.09,S*.035,0,0,Math.PI*2); ctx.fill();
+    // Visible shoulder pad
+    ctx.fillStyle='#556644';
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.28,cy-S*.06,S*.11,S*.08,0,0,Math.PI*2); ctx.fill();
+    // Dual launchers
+    ctx.fillStyle='#222';
+    ctx.fillRect(cx+flip*S*.18,cy-S*.06,flip*S*.3,S*.07);
+    ctx.fillRect(cx+flip*S*.18,cy+S*.02,flip*S*.3,S*.07);
+    // Knee plate in teamColor
+    ctx.fillStyle=teamColor;
+    ctx.beginPath(); ctx.ellipse(cx,cy+S*.22,S*.1,S*.06,0,0,Math.PI*2); ctx.fill();
+    // Boot
+    ctx.fillStyle='#223311';
+    ctx.beginPath(); ctx.ellipse(cx,cy+S*.3,S*.13,S*.06,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  // FRONT
+  const b = ctx.createRadialGradient(cx-S*.08,cy-S*.06,S*.04,cx,cy,S*.36);
+  b.addColorStop(0,'#889977'); b.addColorStop(.5,'#445544'); b.addColorStop(1,'#1a221a');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.04,S*.36,S*.3,0,0,Math.PI*2); ctx.fill();
+  // Wide shoulder pads
+  ctx.fillStyle='#667755';
+  ctx.beginPath(); ctx.ellipse(cx-S*.32,cy-S*.04,S*.13,S*.09,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.32,cy-S*.04,S*.13,S*.09,0,0,Math.PI*2); ctx.fill();
+  // Helmet
+  const h = ctx.createRadialGradient(cx-S*.04,cy-S*.2,S*.02,cx,cy-S*.16,S*.22);
+  h.addColorStop(0,'#889977'); h.addColorStop(.6,'#445544'); h.addColorStop(1,'#0d1108');
+  ctx.fillStyle=h; ctx.beginPath(); ctx.ellipse(cx,cy-S*.16,S*.22,S*.2,0,0,Math.PI*2); ctx.fill();
+  // Visor slit in teamColor (narrower than Marine visor)
+  ctx.fillStyle=hexToRgba(teamColor, 0.85);
+  ctx.beginPath(); ctx.ellipse(cx,cy-S*.18,S*.14,S*.04,0,0,Math.PI*2); ctx.fill();
+  // Chin guard
+  ctx.fillStyle='#334433';
+  ctx.beginPath(); ctx.ellipse(cx,cy-S*.08,S*.1,S*.06,0,0,Math.PI*2); ctx.fill();
+  // Dual Punisher grenade launchers
+  ctx.fillStyle='#222';
+  ctx.fillRect(cx+S*.2,cy-S*.07,S*.24,S*.07);
+  ctx.fillRect(cx+S*.2,cy+S*.01,S*.24,S*.07);
+  ctx.fillStyle='#444';
+  ctx.beginPath(); ctx.ellipse(cx+S*.46,cy-S*.035,S*.06,S*.05,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.46,cy+S*.045,S*.06,S*.05,0,0,Math.PI*2); ctx.fill();
+  // Knee plates in teamColor
+  ctx.fillStyle=teamColor;
+  ctx.beginPath(); ctx.ellipse(cx-S*.14,cy+S*.22,S*.11,S*.062,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.14,cy+S*.22,S*.11,S*.062,0,0,Math.PI*2); ctx.fill();
+  // Boots
+  ctx.fillStyle='#223311';
+  ctx.beginPath(); ctx.ellipse(cx-S*.12,cy+S*.3,S*.12,S*.06,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.12,cy+S*.3,S*.12,S*.06,0,0,Math.PI*2); ctx.fill();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -833,9 +924,11 @@ function initSpriteMaterials() {
   UNIT_MATS['ZEALOT_E']   = makeDirTextures(drawZealot,  TEAM_COLOR_ENEMY);
   UNIT_MATS['STALKER_F']  = makeDirTextures(drawStalker, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['STALKER_E']  = makeDirTextures(drawStalker, TEAM_COLOR_ENEMY);
-  UNIT_MATS['MARINE_F']   = makeDirTextures(drawMarine,   TEAM_COLOR_FRIENDLY);
-  UNIT_MATS['MARINE_E']   = makeDirTextures(drawMarine,   TEAM_COLOR_ENEMY);
-  UNIT_MATS['UNKNOWN_F']  = makeDirTextures(drawEnemy,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MARINE_F']    = makeDirTextures(drawMarine,    TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MARINE_E']    = makeDirTextures(drawMarine,    TEAM_COLOR_ENEMY);
+  UNIT_MATS['MARAUDER_F']  = makeDirTextures(drawMarauder,  TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MARAUDER_E']  = makeDirTextures(drawMarauder,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['UNKNOWN_F']   = makeDirTextures(drawEnemy,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']  = makeDirTextures(drawEnemy,   TEAM_COLOR_ENEMY);
 }
 

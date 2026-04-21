@@ -741,6 +741,45 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    @Test
+    @Tag("browser")
+    void marauderDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawMarauder', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue())
+                .as("drawMarauder dir=" + dir + " team=" + color)
+                .isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void marauderEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MARAUDER, new Point2d(22, 22));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Marauder enemy must render").isEqualTo(1);
+        page.close();
+    }
+
     /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
