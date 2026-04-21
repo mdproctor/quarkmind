@@ -884,6 +884,29 @@ class VisualizerRenderTest {
     }
 
     /**
+     * Config panel dropdown must include all three Terran wave types.
+     * Structural HTML test — asserts options exist in the DOM regardless of panel visibility
+     * (panel only shows in %emulated profile, but options are always present in the HTML).
+     */
+    @Test
+    @Tag("browser")
+    void configPanelDropdownContainsTerranWaveTypes() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        int marineCount   = page.locator("#cfg-unit-type option[value='MARINE']").count();
+        int marauderCount = page.locator("#cfg-unit-type option[value='MARAUDER']").count();
+        int medivacCount  = page.locator("#cfg-unit-type option[value='MEDIVAC']").count();
+
+        assertThat(marineCount).as("MARINE option must exist").isEqualTo(1);
+        assertThat(marauderCount).as("MARAUDER option must exist").isEqualTo(1);
+        assertThat(medivacCount).as("MEDIVAC option must exist").isEqualTo(1);
+        page.close();
+    }
+
+    /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
      * updating throughout.
