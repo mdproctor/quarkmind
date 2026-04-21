@@ -29,6 +29,9 @@ public class EmulatedConfig {
 
     private static final Logger log = Logger.getLogger(EmulatedConfig.class);
 
+    @ConfigProperty(name = "emulated.active", defaultValue = "false")
+    boolean active;
+
     @ConfigProperty(name = "emulated.wave.spawn-frame", defaultValue = "200")
     int defaultWaveSpawnFrame;
 
@@ -90,10 +93,10 @@ public class EmulatedConfig {
     public void setEnemyStrategy(EnemyStrategy s)  { this.enemyStrategy = s; }
 
     /** Serialisable snapshot for the REST response body. */
-    public record Snapshot(int waveSpawnFrame, int waveUnitCount,
+    public record Snapshot(boolean active, int waveSpawnFrame, int waveUnitCount,
                            String waveUnitType, double unitSpeed) {}
 
     public Snapshot snapshot() {
-        return new Snapshot(waveSpawnFrame, waveUnitCount, waveUnitType, unitSpeed);
+        return new Snapshot(active, waveSpawnFrame, waveUnitCount, waveUnitType, unitSpeed);
     }
 }

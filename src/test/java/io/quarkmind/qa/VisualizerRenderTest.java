@@ -30,6 +30,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -700,6 +701,25 @@ class VisualizerRenderTest {
             null, new Page.WaitForFunctionOptions().setTimeout(8_000));
         Object ready = page.evaluate("() => window.__test.threeReady()");
         assertTrue((Boolean) ready, "Three.js renderer not initialised");
+        page.close();
+    }
+
+    /**
+     * Config panel visibility test: the config panel must be hidden in %mock profile
+     * (the /qa/emulated/config endpoint returns 404 — panel only shows in %emulated).
+     */
+    @Test
+    @Tag("browser")
+    void configPanelHiddenInMockProfile() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8000));
+        page.waitForTimeout(600); // let /qa/emulated/config fetch settle
+        String display = (String) page.evaluate(
+            "() => document.getElementById('config-panel').style.display");
+        assertNotEquals("block", display,
+            "Config panel should be hidden in %mock profile (emulated/config returns 404)");
         page.close();
     }
 

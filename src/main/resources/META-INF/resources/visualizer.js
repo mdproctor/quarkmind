@@ -745,6 +745,62 @@ function make3dModel(color, emissive) {
   return g;
 }
 
-function initConfigPanel() {}
+function initConfigPanel() {
+  const panel     = document.getElementById('config-panel');
+  const speedSlider = document.getElementById('cfg-speed');
+  const speedVal  = document.getElementById('cfg-speed-val');
+  const status    = document.getElementById('cfg-status');
+
+  fetch('/qa/emulated/config')
+    .then(r => { if (!r.ok) return null; return r.json(); })
+    .then(cfg => {
+      if (!cfg || !cfg.active) return;
+      panel.style.display = 'block';
+      document.getElementById('cfg-wave-frame').value = cfg.waveSpawnFrame;
+      document.getElementById('cfg-unit-count').value = cfg.waveUnitCount;
+      document.getElementById('cfg-unit-type').value  = cfg.waveUnitType;
+      speedSlider.value    = cfg.unitSpeed;
+      speedVal.textContent = cfg.unitSpeed;
+    })
+    .catch(() => {});
+
+  speedSlider.addEventListener('input', () => {
+    speedVal.textContent = speedSlider.value;
+    sendConfig({ unitSpeed: parseFloat(speedSlider.value) });
+  });
+
+  document.getElementById('cfg-apply').addEventListener('click', () => {
+    sendConfig(currentConfig()).then(() => showStatus('Applied — restart to activate wave'));
+  });
+
+  document.getElementById('cfg-restart').addEventListener('click', () => {
+    sendConfig(currentConfig())
+      .then(() => fetch('/sc2/start', { method: 'POST' }))
+      .then(() => showStatus('Restarted'))
+      .catch(() => showStatus('Failed', true));
+  });
+
+  function currentConfig() {
+    return {
+      waveSpawnFrame: parseInt(document.getElementById('cfg-wave-frame').value),
+      waveUnitCount:  parseInt(document.getElementById('cfg-unit-count').value),
+      waveUnitType:   document.getElementById('cfg-unit-type').value,
+      unitSpeed:      parseFloat(speedSlider.value),
+    };
+  }
+
+  function sendConfig(partial) {
+    return fetch('/qa/emulated/config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partial),
+    }).then(r => r.json()).catch(() => showStatus('Update failed', true));
+  }
+
+  function showStatus(msg, isError=false) {
+    status.textContent = msg;
+    status.style.color = isError ? '#ff4444' : '#88ff88';
+    setTimeout(() => { status.textContent = ''; }, 2500);
+  }
+}
 
 init();
