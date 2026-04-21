@@ -59,6 +59,8 @@ class VisualizerRenderTest {
     private static final double TILE   = 0.7;
     private static final double HALF_W = 64 * TILE / 2;  // 22.4
     private static final double HALF_H = 64 * TILE / 2;  // 22.4
+    private static final String TEAM_COLOR_FRIENDLY = "#4488ff";
+    private static final String TEAM_COLOR_ENEMY    = "#ff4422";
 
     @TestHTTPResource("/visualizer.html")
     URL pageUrl;
@@ -691,8 +693,6 @@ class VisualizerRenderTest {
         page.close();
     }
 
-    private static final String TEAM_COLOR_FRIENDLY = "#4488ff";
-    private static final String TEAM_COLOR_ENEMY    = "#ff4422";
 
     /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
