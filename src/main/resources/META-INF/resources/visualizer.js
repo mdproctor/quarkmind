@@ -315,7 +315,7 @@ function updateFog(visibility) {
     for (let gx = 0; gx < GRID_W; gx++) {
       const plane = fogPlanes.get(`${gx},${gz}`);
       if (!plane) continue;
-      const ch = visibility.charAt(gz * 64 + gx);
+      const ch = visibility.charAt(gz * GRID_W + gx);
       if (ch === '2') {
         plane.visible = false;
       } else {
@@ -357,6 +357,7 @@ function syncBuildings(buildings) {
       mesh.castShadow = mesh.receiveShadow = true;
       const wp = gw(b.position.x, b.position.y);
       mesh.position.set(wp.x, h/2, wp.z);
+      // Buildings are always-visible anchors like terrain tiles — not in group2d/group3d
       scene.add(mesh);
       buildingMeshes.set(b.tag, mesh);
     }
@@ -377,6 +378,7 @@ function syncGeysers(geysers) {
       );
       const wp = gw(g.position.x, g.position.y);
       mesh.position.set(wp.x, TILE*0.125, wp.z);
+      // Geysers are always-visible anchors — not toggled by 2D/3D mode
       scene.add(mesh);
       geyserMeshes.set(g.tag, mesh);
     }

@@ -14,6 +14,7 @@ import io.quarkmind.sc2.SC2Engine;
 import java.net.URL;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @QuarkusTest
 @Tag("browser")
@@ -28,8 +29,12 @@ class VisualizerFogRenderTest {
 
     @BeforeAll
     static void launchBrowser() {
-        playwright = Playwright.create();
-        browser = playwright.chromium().launch();
+        try {
+            playwright = Playwright.create();
+            browser = playwright.chromium().launch();
+        } catch (Exception e) {
+            assumeTrue(false, "Chromium not available: " + e.getMessage());
+        }
     }
 
     @AfterAll

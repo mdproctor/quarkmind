@@ -521,7 +521,8 @@ class VisualizerRenderTest {
         page.waitForFunction("() => window.__test?.wsConnected?.() === true",
             null, new Page.WaitForFunctionOptions().setTimeout(8000));
         orchestrator.gameTick();
-        page.waitForTimeout(400);
+        page.waitForFunction("() => window.__test.buildingCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(3000));
         Number buildings = (Number) page.evaluate("() => window.__test.buildingCount()");
         assertTrue(buildings.intValue() >= 1,
             "Expected at least 1 building (Nexus), got " + buildings);
@@ -536,7 +537,8 @@ class VisualizerRenderTest {
         page.waitForFunction("() => window.__test?.wsConnected?.() === true",
             null, new Page.WaitForFunctionOptions().setTimeout(8000));
         orchestrator.gameTick();
-        page.waitForTimeout(400);
+        page.waitForFunction("() => window.__test.unitCount() >= 12",
+            null, new Page.WaitForFunctionOptions().setTimeout(3000));
         Number units = (Number) page.evaluate("() => window.__test.unitCount()");
         assertTrue(units.intValue() >= 12,
             "Expected ≥12 units (SimulatedGame default), got " + units);
@@ -553,7 +555,8 @@ class VisualizerRenderTest {
         simulatedGame.spawnEnemyUnit(UnitType.ZERGLING,
             new Point2d(20, 20));
         orchestrator.gameTick();
-        page.waitForTimeout(400);
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(3000));
         Number enemies = (Number) page.evaluate("() => window.__test.enemyCount()");
         assertTrue(enemies.intValue() >= 1, "Expected ≥1 enemy unit, got " + enemies);
         page.close();
