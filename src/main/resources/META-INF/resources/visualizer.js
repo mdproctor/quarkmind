@@ -3,6 +3,7 @@
 const TILE = 0.7;
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
+const FLYING_UNITS = new Set(['MEDIVAC']);
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -437,13 +438,14 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
       const sp = new THREE.Sprite(mats[0]);
       sp.userData.mats = mats;
       sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
-      sp.position.set(wp.x, TILE * 0.65, wp.z);
+      const unitY = FLYING_UNITS.has(u.type) ? TILE * 1.5 : TILE * 0.65;
+      sp.position.set(wp.x, unitY, wp.z);
       group2d.add(sp);
       spriteMap.set(u.tag, sp);
 
       // 3D sphere model
       const g = make3dModel(isEnemy ? 0xcc3322 : 0x4488dd, isEnemy ? 0x330000 : 0x112244);
-      g.position.set(wp.x, 0, wp.z);
+      g.position.set(wp.x, FLYING_UNITS.has(u.type) ? TILE * 0.85 : 0, wp.z);
       group3d.add(g);
       if (meshMap instanceof Map) meshMap.set(u.tag, g);
     } else {
@@ -914,6 +916,87 @@ function drawMarauder(ctx, S, dir, teamColor) {
   ctx.beginPath(); ctx.ellipse(cx+S*.12,cy+S*.3,S*.12,S*.06,0,0,Math.PI*2); ctx.fill();
 }
 
+function drawMedivac(ctx, S, dir, teamColor) {
+  const cx = S/2, cy = S/2;
+  // Hover glow
+  const grd = ctx.createRadialGradient(cx,cy,S*.06,cx,cy,S*.46);
+  grd.addColorStop(0,'rgba(180,200,220,0.28)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.46,S*.46,0,0,Math.PI*2); ctx.fill();
+
+  if (dir === 2) { // BACK — engine pods visible
+    ctx.fillStyle='#7788aa'; ctx.beginPath(); ctx.ellipse(cx,cy,S*.36,S*.2,0,0,Math.PI*2); ctx.fill();
+    // Engine pods
+    ctx.fillStyle='#556688';
+    ctx.beginPath(); ctx.ellipse(cx-S*.3,cy+S*.04,S*.1,S*.08,0.3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.3,cy+S*.04,S*.1,S*.08,-0.3,0,Math.PI*2); ctx.fill();
+    // Engine glow in teamColor
+    ctx.fillStyle=hexToRgba(teamColor, 0.8);
+    ctx.beginPath(); ctx.ellipse(cx-S*.3,cy+S*.09,S*.07,S*.05,0.3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.3,cy+S*.09,S*.07,S*.05,-0.3,0,Math.PI*2); ctx.fill();
+    // Tail fin
+    ctx.fillStyle='#445577';
+    ctx.fillRect(cx-S*.04,cy-S*.24,S*.08,S*.16);
+    // Running lights in teamColor
+    ctx.fillStyle=teamColor;
+    ctx.beginPath(); ctx.ellipse(cx-S*.36,cy-S*.04,S*.03,S*.03,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.36,cy-S*.04,S*.03,S*.03,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    // Far engine pod
+    ctx.fillStyle='#445577';
+    ctx.beginPath(); ctx.ellipse(cx-flip*S*.28,cy+S*.04,S*.1,S*.08,flip*0.3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=hexToRgba(teamColor, 0.7);
+    ctx.beginPath(); ctx.ellipse(cx-flip*S*.28,cy+S*.09,S*.06,S*.04,flip*0.3,0,Math.PI*2); ctx.fill();
+    // Main hull
+    ctx.fillStyle='#8899bb'; ctx.beginPath(); ctx.ellipse(cx,cy-S*.02,S*.4,S*.18,0,0,Math.PI*2); ctx.fill();
+    // Red cross — canonical, never team-coloured
+    ctx.fillStyle='rgba(255,60,60,0.9)';
+    ctx.fillRect(cx-S*.04,cy-S*.12,S*.08,S*.24);
+    ctx.fillRect(cx-S*.1,cy-S*.04,S*.2,S*.08);
+    // Cockpit
+    ctx.fillStyle='rgba(100,200,255,0.6)';
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.18,cy-S*.04,S*.08,S*.07,0,0,Math.PI*2); ctx.fill();
+    // Near engine pod
+    ctx.fillStyle='#556688';
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.3,cy+S*.04,S*.1,S*.08,-flip*0.3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.3,cy+S*.09,S*.07,S*.05,-flip*0.3,0,Math.PI*2); ctx.fill();
+    // Running light
+    ctx.fillStyle=teamColor;
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.4,cy-S*.04,S*.03,S*.03,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  // FRONT — nose view
+  // Engine pods
+  ctx.fillStyle='#556688';
+  ctx.beginPath(); ctx.ellipse(cx-S*.3,cy+S*.06,S*.1,S*.07,0.3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.3,cy+S*.06,S*.1,S*.07,-0.3,0,Math.PI*2); ctx.fill();
+  // Engine glow in teamColor
+  ctx.fillStyle=hexToRgba(teamColor, 0.8);
+  ctx.beginPath(); ctx.ellipse(cx-S*.3,cy+S*.1,S*.06,S*.04,0.3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.3,cy+S*.1,S*.06,S*.04,-0.3,0,Math.PI*2); ctx.fill();
+  // Main hull
+  ctx.fillStyle='#8899bb'; ctx.beginPath(); ctx.ellipse(cx,cy,S*.36,S*.2,0,0,Math.PI*2); ctx.fill();
+  // Red cross — canonical medical cross, never team-coloured
+  ctx.fillStyle='rgba(255,60,60,0.9)';
+  ctx.fillRect(cx-S*.04,cy-S*.14,S*.08,S*.28);
+  ctx.fillRect(cx-S*.12,cy-S*.06,S*.24,S*.08);
+  // Cockpit window
+  ctx.fillStyle='rgba(100,200,255,0.6)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.14,cy-S*.04,S*.08,S*.06,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(200,240,255,0.4)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.16,cy-S*.06,S*.03,S*.02,-0.3,0,Math.PI*2); ctx.fill();
+  // Running lights in teamColor
+  ctx.fillStyle=teamColor;
+  ctx.beginPath(); ctx.ellipse(cx-S*.36,cy-S*.02,S*.03,S*.03,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.36,cy-S*.02,S*.03,S*.03,0,0,Math.PI*2); ctx.fill();
+  // Hover ring
+  ctx.strokeStyle=hexToRgba(teamColor, 0.35); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(cx,cy,S*.42,S*.26,0,0,Math.PI*2); ctx.stroke();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -928,6 +1011,8 @@ function initSpriteMaterials() {
   UNIT_MATS['MARINE_E']    = makeDirTextures(drawMarine,    TEAM_COLOR_ENEMY);
   UNIT_MATS['MARAUDER_F']  = makeDirTextures(drawMarauder,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['MARAUDER_E']  = makeDirTextures(drawMarauder,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['MEDIVAC_F']   = makeDirTextures(drawMedivac,  TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MEDIVAC_E']   = makeDirTextures(drawMedivac,  TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']   = makeDirTextures(drawEnemy,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']   = makeDirTextures(drawEnemy,    TEAM_COLOR_ENEMY);
 }

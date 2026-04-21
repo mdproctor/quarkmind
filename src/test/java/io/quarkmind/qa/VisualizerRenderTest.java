@@ -789,6 +789,101 @@ class VisualizerRenderTest {
     }
 
     /**
+     * Smoke test: drawMedivac must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawMedivac is defined.
+     */
+    @Test
+    @Tag("browser")
+    void medivacDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawMedivac', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue())
+                .as("drawMedivac dir=" + dir + " team=" + color)
+                .isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    /**
+     * Happy path: Medivac enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['MEDIVAC_E'] must be registered and dispatch must resolve it.
+     */
+    @Test
+    @Tag("browser")
+    void medivacEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC, new Point2d(24, 24));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Medivac enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
+     * Correctness: Medivac must spawn at a higher Three.js world Y than a ground unit.
+     * TILE=0.7: ground Y = 0.7*0.65 = 0.455; flying Y = 0.7*1.5 = 1.05.
+     * Uses two separate browser pages to avoid shared enemy state between Marine and Medivac.
+     */
+    @Test
+    @Tag("browser")
+    void medivacSpawnsHigherThanGroundUnit() throws Exception {
+        // Test Marine Y first (ground unit)
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20));
+        engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        List<Double> marineYs = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList();
+        double marineY = marineYs.get(0);
+        page.close();
+
+        // Now test Medivac Y
+        orchestrator.startGame(); // reset game state
+        Page page2 = browser.newPage();
+        page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC, new Point2d(20, 20));
+        engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        List<Double> medivacYs = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList();
+        double medivacY = medivacYs.get(0);
+        page2.close();
+
+        assertThat(medivacY)
+            .as("Medivac world Y (%.3f) must be higher than Marine world Y (%.3f)".formatted(medivacY, marineY))
+            .isGreaterThan(marineY + 0.3); // 1.05 vs 0.455 — margin of 0.3 is safe
+    }
+
+    /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
      * updating throughout.
