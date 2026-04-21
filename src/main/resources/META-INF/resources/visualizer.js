@@ -1,439 +1,810 @@
-// visualizer.js — QuarkMind live game visualizer (PixiJS 8)
+// visualizer.js — QuarkMind 3D visualizer (Three.js r128)
 
-const SCALE = 20;          // pixels per tile
-const VIEWPORT_H = 32;     // tiles high (for Y-axis flip: game Y=0 is bottom, canvas Y=0 is top)
+const TILE = 0.7;
 const RECONNECT_MS = 2000;
 
-// Sprite assets loaded from the Quarkus sprite proxy
-const ASSETS = [
-    { alias: 'probe',   src: '/qa/sprites/SC2Probe.jpg' },
-    { alias: 'nexus',   src: '/qa/sprites/SC2Nexus.jpg' },
-    { alias: 'pylon',   src: '/qa/sprites/SC2Pylon.jpg' },
-    { alias: 'gateway', src: '/qa/sprites/SC2Gateway.jpg' },
-    { alias: 'zealot',  src: '/qa/sprites/SC2Zealot.jpg' },
-    { alias: 'stalker', src: '/qa/sprites/SC2Stalker.jpg' },
-];
+let GRID_W = 64, GRID_H = 64;
+let HALF_W, HALF_H;
+let camTheta = Math.PI*0.25, camPhi = Math.PI/3.5, camDist = 30;
+const camTarget = new THREE.Vector3(0, 0, 0);
+let tTheta = camTheta, tPhi = camPhi, tDist = camDist;
 
-// Map domain UnitType/BuildingType strings → sprite aliases
-const UNIT_ALIAS = {
-    PROBE: 'probe', ZEALOT: 'zealot', STALKER: 'stalker',
-    MARINE: null, ZERGLING: null,
-};
-const BUILDING_ALIAS = { NEXUS: 'nexus', PYLON: 'pylon', GATEWAY: 'gateway' };
-const BUILDING_SIZE  = { NEXUS: 64,      PYLON: 32,      GATEWAY: 48 };
-const UNIT_RADIUS = 14;
-const DEFAULT_BUILDING_SIZE = 36;
-
-let hudText;
-const activeSprites = new Map(); // "prefix:tag" → PIXI display object
-
-/** Convert game tile coordinates to canvas pixels. Flips Y axis. */
-function tile(x, y) {
-    return { x: x * SCALE, y: (VIEWPORT_H - y) * SCALE };
-}
-
-/** Load all sprite assets from Quarkus sprite proxy. Logs warnings on failure. */
-async function loadAssets() {
-    for (const asset of ASSETS) {
-        try {
-            await PIXI.Assets.load(asset);
-        } catch (e) {
-            console.warn(`Sprite load failed: ${asset.alias} — using fallback shape`, e);
-        }
-    }
-}
-
-/**
- * Draw a static grid covering the 32×32 tile game area (640×640px).
- * The canvas (800×680px) is wider/taller — the right strip and bottom strip
- * outside the grid are intentionally empty (future sidebar; HUD below).
- */
-function drawGrid(container) {
-    const g = new PIXI.Graphics();
-    for (let i = 0; i <= VIEWPORT_H; i++) {
-        g.moveTo(i * SCALE, 0).lineTo(i * SCALE, VIEWPORT_H * SCALE);
-        g.moveTo(0, i * SCALE).lineTo(VIEWPORT_H * SCALE, i * SCALE);
-    }
-    g.stroke({ width: 0.5, color: 0x2a2a4e });
-    container.addChild(g);
-}
-
-/**
- * Fetch terrain once at startup and draw static height-shaded tiles.
- * Colour scheme (topographic): HIGH=tan/brown, RAMP=mid-brown, WALL=dark-grey.
- * LOW tiles are the default canvas background — no fill drawn.
- * Silently no-ops if the endpoint is unavailable (non-emulated profile).
- */
-async function loadTerrain(container) {
-    try {
-        const resp = await fetch('/qa/emulated/terrain');
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const g = new PIXI.Graphics();
-
-        // HIGH ground — warm tan/brown
-        (data.highGround ?? []).forEach(([wx, wy]) => {
-            const canvasX = wx * SCALE;
-            const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
-            g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x8B6914, alpha: 0.55 });
-        });
-
-        // RAMP — mid brown (transitional slope)
-        (data.ramps ?? []).forEach(([wx, wy]) => {
-            const canvasX = wx * SCALE;
-            const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
-            g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x7A6040, alpha: 0.40 });
-        });
-
-        // WALL — dark grey (unchanged from E7)
-        data.walls.forEach(([wx, wy]) => {
-            const canvasX = wx * SCALE;
-            const canvasY = (VIEWPORT_H - wy - 1) * SCALE;
-            g.rect(canvasX, canvasY, SCALE, SCALE).fill({ color: 0x333333, alpha: 0.85 });
-        });
-
-        container.addChild(g);
-    } catch (e) {
-        console.warn('Could not load terrain:', e);
-    }
-}
-
-/**
- * Create a circular-masked unit portrait using a PIXI.Container approach (PixiJS 8).
- *
- * PixiJS 8 gotcha (GE-0144): adding a Graphics mask as a child of an anchored Sprite
- * and setting sprite.mask makes the Sprite invisible — the mask's coordinate space
- * doesn't align with the anchor offset, clipping away all pixels.
- *
- * Fix: both the Sprite and the Graphics mask are children of a Container. The mask is
- * applied to the Container (not the Sprite). The Container is then positioned by syncLayer.
- *
- * If the texture is unavailable the fallback is a coloured circle — no mask needed
- * because Graphics shapes have no rectangular background to clip.
- */
-function makeUnitSprite(alias, radius, tintColor) {
-    const texture = alias ? PIXI.Assets.get(alias) : null;
-    if (texture) {
-        const container = new PIXI.Container();
-
-        const sprite = new PIXI.Sprite(texture);
-        sprite.width  = radius * 2;
-        sprite.height = radius * 2;
-        sprite.anchor.set(0.5);
-        if (tintColor) sprite.tint = tintColor;
-
-        const mask = new PIXI.Graphics();
-        mask.circle(0, 0, radius).fill(0xffffff);
-
-        container.addChild(sprite);
-        container.addChild(mask);  // mask in same coordinate space as sprite
-        container.mask = mask;     // mask on Container, not on Sprite
-
-        return container;
-    }
-    // Fallback: coloured circle — Graphics has no rectangular background, no mask needed
-    const g = new PIXI.Graphics();
-    g.circle(0, 0, radius).fill(tintColor ?? 0x4488ff);
-    return g;
-}
-
-/** Create a building sprite or fallback rectangle. */
-function makeBuildingSprite(type) {
-    const alias = BUILDING_ALIAS[type];
-    const size  = BUILDING_SIZE[type] ?? DEFAULT_BUILDING_SIZE;
-    const texture = alias ? PIXI.Assets.get(alias) : null;
-    if (texture) {
-        const sprite = new PIXI.Sprite(texture);
-        sprite.width  = size;
-        sprite.height = size;
-        sprite.anchor.set(0.5);
-        return sprite;
-    }
-    const g = new PIXI.Graphics();
-    g.rect(-size / 2, -size / 2, size, size).fill(0x3366cc);
-    return g;
-}
-
-/** Create a geyser marker (green circle). */
-function makeGeyserSprite() {
-    const g = new PIXI.Graphics();
-    g.circle(0, 0, 12).fill(0x22cc66);
-    return g;
-}
-
-/**
- * Returns a tint colour based on HP ratio, or null for full health (no tint).
- * Applied to both friendly and enemy unit sprites.
- */
-function healthTint(health, maxHealth) {
-    if (maxHealth <= 0 || health >= maxHealth) return null;
-    const ratio = health / maxHealth;
-    if (ratio > 0.6) return null;       // full colour — no tint
-    if (ratio > 0.3) return 0xffcc44;  // yellow — wounded
-    return 0xff3333;                    // red — critical
-}
-
-/**
- * Reconcile a layer's sprites against the received entity list.
- * Creates sprites for new entities, updates positions of existing ones,
- * destroys sprites for removed entities.
- */
-function syncLayer(layer, entities, keyPrefix, spriteFactory) {
-    const seen = new Set();
-    for (const entity of entities) {
-        const key = `${keyPrefix}:${entity.tag}`;
-        seen.add(key);
-        const pos = tile(entity.position.x, entity.position.y);
-        if (activeSprites.has(key)) {
-            const s = activeSprites.get(key);
-            s.x = pos.x;
-            s.y = pos.y;
-            if (entity.health !== undefined && entity.maxHealth !== undefined) {
-                const tintVal = healthTint(entity.health, entity.maxHealth) ?? 0xffffff;
-                s.tint = tintVal;  // Keep on container for window.__test.sprite() readback
-                if (s.children && s.children.length > 0) {
-                    s.children[0].tint = tintVal;  // Also set on inner Sprite for consistent rendering
-                }
-            }
-        } else {
-            const s = spriteFactory(entity);
-            s.x = pos.x;
-            s.y = pos.y;
-            if (entity.health !== undefined && entity.maxHealth !== undefined) {
-                const tintVal = healthTint(entity.health, entity.maxHealth) ?? 0xffffff;
-                s.tint = tintVal;  // Keep on container for window.__test.sprite() readback
-                if (s.children && s.children.length > 0) {
-                    s.children[0].tint = tintVal;  // Also set on inner Sprite for consistent rendering
-                }
-            }
-            layer.addChild(s);
-            activeSprites.set(key, s);
-        }
-    }
-    for (const [key, sprite] of activeSprites.entries()) {
-        if (key.startsWith(keyPrefix + ':') && !seen.has(key)) {
-            layer.removeChild(sprite);
-            sprite.destroy();
-            activeSprites.delete(key);
-        }
-    }
-}
-
-/** Apply one GameState snapshot to the scene. */
-function updateScene(state) {
-    syncLayer(
-        window._layers.resource,
-        state.geysers,
-        'geyser',
-        () => makeGeyserSprite()
-    );
-    syncLayer(
-        window._layers.building,
-        state.myBuildings,
-        'building',
-        e => makeBuildingSprite(e.type)
-    );
-    syncLayer(
-        window._layers.unit,
-        state.myUnits,
-        'unit',
-        e => makeUnitSprite(UNIT_ALIAS[e.type] ?? null, UNIT_RADIUS, 0x88bbff)
-    );
-    syncLayer(
-        window._layers.enemy,
-        state.enemyUnits,
-        'enemy',
-        e => makeUnitSprite(UNIT_ALIAS[e.type] ?? null, UNIT_RADIUS, 0xff4444)
-    );
-    syncLayer(
-        window._layers.staging,
-        state.enemyStagingArea ?? [],
-        'staging',
-        e => makeUnitSprite(UNIT_ALIAS[e.type] ?? null, UNIT_RADIUS, 0x4488ff)
-    );
-
-    hudText.text =
-        `Minerals: ${state.minerals}   Gas: ${state.vespene}` +
-        `   Supply: ${state.supplyUsed}/${state.supply}` +
-        `   Frame: ${state.gameFrame}`;
-}
-
+let renderer, scene, camera;
 let wsConnected = false;
+let group2d, group3d;
 
-/** Redraws the fog overlay from the 4096-char visibility string. No-op if null. */
-function updateFog(visibility) {
-    const fog = window._layers.fog;
-    fog.clear();
-    if (!visibility) return;
-    for (let y = 0; y < VIEWPORT_H; y++) {
-        for (let x = 0; x < 64; x++) {
-            const s = visibility.charAt(y * 64 + x);
-            if (s === '2') continue;                          // VISIBLE — no overlay
-            const alpha = s === '0' ? 1.0 : 0.45;            // UNSEEN solid, MEMORY 45%
-            const canvasX = x * SCALE;
-            const canvasY = (VIEWPORT_H - y - 1) * SCALE;
-            fog.rect(canvasX, canvasY, SCALE, SCALE)
-               .fill({ color: 0x000000, alpha });
-        }
-    }
+const unitSprites    = new Map();
+const unit3dMeshes   = new Map();
+const enemySprites   = new Map();
+const enemy3dMeshes  = new Map();
+const buildingMeshes = new Map();
+const geyserMeshes   = new Map();
+const stagingSprites = new Map();
+const stagingMeshes  = new Map();
+const fogPlanes      = new Map();
+const prevPositions  = new Map();
+const unitFacings    = new Map();
+
+let mGround, mWall, mHigh, mRamp, lineMat;
+function initMaterials() {
+  mGround = new THREE.MeshLambertMaterial({ color: 0x1a2233 });
+  mWall   = new THREE.MeshLambertMaterial({ color: 0x2e4055 });
+  mHigh   = new THREE.MeshLambertMaterial({ color: 0x3a3020 });
+  mRamp   = new THREE.MeshLambertMaterial({ color: 0x2a3a44 });
+  lineMat = new THREE.LineBasicMaterial({ color: 0x1e2a3a, transparent: true, opacity: 0.4 });
 }
 
-/** Open WebSocket; auto-reconnect on close. */
-function connect() {
-    const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
-    ws.onopen    = () => { wsConnected = true; };
-    ws.onmessage = e => {
-        try {
-            const msg = JSON.parse(e.data);
-            updateScene(msg.state);
-            updateFog(msg.visibility);
-        }
-        catch (err) { console.warn('Bad message', err); }
+let terrainLoaded = false;
+
+window.__test = {
+  threeReady:    () => !!renderer,
+  terrainReady:  () => terrainLoaded,
+  wsConnected:   () => wsConnected,
+  hudText:       () => document.getElementById('hud')?.textContent ?? '',
+  unitCount:     () => unitSprites.size,
+  enemyCount:    () => enemySprites.size,
+  buildingCount: () => buildingMeshes.size,
+  stagingCount:  () => stagingSprites.size,
+  geyserCount:   () => geyserMeshes.size,
+  fogOpacity:    (x, z) => {
+    const p = fogPlanes.get(`${x},${z}`);
+    return p ? (p.visible ? p.material.opacity : 0) : -1;
+  },
+  fogVisible:    (x, z) => fogPlanes.get(`${x},${z}`)?.visible ?? false,
+  spriteCount: prefix => {
+    if (prefix === 'unit')     return unitSprites.size;
+    if (prefix === 'enemy')    return enemySprites.size;
+    if (prefix === 'building') return buildingMeshes.size;
+    if (prefix === 'geyser')   return geyserMeshes.size;
+    if (prefix === 'staging')  return stagingSprites.size;
+    return 0;
+  },
+  sprite: key => {
+    // key format: "unit:tag", "enemy:tag", "building:tag", "geyser:tag", "staging:tag"
+    const [prefix, tag] = key.split(':');
+    let obj = null;
+    if (prefix === 'unit')     obj = unitSprites.get(tag);
+    if (prefix === 'enemy')    obj = enemySprites.get(tag);
+    if (prefix === 'building') obj = buildingMeshes.get(tag);
+    if (prefix === 'geyser')   obj = geyserMeshes.get(tag);
+    if (prefix === 'staging')  obj = stagingSprites.get(tag);
+    if (!obj) return null;
+    // Return a plain serialisable object for Playwright to receive
+    return {
+      x:       Math.round(obj.position.x),
+      y:       Math.round(obj.position.z),
+      visible: obj.visible,
+      alpha:   obj.material?.opacity ?? 1,
+      tint:    obj.userData?.tint ?? 0xffffff,
+      hasMask: obj.userData?.hasMask ?? false,
     };
-    ws.onerror = () => ws.close();
-    ws.onclose = () => {
-        wsConnected = false;
-        hudText.text = 'Disconnected — reconnecting...';
-        setTimeout(connect, RECONNECT_MS);
-    };
-}
+  },
+  worldToScreen: (wx, wz) => {
+    if (!camera || !renderer) return { x: 0, y: 0 };
+    const v = new THREE.Vector3(wx, 0, wz).project(camera);
+    const sz = renderer.getSize(new THREE.Vector2());
+    return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+  },
+};
 
-/**
- * Initialise the config panel sidebar.
- * Probes GET /qa/emulated/config — shows panel only in %emulated profile,
- * hides silently in %mock, %sc2, etc. (endpoint returns 404 in those profiles).
- */
-function initConfigPanel() {
-    const panel       = document.getElementById('config-panel');
-    const speedSlider = document.getElementById('cfg-speed');
-    const speedVal    = document.getElementById('cfg-speed-val');
-    const status      = document.getElementById('cfg-status');
-
-    // Probe the endpoint — show panel only if it exists (%emulated profile)
-    fetch('/qa/emulated/config')
-        .then(r => { if (!r.ok) return null; panel.style.display = 'block'; return r.json(); })
-        .then(cfg => {
-            if (!cfg) return;
-            document.getElementById('cfg-wave-frame').value = cfg.waveSpawnFrame;
-            document.getElementById('cfg-unit-count').value = cfg.waveUnitCount;
-            document.getElementById('cfg-unit-type').value  = cfg.waveUnitType;
-            speedSlider.value    = cfg.unitSpeed;
-            speedVal.textContent = cfg.unitSpeed;
-        })
-        .catch(() => {}); // not in %emulated — panel stays hidden
-
-    // Speed is live — sends immediately on slider move (no restart needed)
-    speedSlider.addEventListener('input', () => {
-        speedVal.textContent = speedSlider.value;
-        sendConfig({ unitSpeed: parseFloat(speedSlider.value) });
-    });
-
-    // Apply button — sends wave + speed config (wave takes effect on next restart)
-    document.getElementById('cfg-apply').addEventListener('click', () => {
-        sendConfig(currentConfig()).then(() => showStatus('Applied — restart to activate wave'));
-    });
-
-    // Restart — apply config then call /sc2/start
-    document.getElementById('cfg-restart').addEventListener('click', () => {
-        sendConfig(currentConfig())
-            .then(() => fetch('/sc2/start', { method: 'POST' }))
-            .then(() => showStatus('Game restarted'))
-            .catch(() => showStatus('Restart failed', true));
-    });
-
-    function currentConfig() {
-        return {
-            waveSpawnFrame: parseInt(document.getElementById('cfg-wave-frame').value),
-            waveUnitCount:  parseInt(document.getElementById('cfg-unit-count').value),
-            waveUnitType:   document.getElementById('cfg-unit-type').value,
-            unitSpeed:      parseFloat(speedSlider.value),
-        };
-    }
-
-    function sendConfig(partial) {
-        return fetch('/qa/emulated/config', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(partial),
-        }).then(r => r.json()).catch(() => showStatus('Update failed', true));
-    }
-
-    function showStatus(msg, isError = false) {
-        status.textContent = msg;
-        status.style.color = isError ? '#ff4444' : '#88ff88';
-        setTimeout(() => { status.textContent = ''; }, 2500);
-    }
-}
-
-/** Entry point — called once on page load. */
 async function init() {
-    const app = new PIXI.Application();
-    await app.init({ width: 800, height: 680, background: 0x1a1a2e });
-    document.getElementById('game').appendChild(app.canvas);
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
 
-    // Layers — order matters (bottom to top)
-    const background = new PIXI.Container();
-    const terrain    = new PIXI.Container();  // static wall overlay, drawn once at startup
-    const fogLayer   = new PIXI.Graphics();   // fog of war — above terrain, below units
-    const resource   = new PIXI.Container();
-    const building   = new PIXI.Container();
-    const unit       = new PIXI.Container();
-    const enemy      = new PIXI.Container();
-    const staging    = new PIXI.Container();
-    const hud        = new PIXI.Container();
-    app.stage.addChild(background, terrain, fogLayer, resource, building, unit, enemy, staging, hud);
-    window._layers = { resource, building, unit, enemy, staging, fog: fogLayer };
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  document.body.appendChild(renderer.domElement);
 
-    drawGrid(background);
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 500);
 
-    // HUD text anchored to bottom of canvas
-    hudText = new PIXI.Text({
-        text: 'Connecting...',
-        style: { fill: 0xccccff, fontSize: 13, fontFamily: 'monospace' }
+  group2d = new THREE.Group(); scene.add(group2d);
+  group3d = new THREE.Group(); scene.add(group3d);
+  group3d.visible = false;
+
+  window._three = { scene, camera, renderer };
+
+  initMaterials();
+  initSpriteMaterials();  // ← directional canvas texture materials
+  setupCamera();
+  setupLighting();
+  await loadTerrain();
+  connectWebSocket();
+  initConfigPanel();
+  animate();
+}
+
+window.addEventListener('resize', () => {
+  if (!renderer || !camera) return;
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  smoothCamera();
+  updateSpriteDirs();
+  renderer.render(scene, camera);
+}
+
+function setupCamera() {
+  updateCamera();
+  let drag = false, lastX = 0, lastY = 0, rDrag = false;
+  renderer.domElement.addEventListener('mousedown', e => {
+    drag = true; lastX = e.clientX; lastY = e.clientY; rDrag = e.button === 2;
+    e.preventDefault();
+  });
+  renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+  window.addEventListener('mousemove', e => {
+    if (!drag) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    if (rDrag) {
+      const right = new THREE.Vector3();
+      camera.getWorldDirection(right); right.cross(camera.up).normalize();
+      camTarget.addScaledVector(right, -dx * 0.03);
+      camTarget.y += dy * 0.03;
+    } else {
+      tTheta -= dx * 0.012;
+      tPhi = Math.max(0.08, Math.min(Math.PI/2.05, tPhi - dy * 0.012));
+    }
+  });
+  window.addEventListener('mouseup', () => { drag = false; });
+  renderer.domElement.addEventListener('wheel', e => {
+    tDist = Math.max(4, Math.min(120, tDist + e.deltaY * 0.05));
+    e.preventDefault();
+  }, { passive: false });
+}
+
+function updateCamera() {
+  camera.position.set(
+    camTarget.x + camDist * Math.sin(camPhi) * Math.sin(camTheta),
+    camTarget.y + camDist * Math.cos(camPhi),
+    camTarget.z + camDist * Math.sin(camPhi) * Math.cos(camTheta)
+  );
+  camera.lookAt(camTarget);
+}
+
+function smoothCamera() {
+  camPhi   += (tPhi   - camPhi)   * 0.1;
+  camTheta += (tTheta - camTheta) * 0.1;
+  camDist  += (tDist  - camDist)  * 0.1;
+  updateCamera();
+}
+
+function setAngle(p, btn) {
+  document.querySelectorAll('.angle-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (p === 'top') { tPhi = 0.12;        tDist = Math.max(GRID_W, GRID_H) * TILE * 0.9; }
+  if (p === 'iso') { tPhi = Math.PI/3.5; tDist = Math.max(GRID_W, GRID_H) * TILE * 0.7; }
+  if (p === 'low') { tPhi = Math.PI/2.3; tDist = Math.max(GRID_W, GRID_H) * TILE * 0.5; }
+}
+
+function setMode(m) {
+  document.getElementById('btn2d').classList.toggle('active', m === '2d');
+  document.getElementById('btn3d').classList.toggle('active', m === '3d');
+  group2d.visible = m === '2d';
+  group3d.visible = m === '3d';
+}
+
+function setupLighting() {
+  scene.add(new THREE.AmbientLight(0x223355, 0.9));
+  const sun = new THREE.DirectionalLight(0xaabbff, 1.3);
+  sun.position.set(20, 40, 20);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 200;
+  sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
+  sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+  scene.add(sun);
+  const fill = new THREE.DirectionalLight(0x334466, 0.4);
+  fill.position.set(-10, 20, -10);
+  scene.add(fill);
+}
+
+async function loadTerrain() {
+  let walls = [], highGround = [], ramps = [];
+  try {
+    const r = await fetch('/qa/emulated/terrain');
+    if (r.ok) {
+      const d = await r.json();
+      GRID_W = d.width; GRID_H = d.height;
+      walls      = d.walls      || [];
+      highGround = d.highGround || [];
+      ramps      = d.ramps      || [];
+    }
+  } catch (_) { /* non-emulated profiles: flat grid */ }
+
+  HALF_W = (GRID_W * TILE) / 2;
+  HALF_H = (GRID_H * TILE) / 2;
+
+  const wallSet = new Set(walls.map(([x,z])      => `${x},${z}`));
+  const highSet = new Set(highGround.map(([x,z]) => `${x},${z}`));
+  const rampSet = new Set(ramps.map(([x,z])      => `${x},${z}`));
+
+  const sharedEdgesGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(TILE, 0.01, TILE));
+  for (let gz = 0; gz < GRID_H; gz++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const key = `${gx},${gz}`;
+      const cx  = gx * TILE - HALF_W + TILE/2;
+      const cz  = gz * TILE - HALF_H + TILE/2;
+
+      let h = 0.08, mat = mGround;
+      if      (wallSet.has(key)) { h = TILE * 1.2; mat = mWall; }
+      else if (highSet.has(key)) { h = TILE * 0.6; mat = mHigh; }
+      else if (rampSet.has(key)) { h = TILE * 0.25; mat = mRamp; }
+
+      const tile = new THREE.Mesh(new THREE.BoxGeometry(TILE*0.98, h, TILE*0.98), mat);
+      tile.position.set(cx, h/2, cz);
+      tile.receiveShadow = true;
+      if (mat === mWall) tile.castShadow = true;
+      scene.add(tile);
+
+      const el = new THREE.LineSegments(sharedEdgesGeo, lineMat);
+      el.position.set(cx, h + 0.01, cz);
+      scene.add(el);
+    }
+  }
+
+  // Fog planes — one per tile, updated from visibility string each frame
+  const fogMat = new THREE.MeshBasicMaterial({
+    color: 0x000000, transparent: true,
+    side: THREE.DoubleSide, depthWrite: false
+  });
+  const fogGeo = new THREE.PlaneGeometry(TILE*0.98, TILE*0.98);
+  for (let gz = 0; gz < GRID_H; gz++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const cx = gx * TILE - HALF_W + TILE/2;
+      const cz = gz * TILE - HALF_H + TILE/2;
+      const plane = new THREE.Mesh(fogGeo, fogMat.clone());
+      plane.rotation.x = -Math.PI/2;
+      plane.position.set(cx, 0.18, cz);
+      plane.renderOrder = 5;
+      plane.userData.isFog = true;
+      plane.visible = true;
+      plane.material.opacity = 1.0; // start fully UNSEEN
+      scene.add(plane);
+      fogPlanes.set(`${gx},${gz}`, plane);
+    }
+  }
+
+  tDist = camDist = Math.max(GRID_W, GRID_H) * TILE * 0.7;
+  updateCamera();
+  terrainLoaded = true;
+}
+
+function gw(gx, gz) {
+  return { x: gx * TILE - HALF_W, z: gz * TILE - HALF_H };
+}
+
+function connectWebSocket() {
+  const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
+  ws.onopen  = () => { wsConnected = true; };
+  ws.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      onFrame(msg.state, msg.visibility);
+    } catch (err) { console.warn('Bad WS message', err); }
+  };
+  ws.onerror = () => ws.close();
+  ws.onclose = () => {
+    wsConnected = false;
+    document.getElementById('hud').textContent = 'Disconnected — reconnecting...';
+    setTimeout(connectWebSocket, RECONNECT_MS);
+  };
+}
+
+function onFrame(state, visibility) {
+  if (!state) return;
+  updateHud(state);
+  updateFog(visibility);
+  syncUnits(state);
+}
+
+function updateHud(state) {
+  document.getElementById('hud').textContent =
+    `Minerals: ${state.minerals}   Gas: ${state.vespene}` +
+    `   Supply: ${state.supplyUsed}/${state.supply}` +
+    `   Frame: ${state.gameFrame}`;
+}
+
+function updateFog(visibility) {
+  if (!visibility) return;
+  for (let gz = 0; gz < GRID_H; gz++) {
+    for (let gx = 0; gx < GRID_W; gx++) {
+      const plane = fogPlanes.get(`${gx},${gz}`);
+      if (!plane) continue;
+      const ch = visibility.charAt(gz * GRID_W + gx);
+      if (ch === '2') {
+        plane.visible = false;
+      } else {
+        plane.visible = true;
+        plane.material.opacity = ch === '1' ? 0.45 : 1.0;
+      }
+    }
+  }
+}
+
+const BUILDING_H = { NEXUS: 1.4, PYLON: 1.7, GATEWAY: 1.1 };
+const BUILDING_W = { NEXUS: 2.5, PYLON: 0.8, GATEWAY: 1.8 };
+const BUILDING_COLOUR = {
+  NEXUS:   [0x2255aa, 0x112244],
+  PYLON:   [0x553399, 0x221144],
+  GATEWAY: [0x336688, 0x112233],
+};
+
+function syncUnits(state) {
+  syncBuildings(state.myBuildings   || []);
+  syncGeysers(state.geysers         || []);
+  syncUnitLayer(unitSprites,   unit3dMeshes,  state.myUnits          || [], false);
+  syncUnitLayer(enemySprites,  enemy3dMeshes, state.enemyUnits        || [], true);
+  syncUnitLayer(stagingSprites, stagingMeshes, state.enemyStagingArea  || [], true);
+}
+
+function syncBuildings(buildings) {
+  const seen = new Set();
+  buildings.forEach(b => {
+    seen.add(b.tag);
+    if (!buildingMeshes.has(b.tag)) {
+      const h = BUILDING_H[b.type] ?? 1.0;
+      const w = BUILDING_W[b.type] ?? 1.5;
+      const [color, emissive] = BUILDING_COLOUR[b.type] ?? [0x334455, 0x111122];
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(w * TILE * 0.7, h, w * TILE * 0.7),
+        new THREE.MeshLambertMaterial({ color, emissive })
+      );
+      mesh.castShadow = mesh.receiveShadow = true;
+      const wp = gw(b.position.x, b.position.y);
+      mesh.position.set(wp.x, h/2, wp.z);
+      // Buildings are always-visible anchors like terrain tiles — not in group2d/group3d
+      scene.add(mesh);
+      buildingMeshes.set(b.tag, mesh);
+    }
+  });
+  buildingMeshes.forEach((m, tag) => {
+    if (!seen.has(tag)) { scene.remove(m); buildingMeshes.delete(tag); }
+  });
+}
+
+function syncGeysers(geysers) {
+  const seen = new Set();
+  geysers.forEach(g => {
+    seen.add(g.tag);
+    if (!geyserMeshes.has(g.tag)) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(TILE*0.6, TILE*0.25, TILE*0.6),
+        new THREE.MeshLambertMaterial({ color: 0x224422, emissive: 0x001100 })
+      );
+      const wp = gw(g.position.x, g.position.y);
+      mesh.position.set(wp.x, TILE*0.125, wp.z);
+      // Geysers are always-visible anchors — not toggled by 2D/3D mode
+      scene.add(mesh);
+      geyserMeshes.set(g.tag, mesh);
+    }
+  });
+  geyserMeshes.forEach((m, tag) => {
+    if (!seen.has(tag)) { scene.remove(m); geyserMeshes.delete(tag); }
+  });
+}
+
+function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
+  const seen = new Set();
+  units.forEach(u => {
+    seen.add(u.tag);
+    const wp = gw(u.position.x, u.position.y);
+
+    // Update facing from position delta
+    const prev = prevPositions.get(u.tag);
+    if (prev) {
+      const dx = wp.x - prev.x, dz = wp.z - prev.z;
+      if (dx*dx + dz*dz > 0.0001) {
+        unitFacings.set(u.tag, Math.atan2(-dx, dz));
+      }
+    }
+    prevPositions.set(u.tag, { x: wp.x, z: wp.z });
+
+    if (!spriteMap.has(u.tag)) {
+      // 2D sprite — directional canvas texture material
+      const mats = isEnemy ? enemyMats : (UNIT_MATS[u.type] ?? enemyMats);
+      const sp = new THREE.Sprite(mats[0]);
+      sp.userData.mats = mats;
+      sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
+      sp.position.set(wp.x, TILE * 0.65, wp.z);
+      group2d.add(sp);
+      spriteMap.set(u.tag, sp);
+
+      // 3D sphere model
+      const g = make3dModel(isEnemy ? 0xcc3322 : 0x4488dd, isEnemy ? 0x330000 : 0x112244);
+      g.position.set(wp.x, 0, wp.z);
+      group3d.add(g);
+      if (meshMap instanceof Map) meshMap.set(u.tag, g);
+    } else {
+      const sp = spriteMap.get(u.tag);
+      sp.position.x = wp.x; sp.position.z = wp.z;
+      const g = meshMap instanceof Map ? meshMap.get(u.tag) : null;
+      if (g) { g.position.x = wp.x; g.position.z = wp.z; }
+    }
+  });
+
+  spriteMap.forEach((sp, tag) => {
+    if (!seen.has(tag)) {
+      group2d.remove(sp);
+      spriteMap.delete(tag);
+      prevPositions.delete(tag);
+      unitFacings.delete(tag);
+      if (meshMap instanceof Map) {
+        const g = meshMap.get(tag);
+        if (g) { group3d.remove(g); meshMap.delete(tag); }
+      }
+    }
+  });
+}
+
+// ── Sprite direction system ───────────────────────────────────────────────────
+
+// Returns 0=front, 1=right, 2=back, 3=left relative to unit facing.
+// Negated dx corrects for Three.js screen-space handedness.
+function getDir4(facingAngle, unitPos, camPos) {
+  const camAngle = Math.atan2(-(camPos.x - unitPos.x), camPos.z - unitPos.z);
+  let rel = camAngle - facingAngle;
+  while (rel < 0)          rel += Math.PI * 2;
+  while (rel >= Math.PI*2) rel -= Math.PI * 2;
+  return Math.round(rel / (Math.PI/2)) % 4;
+}
+
+function makeDirTextures(drawFn, size = 128) {
+  return [0, 1, 2, 3].map(dir => {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    drawFn(c.getContext('2d'), size, dir);
+    const tex = new THREE.CanvasTexture(c);
+    tex.premultiplyAlpha = true;
+    return new THREE.SpriteMaterial({
+      map: tex, transparent: true,
+      depthWrite: true, alphaTest: 0.1
     });
-    hudText.x = 8;
-    hudText.y = 648;
-    hud.addChild(hudText);
+  });
+}
 
-    // ---------------------------------------------------------------------------
-    // Test hooks — used by VisualizerRenderTest (@QuarkusTest + Playwright).
-    // Set before loadAssets() so tests can access them without waiting for
-    // network fetches. Do not use in production code.
-    // ---------------------------------------------------------------------------
-    window.__pixiApp = app;
-    window.__test = {
-        /** Count sprites by entity type prefix ('unit', 'building', 'geyser', 'enemy'). */
-        spriteCount: (prefix) =>
-            [...activeSprites.keys()].filter(k => k.startsWith(prefix + ':')).length,
+// Art stubs — replaced in Tasks 8-11
+function drawProbe(ctx, S, dir) {
+  const cx = S/2, cy = S/2 + 4;
+  // outer glow
+  const grd = ctx.createRadialGradient(cx, cy, S*.05, cx, cy, S*.46);
+  grd.addColorStop(0, 'rgba(80,160,255,0.3)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.46,S*.46,0,0,Math.PI*2); ctx.fill();
 
-        /** Serialisable metadata for a single sprite looked up by key ('building:nexus-0'). */
-        sprite: (key) => {
-            const s = activeSprites.get(key);
-            if (!s) return null;
-            return {
-                x:       s.x,
-                y:       s.y,
-                alpha:   s.alpha   ?? 1,
-                visible: s.visible !== false,
-                hasMask: s.mask != null,      // true → masked sprite (see mask-bug history)
-                tint:    s.tint    ?? 0xffffff,   // 0xffffff = no tint (full health)
-            };
-        },
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.08,cy-S*.08,S*.02,cx,cy,S*.3);
+    b.addColorStop(0,'#6699cc'); b.addColorStop(.7,'#2255aa'); b.addColorStop(1,'#112244');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#4477aa'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(cx,cy-S*.28); ctx.lineTo(cx,cy-S*.42); ctx.stroke();
+    ctx.fillStyle='#88bbff'; ctx.beginPath(); ctx.ellipse(cx,cy-S*.44,S*.04,S*.04,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#2255aa';
+    ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    const b = ctx.createRadialGradient(cx+flip*S*.06,cy-S*.08,S*.02,cx,cy,S*.28);
+    b.addColorStop(0,'#88ccff'); b.addColorStop(.6,'#4488dd'); b.addColorStop(1,'#224499');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.28,S*.24,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.12)';
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.1,S*.1,S*.07,-.3,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.16,cy-S*.04,S*.08,S*.08,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#112244'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.18,cy-S*.03,S*.046,S*.046,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.15,cy-S*.07,S*.02,S*.02,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#6699bb'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx+flip*S*.24,cy-S*.02); ctx.lineTo(cx+flip*S*.37,cy-S*.14); ctx.stroke();
+    const eg = ctx.createRadialGradient(cx+flip*S*.4,cy-S*.17,0,cx+flip*S*.4,cy-S*.17,S*.09);
+    eg.addColorStop(0,'#ffff88'); eg.addColorStop(.5,'#ffcc00'); eg.addColorStop(1,'rgba(255,180,0,0)');
+    ctx.fillStyle=eg; ctx.beginPath(); ctx.ellipse(cx+flip*S*.4,cy-S*.17,S*.09,S*.09,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#336699';
+    ctx.beginPath(); ctx.ellipse(cx,cy+S*.26,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  // FRONT
+  const b = ctx.createRadialGradient(cx-S*.08,cy-S*.1,S*.04,cx,cy,S*.3);
+  b.addColorStop(0,'#88ccff'); b.addColorStop(.6,'#4488dd'); b.addColorStop(1,'#224499');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.06,cy-S*.1,S*.12,S*.08,-.4,0,Math.PI*2); ctx.fill();
+  [[-S*.1],[S*.1]].forEach(([ex]) => {
+    const exx=cx+ex, eyy=cy-S*.06;
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx,eyy,S*.07,S*.07,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#112244'; ctx.beginPath(); ctx.ellipse(exx+1,eyy+1,S*.04,S*.04,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx-1,eyy-2,S*.018,S*.018,0,0,Math.PI*2); ctx.fill();
+  });
+  ctx.strokeStyle='#6699bb'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx+S*.22,cy-S*.04); ctx.lineTo(cx+S*.35,cy-S*.16); ctx.stroke();
+  const eg = ctx.createRadialGradient(cx+S*.38,cy-S*.19,0,cx+S*.38,cy-S*.19,S*.09);
+  eg.addColorStop(0,'#ffff88'); eg.addColorStop(.5,'#ffcc00'); eg.addColorStop(1,'rgba(255,180,0,0)');
+  ctx.fillStyle=eg; ctx.beginPath(); ctx.ellipse(cx+S*.38,cy-S*.19,S*.09,S*.09,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#336699';
+  ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.08,S*.05,0,0,Math.PI*2); ctx.fill();
+}
+function drawZealot(ctx, S, dir) {
+  const cx = S/2, cy = S/2 + 2;
+  const grd = ctx.createRadialGradient(cx,cy,S*.1,cx,cy,S*.48);
+  grd.addColorStop(0,'rgba(140,80,255,0.25)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.48,S*.48,0,0,Math.PI*2); ctx.fill();
 
-        /** Current HUD text — includes minerals, gas, supply, frame. */
-        hudText: () => hudText?.text ?? '',
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.08,cy-S*.08,S*.02,cx,cy,S*.3);
+    b.addColorStop(0,'#aa88dd'); b.addColorStop(.7,'#5533aa'); b.addColorStop(1,'#331177');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#8855cc';
+    ctx.beginPath(); ctx.moveTo(cx-S*.08,cy-S*.28); ctx.lineTo(cx,cy-S*.44); ctx.lineTo(cx+S*.08,cy-S*.28); ctx.fill();
+    const bg1 = ctx.createLinearGradient(cx-S*.36,cy,cx-S*.28,cy);
+    bg1.addColorStop(0,'rgba(0,180,255,0)'); bg1.addColorStop(1,'#44ccff');
+    ctx.fillStyle=bg1; ctx.beginPath(); ctx.ellipse(cx-S*.33,cy,S*.06,S*.18,0,0,Math.PI*2); ctx.fill();
+    const bg2 = ctx.createLinearGradient(cx+S*.28,cy,cx+S*.36,cy);
+    bg2.addColorStop(0,'#44ccff'); bg2.addColorStop(1,'rgba(0,180,255,0)');
+    ctx.fillStyle=bg2; ctx.beginPath(); ctx.ellipse(cx+S*.33,cy,S*.06,S*.18,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5533aa';
+    ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    const bg = ctx.createLinearGradient(cx+flip*S*.22,cy,cx+flip*S*.42,cy);
+    bg.addColorStop(flip>0?0:1,'#44ccff'); bg.addColorStop(flip>0?1:0,'rgba(0,180,255,0)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(cx+flip*S*.36,cy,S*.07,S*.2,0,0,Math.PI*2); ctx.fill();
+    const b = ctx.createRadialGradient(cx+flip*S*.06,cy-S*.08,S*.02,cx,cy,S*.26);
+    b.addColorStop(0,'#ccaaff'); b.addColorStop(.5,'#7755cc'); b.addColorStop(1,'#441199');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.26,S*.24,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.15,cy-S*.07,S*.08,S*.08,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#221144'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.17,cy-S*.06,S*.046,S*.046,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.14,cy-S*.1,S*.02,S*.02,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#5533aa';
+    ctx.beginPath(); ctx.ellipse(cx,cy+S*.26,S*.1,S*.055,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  // FRONT
+  function blade(bx) {
+    const bg = ctx.createLinearGradient(bx-8,cy-S*.2,bx+8,cy+S*.2);
+    bg.addColorStop(0,'#88ffff'); bg.addColorStop(.5,'#44ccff'); bg.addColorStop(1,'rgba(0,180,255,0.2)');
+    ctx.fillStyle=bg; ctx.beginPath(); ctx.ellipse(bx,cy,S*.07,S*.2,0,0,Math.PI*2); ctx.fill();
+  }
+  blade(cx-S*.36); blade(cx+S*.36);
+  const b = ctx.createRadialGradient(cx-S*.08,cy-S*.1,S*.04,cx,cy,S*.3);
+  b.addColorStop(0,'#ccaaff'); b.addColorStop(.5,'#7755cc'); b.addColorStop(1,'#441199');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.3,S*.28,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.12)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.07,cy-S*.1,S*.12,S*.08,-.4,0,Math.PI*2); ctx.fill();
+  [[-S*.11],[S*.11]].forEach(([ex]) => {
+    const exx=cx+ex, eyy=cy-S*.07;
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx,eyy,S*.075,S*.075,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#221144'; ctx.beginPath(); ctx.ellipse(exx+1,eyy+1,S*.042,S*.042,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white'; ctx.beginPath(); ctx.ellipse(exx-1,eyy-2,S*.018,S*.018,0,0,Math.PI*2); ctx.fill();
+  });
+  ctx.fillStyle='#5533aa';
+  ctx.beginPath(); ctx.ellipse(cx-S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx+S*.1,cy+S*.26,S*.09,S*.055,0,0,Math.PI*2); ctx.fill();
+}
+function drawStalker(ctx, S, dir) {
+  const cx = S/2, cy = S/2 + 2;
+  const grd = ctx.createRadialGradient(cx,cy,S*.05,cx,cy,S*.44);
+  grd.addColorStop(0,'rgba(50,100,150,0.22)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.44,S*.44,0,0,Math.PI*2); ctx.fill();
 
-        /** True if the sprite texture was loaded successfully (not a fallback shape). */
-        assetLoaded: (alias) => PIXI.Assets.get(alias) !== undefined,
+  function drawEye(ex, ey, r) {
+    r = r ?? S*.09;
+    ctx.fillStyle='#001122'; ctx.beginPath(); ctx.ellipse(ex,ey,r*1.3,r*1.3,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#0066cc'; ctx.beginPath(); ctx.ellipse(ex,ey,r,r,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#44aaff'; ctx.beginPath(); ctx.ellipse(ex,ey,r*.6,r*.6,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='white';   ctx.beginPath(); ctx.ellipse(ex-r*.4,ey-r*.4,r*.22,r*.22,0,0,Math.PI*2); ctx.fill();
+  }
 
-        /** True once the WebSocket handshake completes. Use in waitForFunction before triggering observe(). */
-        wsConnected: () => wsConnected,
+  function legs4(ox) {
+    ctx.strokeStyle='#445566'; ctx.lineWidth=4; ctx.lineCap='round';
+    [[-S*.22,S*.1,-S*.34,S*.28],[-S*.1,S*.14,-S*.14,S*.3],
+     [S*.1,S*.14,S*.14,S*.3],[S*.22,S*.1,S*.34,S*.28]].forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath(); ctx.moveTo(cx+(x1+(ox||0)),cy+y1); ctx.lineTo(cx+(x2+(ox||0)),cy+y2); ctx.stroke();
+    });
+  }
+
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.06,cy-S*.06,S*.02,cx,cy,S*.28);
+    b.addColorStop(0,'#556677'); b.addColorStop(.7,'#2a3a44'); b.addColorStop(1,'#111822');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy,S*.28,S*.24,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#445566'; ctx.lineWidth=4; ctx.lineCap='round';
+    [[-S*.2,S*.12,-S*.3,S*.28],[-S*.08,S*.14,-S*.12,S*.3],
+     [S*.08,S*.14,S*.12,S*.3],[S*.2,S*.12,S*.3,S*.28]].forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath(); ctx.moveTo(cx+x1,cy+y1); ctx.lineTo(cx+x2,cy+y2); ctx.stroke();
+    });
+    ctx.fillStyle='#334455';
+    ctx.beginPath(); ctx.ellipse(cx,cy-S*.28,S*.08,S*.06,0,0,Math.PI*2); ctx.fill();
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    ctx.strokeStyle='#445566'; ctx.lineWidth=4; ctx.lineCap='round';
+    [[-S*.08,S*.12,-S*.14,S*.28],[S*.08,S*.12,S*.14,S*.28]].forEach(([x1,y1,x2,y2])=>{
+      ctx.beginPath(); ctx.moveTo(cx+x1,cy+y1); ctx.lineTo(cx+x2,cy+y2); ctx.stroke();
+    });
+    const b = ctx.createRadialGradient(cx+flip*S*.04,cy-S*.06,S*.02,cx,cy,S*.24);
+    b.addColorStop(0,'#556677'); b.addColorStop(.6,'#334455'); b.addColorStop(1,'#111822');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy-S*.02,S*.26,S*.2,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#334455';
+    ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.24,S*.1,S*.07,flip*0.4,0,Math.PI*2); ctx.fill();
+    drawEye(cx+flip*S*.14, cy-S*.04, S*.075);
+    return;
+  }
+  // FRONT
+  legs4();
+  const b = ctx.createRadialGradient(cx-S*.06,cy-S*.08,S*.02,cx,cy,S*.3);
+  b.addColorStop(0,'#667788'); b.addColorStop(.6,'#334455'); b.addColorStop(1,'#111822');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy-S*.02,S*.3,S*.26,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#445566';
+  ctx.fillRect(cx-S*.07, cy-S*.4, S*.14, S*.16);
+  ctx.beginPath(); ctx.ellipse(cx,cy-S*.4,S*.07,S*.07,0,0,Math.PI*2); ctx.fill();
+  drawEye(cx, cy-S*.04, S*.1);
+}
+function drawEnemy(ctx, S, dir) {
+  const cx = S/2, cy = S/2 + 2;
+  const grd = ctx.createRadialGradient(cx,cy,S*.05,cx,cy,S*.44);
+  grd.addColorStop(0,'rgba(255,60,30,0.28)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(cx,cy,S*.44,S*.44,0,0,Math.PI*2); ctx.fill();
+
+  function spikes(num, startAngle) {
+    ctx.fillStyle='#dd2211';
+    for (let i=0; i<num; i++) {
+      const a = startAngle + i*(Math.PI*2/num);
+      ctx.beginPath();
+      ctx.moveTo(cx+Math.cos(a)*S*.28, cy+Math.sin(a)*S*.28);
+      ctx.lineTo(cx+Math.cos(a-.1)*S*.22, cy+Math.sin(a-.1)*S*.22);
+      ctx.lineTo(cx+Math.cos(a+.1)*S*.22, cy+Math.sin(a+.1)*S*.22);
+      ctx.fill();
+    }
+  }
+
+  if (dir === 2) { // BACK
+    const b = ctx.createRadialGradient(cx+S*.08,cy-S*.08,S*.04,cx,cy,S*.3);
+    b.addColorStop(0,'#dd5533'); b.addColorStop(.5,'#cc3322'); b.addColorStop(1,'#881111');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.02,S*.3,S*.26,0,0,Math.PI*2); ctx.fill();
+    spikes(5, -Math.PI*.6);
+    return;
+  }
+  if (dir === 1 || dir === 3) { // SIDE
+    const flip = dir===3 ? -1 : 1;
+    spikes(3, flip>0 ? -Math.PI*.3 : Math.PI*.7);
+    const b = ctx.createRadialGradient(cx-S*.06,cy-S*.08,S*.04,cx,cy,S*.28);
+    b.addColorStop(0,'#ff9966'); b.addColorStop(.5,'#cc3322'); b.addColorStop(1,'#881111');
+    ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.02,S*.22,S*.26,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.05,S*.075,S*.065,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#220000'; ctx.beginPath(); ctx.ellipse(cx+flip*S*.08,cy-S*.04,S*.04,S*.05,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#881111'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(cx+flip*S*.01,cy-S*.12); ctx.lineTo(cx+flip*S*.13,cy-S*.08); ctx.stroke();
+    return;
+  }
+  // FRONT
+  spikes(5, -Math.PI*.6);
+  const b = ctx.createRadialGradient(cx-S*.08,cy-S*.08,S*.04,cx,cy,S*.3);
+  b.addColorStop(0,'#ff9966'); b.addColorStop(.5,'#cc3322'); b.addColorStop(1,'#881111');
+  ctx.fillStyle=b; ctx.beginPath(); ctx.ellipse(cx,cy+S*.02,S*.3,S*.26,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,200,180,0.18)';
+  ctx.beginPath(); ctx.ellipse(cx-S*.06,cy-S*.08,S*.12,S*.08,-.4,0,Math.PI*2); ctx.fill();
+  [[-S*.1],[S*.1]].forEach(([ex],i) => {
+    const exx=cx+ex, eyy=cy-S*.05;
+    ctx.fillStyle='#ffcc00'; ctx.beginPath(); ctx.ellipse(exx,eyy,S*.075,S*.065,0,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#220000'; ctx.beginPath(); ctx.ellipse(exx,eyy+1,S*.04,S*.05,0,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle='#881111'; ctx.lineWidth=2.5;
+    ctx.beginPath();
+    if (i===0) { ctx.moveTo(exx-S*.07,eyy-S*.07); ctx.lineTo(exx+S*.04,eyy-S*.04); }
+    else       { ctx.moveTo(exx-S*.04,eyy-S*.04); ctx.lineTo(exx+S*.07,eyy-S*.07); }
+    ctx.stroke();
+  });
+}
+
+let probeMats, zealotMats, stalkerMats, enemyMats;
+
+function initSpriteMaterials() {
+  probeMats   = makeDirTextures(drawProbe);
+  zealotMats  = makeDirTextures(drawZealot);
+  stalkerMats = makeDirTextures(drawStalker);
+  enemyMats   = makeDirTextures(drawEnemy);
+  populateUnitMats();
+}
+
+// Populated by initSpriteMaterials() — do not read before init() runs
+const UNIT_MATS = {};
+function populateUnitMats() {
+  UNIT_MATS.PROBE = probeMats; UNIT_MATS.ZEALOT = zealotMats; UNIT_MATS.STALKER = stalkerMats;
+}
+
+function updateSpriteDirs() {
+  [unitSprites, enemySprites, stagingSprites].forEach(map => {
+    map.forEach((sp, tag) => {
+      const mats = sp.userData.mats;
+      if (!mats) return;
+      const facing = unitFacings.get(tag) ?? 0;
+      sp.material = mats[getDir4(facing, sp.position, camera.position)];
+    });
+  });
+}
+
+function make3dModel(color, emissive) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(TILE*0.38, 16, 12),
+    new THREE.MeshLambertMaterial({ color, emissive })
+  );
+  body.position.y = TILE*0.42; body.castShadow = true; g.add(body);
+  const eyeM = new THREE.MeshLambertMaterial({ color: 0xffffff });
+  const pupM = new THREE.MeshLambertMaterial({ color: 0x111122 });
+  [-0.14, 0.14].forEach(ex => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(TILE*0.1, 8, 8), eyeM);
+    eye.position.set(ex*TILE, TILE*0.52, TILE*0.32); g.add(eye);
+    const pup = new THREE.Mesh(new THREE.SphereGeometry(TILE*0.055, 8, 8), pupM);
+    pup.position.set(ex*TILE, TILE*0.52, TILE*0.37); g.add(pup);
+  });
+  return g;
+}
+
+function initConfigPanel() {
+  const panel     = document.getElementById('config-panel');
+  const speedSlider = document.getElementById('cfg-speed');
+  const speedVal  = document.getElementById('cfg-speed-val');
+  const status    = document.getElementById('cfg-status');
+
+  fetch('/qa/emulated/config')
+    .then(r => { if (!r.ok) return null; return r.json(); })
+    .then(cfg => {
+      if (!cfg || !cfg.active) return;
+      panel.style.display = 'block';
+      document.getElementById('cfg-wave-frame').value = cfg.waveSpawnFrame;
+      document.getElementById('cfg-unit-count').value = cfg.waveUnitCount;
+      document.getElementById('cfg-unit-type').value  = cfg.waveUnitType;
+      speedSlider.value    = cfg.unitSpeed;
+      speedVal.textContent = cfg.unitSpeed;
+    })
+    .catch(() => {});
+
+  speedSlider.addEventListener('input', () => {
+    speedVal.textContent = speedSlider.value;
+    sendConfig({ unitSpeed: parseFloat(speedSlider.value) });
+  });
+
+  document.getElementById('cfg-apply').addEventListener('click', () => {
+    sendConfig(currentConfig())
+      .then(() => showStatus('Applied — restart to activate wave'))
+      .catch(() => showStatus('Failed', true));
+  });
+
+  document.getElementById('cfg-restart').addEventListener('click', () => {
+    sendConfig(currentConfig())
+      .then(() => fetch('/sc2/start', { method: 'POST' }))
+      .then(() => showStatus('Restarted'))
+      .catch(() => showStatus('Failed', true));
+  });
+
+  function currentConfig() {
+    return {
+      waveSpawnFrame: parseInt(document.getElementById('cfg-wave-frame').value),
+      waveUnitCount:  parseInt(document.getElementById('cfg-unit-count').value),
+      waveUnitType:   document.getElementById('cfg-unit-type').value,
+      unitSpeed:      parseFloat(speedSlider.value),
     };
+  }
 
-    await loadAssets();
-    await loadTerrain(terrain);
-    connect();
-    initConfigPanel();
+  function sendConfig(partial) {
+    return fetch('/qa/emulated/config', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(partial),
+    }).then(r => r.json()).catch(() => showStatus('Update failed', true));
+  }
+
+  function showStatus(msg, isError=false) {
+    status.textContent = msg;
+    status.style.color = isError ? '#ff4444' : '#88ff88';
+    setTimeout(() => { status.textContent = ''; }, 2500);
+  }
 }
 
 init();

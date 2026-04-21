@@ -86,8 +86,8 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - Flow integration tests emit to a SmallRye channel and assert after `Thread.sleep(300)` — the flow processes asynchronously
 
 **Playwright render tests** (`@QuarkusTest` + `@Tag("browser")`, excluded from default surefire run — need Chromium installed):
-- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, pixel sampling via `window.__test` API
-- `VisualizerFogRenderTest` — asserts fog layer presence (`window._layers.fog`) and correct `GameStateBroadcast` envelope parsing (HUD shows minerals, not undefined)
+- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, on-screen position projection via `window.__test` API
+- `VisualizerFogRenderTest` — asserts Three.js fog plane state via `window.__test.fogOpacity(x,z)` and correct `GameStateBroadcast` envelope parsing (HUD shows minerals, not undefined)
 - Install Chromium once: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`
 - Run with: `mvn test -Pplaywright` (profile configured in pom.xml, runs `@Tag("browser")` tests)
 - Excluded from default surefire run via `excludedGroups=benchmark,browser`

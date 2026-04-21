@@ -1,60 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>QuarkMind</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #1a1a2e; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        h1 { color: #8888ff; font-family: monospace; font-size: 14px; letter-spacing: 2px; margin-bottom: 8px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>QuarkMind Visualizer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; overflow: hidden; font-family: monospace; color: #ccc; }
+    #hud {
+      position: absolute; bottom: 12px; left: 12px;
+      background: rgba(10,10,30,0.8); border: 1px solid #2a2a5e;
+      border-radius: 6px; padding: 6px 14px; font-size: 12px; color: #88bbff;
+    }
+    #config-panel {
+      display: none; position: absolute; top: 12px; right: 12px;
+      background: rgba(10,10,30,0.9); border: 1px solid #2a2a5e;
+      border-radius: 8px; padding: 14px; font-size: 12px; min-width: 200px;
+    }
+    #config-panel label { color: #aaaacc; display: block; margin: 6px 0 2px; }
+    #config-panel input, #config-panel select {
+      width: 100%; background: #111; border: 1px solid #334; color: #ccc;
+      padding: 4px; border-radius: 3px;
+    }
+    .cfg-btn {
+      margin-top: 8px; width: 100%; padding: 6px;
+      background: #223; border: 1px solid #445; color: #aac;
+      border-radius: 4px; cursor: pointer; font-family: monospace;
+    }
+    .cfg-btn:hover { border-color: #88bbff; color: #88bbff; }
+    #cfg-status { margin-top: 6px; font-size: 11px; min-height: 14px; }
+    #angle-btns {
+      position: absolute; top: 12px; left: 12px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .angle-btn {
+      background: rgba(10,10,30,0.85); border: 1px solid #2a2a5e;
+      border-radius: 5px; color: #aaaacc; font-family: monospace;
+      font-size: 11px; padding: 6px 12px; cursor: pointer;
+    }
+    .angle-btn.active, .angle-btn:hover { border-color: #88bbff; color: #88bbff; }
+    #mode-toggle { position: absolute; top: 12px; right: 12px; display: flex; }
+    .mode-btn {
+      background: rgba(10,10,30,0.85); border: 1px solid #2a2a5e;
+      color: #aaaacc; font-family: monospace; font-size: 11px; padding: 6px 12px; cursor: pointer;
+    }
+    .mode-btn:first-child { border-radius: 5px 0 0 5px; }
+    .mode-btn:last-child  { border-radius: 0 5px 5px 0; }
+    .mode-btn.active { background: rgba(40,80,160,0.5); border-color: #88bbff; color: #88bbff; }
+  </style>
 </head>
 <body>
-    <h1>QUARKMIND</h1>
-    <div style="display:flex; align-items:flex-start; gap:8px;">
-        <div id="game"></div>
-        <div id="config-panel" style="display:none; width:180px; background:#0d0d20;
-             color:#ccccff; padding:12px; font-family:monospace; font-size:12px;
-             border:1px solid #2a2a4e; align-self:stretch;">
-
-            <div style="color:#8888ff; font-size:13px; margin-bottom:10px;">WAVE CONFIG</div>
-
-            <label style="display:block; margin-bottom:2px;">Spawn frame</label>
-            <input id="cfg-wave-frame" type="number" value="200" min="1" max="2000"
-                   style="width:100%; margin-bottom:8px; background:#1a1a3e; color:#ccc; border:1px solid #333; padding:2px;">
-
-            <label style="display:block; margin-bottom:2px;">Enemy count</label>
-            <input id="cfg-unit-count" type="number" value="4" min="1" max="12"
-                   style="width:100%; margin-bottom:8px; background:#1a1a3e; color:#ccc; border:1px solid #333; padding:2px;">
-
-            <label style="display:block; margin-bottom:2px;">Unit type</label>
-            <select id="cfg-unit-type"
-                    style="width:100%; margin-bottom:12px; background:#1a1a3e; color:#ccc; border:1px solid #333; padding:2px;">
-                <option value="ZEALOT">Zealot</option>
-                <option value="STALKER">Stalker</option>
-                <option value="ROACH">Roach</option>
-                <option value="MARINE">Marine</option>
-            </select>
-
-            <div style="color:#8888ff; font-size:13px; margin-bottom:8px;">PHYSICS</div>
-            <label style="display:block; margin-bottom:2px;">Speed: <span id="cfg-speed-val">0.5</span> t/tick</label>
-            <input id="cfg-speed" type="range" min="0.05" max="1.5" step="0.05" value="0.5"
-                   style="width:100%; margin-bottom:12px;">
-
-            <button id="cfg-apply"
-                    style="width:100%; margin-bottom:4px; background:#1a2a4e; color:#ccccff;
-                    border:1px solid #444; padding:4px; cursor:pointer; font-family:monospace;">
-                Apply Changes
-            </button>
-            <button id="cfg-restart"
-                    style="width:100%; background:#2a1a1e; color:#ffaaaa; border:1px solid #444;
-                    padding:4px; cursor:pointer; font-family:monospace;">
-                Restart Game
-            </button>
-            <div id="cfg-status" style="margin-top:8px; font-size:11px; color:#88ff88; min-height:14px;"></div>
-        </div>
-    </div>
-    <script src="/pixi.min.js"></script>
-    <script src="/visualizer.js"></script>
+<div id="hud">Connecting...</div>
+<div id="angle-btns">
+  <button class="angle-btn" onclick="setAngle('top',this)">Top-down</button>
+  <button class="angle-btn active" id="angIso" onclick="setAngle('iso',this)">Isometric</button>
+  <button class="angle-btn" onclick="setAngle('low',this)">Low angle</button>
+</div>
+<div id="mode-toggle">
+  <button class="mode-btn active" id="btn2d" onclick="setMode('2d')">2D Sprites</button>
+  <button class="mode-btn" id="btn3d" onclick="setMode('3d')">3D Models</button>
+</div>
+<div id="config-panel">
+  <label>Wave spawn frame</label><input id="cfg-wave-frame" type="number" value="300">
+  <label>Wave unit count</label><input id="cfg-unit-count" type="number" value="5">
+  <label>Unit type</label>
+  <select id="cfg-unit-type">
+    <option value="ZERGLING">ZERGLING</option>
+    <option value="MARINE">MARINE</option>
+  </select>
+  <label>Speed: <span id="cfg-speed-val">1.0</span></label>
+  <input id="cfg-speed" type="range" min="0.2" max="3.0" step="0.1" value="1.0">
+  <button class="cfg-btn" id="cfg-apply">Apply (next restart)</button>
+  <button class="cfg-btn" id="cfg-restart">Apply + Restart</button>
+  <div id="cfg-status"></div>
+</div>
+<script src="/sprites/three.min.js"></script>
+<script src="/visualizer.js"></script>
 </body>
 </html>
