@@ -621,6 +621,7 @@ class VisualizerRenderTest {
      * correctly populates buildingMeshes from state.myBuildings.
      */
     @Test
+    @Tag("browser")
     void buildingCountMatchesGameState() throws Exception {
         Page page = browser.newPage();
         page.navigate(pageUrl.toString());

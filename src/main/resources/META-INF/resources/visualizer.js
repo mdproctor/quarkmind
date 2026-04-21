@@ -20,6 +20,7 @@ const enemy3dMeshes  = new Map();
 const buildingMeshes = new Map();
 const geyserMeshes   = new Map();
 const stagingSprites = new Map();
+const stagingMeshes  = new Map();
 const fogPlanes      = new Map();
 const prevPositions  = new Map();
 const unitFacings    = new Map();
@@ -336,7 +337,7 @@ function syncUnits(state) {
   syncGeysers(state.geysers         || []);
   syncUnitLayer(unitSprites,   unit3dMeshes,  state.myUnits          || [], false);
   syncUnitLayer(enemySprites,  enemy3dMeshes, state.enemyUnits        || [], true);
-  syncUnitLayer(stagingSprites, new Map(),    state.enemyStagingArea  || [], true);
+  syncUnitLayer(stagingSprites, stagingMeshes, state.enemyStagingArea  || [], true);
 }
 
 function syncBuildings(buildings) {
