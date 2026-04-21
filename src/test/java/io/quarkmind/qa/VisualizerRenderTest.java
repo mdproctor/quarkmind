@@ -158,6 +158,7 @@ class VisualizerRenderTest {
      */
     @Test
     @Disabled("Circular masking is PixiJS-specific — not applicable to Three.js sprites")
+    @Tag("browser")
     void unitSpritesAreCircularlyMasked() {
     }
 
@@ -167,6 +168,7 @@ class VisualizerRenderTest {
      */
     @Test
     @Disabled("Health tint via SpriteMaterial colour not implemented in E14")
+    @Tag("browser")
     void fullHealthUnitHasNoTint() {
     }
 
@@ -175,6 +177,7 @@ class VisualizerRenderTest {
      */
     @Test
     @Disabled("Health tint via SpriteMaterial colour not implemented in E14")
+    @Tag("browser")
     void lowHealthUnitHasRedTint() {
     }
 
@@ -185,6 +188,7 @@ class VisualizerRenderTest {
      */
     @Test
     @Disabled("PixiJS canvas-coordinate pixel sampling — not applicable to Three.js 3D terrain")
+    @Tag("browser")
     void highGroundTileRendersWithBrownShading() {
     }
 
@@ -194,6 +198,7 @@ class VisualizerRenderTest {
      */
     @Test
     @Disabled("PixiJS canvas-coordinate pixel sampling — replaced by worldToScreen() position test")
+    @Tag("browser")
     void nexusPixelIsNotBackground() {
     }
 
@@ -203,6 +208,7 @@ class VisualizerRenderTest {
      */
     @Test
     @Disabled("PixiJS canvas-coordinate pixel sampling — replaced by worldToScreen() position test")
+    @Tag("browser")
     void probePixelIsNotBackground() {
     }
 
