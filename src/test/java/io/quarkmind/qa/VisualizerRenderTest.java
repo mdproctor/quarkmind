@@ -637,6 +637,30 @@ class VisualizerRenderTest {
     }
 
     /**
+     * UNIT_MATS must use TYPE_F / TYPE_E key format after Task 3 refactor.
+     * Existing Protoss units and the UNKNOWN fallback must all be registered.
+     */
+    @Test
+    @Tag("browser")
+    void unitMatsCoversAllRegisteredTypes() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        @SuppressWarnings("unchecked")
+        List<String> keys = (List<String>) page.evaluate("() => window.__test.unitMatsKeys()");
+
+        assertThat(keys).contains(
+            "PROBE_F", "PROBE_E",
+            "ZEALOT_F", "ZEALOT_E",
+            "STALKER_F", "STALKER_E",
+            "UNKNOWN_F", "UNKNOWN_E"
+        );
+        page.close();
+    }
+
+    /**
      * Full-loop smoke test: exercises 20 game ticks — unit movement, fog updates,
      * sprite direction switching — and asserts no JS errors occur and the HUD keeps
      * updating throughout.

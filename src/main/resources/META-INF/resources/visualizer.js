@@ -1,6 +1,8 @@
 // visualizer.js — QuarkMind 3D visualizer (Three.js r128)
 
 const TILE = 0.7;
+const TEAM_COLOR_FRIENDLY = '#4488ff';
+const TEAM_COLOR_ENEMY    = '#ff4422';
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -430,7 +432,8 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
 
     if (!spriteMap.has(u.tag)) {
       // 2D sprite — directional canvas texture material
-      const mats = isEnemy ? enemyMats : (UNIT_MATS[u.type] ?? enemyMats);
+      const key  = u.type + (isEnemy ? '_E' : '_F');
+      const mats = UNIT_MATS[key] ?? UNIT_MATS['UNKNOWN_' + (isEnemy ? 'E' : 'F')];
       const sp = new THREE.Sprite(mats[0]);
       sp.userData.mats = mats;
       sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
@@ -477,11 +480,18 @@ function getDir4(facingAngle, unitPos, camPos) {
   return Math.round(rel / (Math.PI/2)) % 4;
 }
 
-function makeDirTextures(drawFn, size = 128) {
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function makeDirTextures(drawFn, teamColor, size = 128) {
   return [0, 1, 2, 3].map(dir => {
     const c = document.createElement('canvas');
     c.width = c.height = size;
-    drawFn(c.getContext('2d'), size, dir);
+    drawFn(c.getContext('2d'), size, dir, teamColor);
     const tex = new THREE.CanvasTexture(c);
     tex.premultiplyAlpha = true;
     return new THREE.SpriteMaterial({
@@ -726,20 +736,18 @@ function drawEnemy(ctx, S, dir) {
   });
 }
 
-let probeMats, zealotMats, stalkerMats, enemyMats;
-
-function initSpriteMaterials() {
-  probeMats   = makeDirTextures(drawProbe);
-  zealotMats  = makeDirTextures(drawZealot);
-  stalkerMats = makeDirTextures(drawStalker);
-  enemyMats   = makeDirTextures(drawEnemy);
-  populateUnitMats();
-}
-
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
-function populateUnitMats() {
-  UNIT_MATS.PROBE = probeMats; UNIT_MATS.ZEALOT = zealotMats; UNIT_MATS.STALKER = stalkerMats;
+
+function initSpriteMaterials() {
+  UNIT_MATS['PROBE_F']    = makeDirTextures(drawProbe,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['PROBE_E']    = makeDirTextures(drawProbe,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['ZEALOT_F']   = makeDirTextures(drawZealot,  TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ZEALOT_E']   = makeDirTextures(drawZealot,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['STALKER_F']  = makeDirTextures(drawStalker, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['STALKER_E']  = makeDirTextures(drawStalker, TEAM_COLOR_ENEMY);
+  UNIT_MATS['UNKNOWN_F']  = makeDirTextures(drawEnemy,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['UNKNOWN_E']  = makeDirTextures(drawEnemy,   TEAM_COLOR_ENEMY);
 }
 
 function updateSpriteDirs() {
