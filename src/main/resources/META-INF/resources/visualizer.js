@@ -481,6 +481,7 @@ function getDir4(facingAngle, unitPos, camPos) {
 }
 
 function hexToRgba(hex, a) {
+  // Expects 6-char hex only: '#rrggbb' — 3-char shorthand and named colours are not supported
   const r = parseInt(hex.slice(1,3), 16);
   const g = parseInt(hex.slice(3,5), 16);
   const b = parseInt(hex.slice(5,7), 16);
