@@ -996,6 +996,10 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    /**
+     * drawZergling must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawZergling is defined.
+     */
     @Test
     @Tag("browser")
     void zerglingDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
@@ -1016,6 +1020,10 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    /**
+     * Happy path: Zergling enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['ZERGLING_E'] must be registered and dispatch must resolve it.
+     */
     @Test
     @Tag("browser")
     void zerglingEnemySpawnsAndRendersInVisualizer() throws Exception {
