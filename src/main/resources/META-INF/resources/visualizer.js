@@ -107,6 +107,7 @@ window.__test = {
     if (typeof drawMarauder !== 'undefined') lookup.drawMarauder = drawMarauder;
     if (typeof drawMedivac  !== 'undefined') lookup.drawMedivac  = drawMedivac;
     if (typeof drawZergling !== 'undefined') lookup.drawZergling = drawZergling;
+    if (typeof drawRoach     !== 'undefined') lookup.drawRoach     = drawRoach;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1114,6 +1115,82 @@ function drawZergling(ctx, S, dir, teamColor) {
   }
 }
 
+function drawRoach(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawRoach(ctx, S, 1, teamColor);
+    ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S * 0.55;
+
+  if (dir === 0 || dir === 2) {
+    // Legs behind body
+    ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 3.5;
+    [[-0.3, 0.12], [-0.18, 0.18], [-0.06, 0.2], [0.06, 0.2], [0.18, 0.18], [0.3, 0.12]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * S * 0.7, cy + S * 0.04);
+      ctx.lineTo(cx + dx * S, cy + dy * S + S * 0.08);
+      ctx.stroke();
+    });
+    // Wide low body
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.34, S * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+    // Armour plates
+    ctx.fillStyle = '#8b3a9e';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.06, S * 0.28, S * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+    if (dir === 0) {
+      // Head — heavy jaw
+      ctx.fillStyle = '#2a0a3a';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.26, S * 0.18, S * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#5c1a6e';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.16, S * 0.14, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+      // Eyes
+      ctx.fillStyle = '#ffe066';
+      ctx.beginPath(); ctx.arc(cx - S * 0.1, cy - S * 0.3, S * 0.035, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + S * 0.1, cy - S * 0.3, S * 0.035, 0, Math.PI * 2); ctx.fill();
+    } else {
+      // Back of head
+      ctx.fillStyle = '#2a0a3a';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.24, S * 0.16, S * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Acid gland sacs (3 on carapace ridge)
+    [[cx - S * 0.12, cy - S * 0.06], [cx, cy - S * 0.1], [cx + S * 0.12, cy - S * 0.06]].forEach(([x, y]) => {
+      const g = ctx.createRadialGradient(x, y, 1, x, y, S * 0.065);
+      g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.5, teamColor + '88'); g.addColorStop(1, teamColor + '00');
+      ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.ellipse(x, y, S * 0.058, S * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  } else {
+    // dir=1: right side profile — hunched low
+    ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 3.5;
+    [[cx - S * 0.15, cy + S * 0.06, cx - S * 0.3, cy + S * 0.22],
+     [cx,            cy + S * 0.1,  cx,            cy + S * 0.28],
+     [cx + S * 0.15, cy + S * 0.06, cx + S * 0.28, cy + S * 0.22]].forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    });
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.32, S * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8b3a9e';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.04, cy - S * 0.08, S * 0.26, S * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    // Head
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.22, cy - S * 0.1, S * 0.12, S * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5c1a6e';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.22, cy - S * 0.04, S * 0.1, S * 0.055, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath(); ctx.arc(cx - S * 0.28, cy - S * 0.14, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    // Two visible sacs
+    [[cx - S * 0.06, cy - S * 0.09], [cx + S * 0.1, cy - S * 0.09]].forEach(([x, y]) => {
+      const g = ctx.createRadialGradient(x, y, 1, x, y, S * 0.062);
+      g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.5, teamColor + '77'); g.addColorStop(1, teamColor + '00');
+      ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 7;
+      ctx.beginPath(); ctx.ellipse(x, y, S * 0.055, S * 0.048, 0, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1132,6 +1209,8 @@ function initSpriteMaterials() {
   UNIT_MATS['MEDIVAC_E']   = makeDirTextures(drawMedivac,   TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['ROACH_F']     = makeDirTextures(drawRoach,     TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ROACH_E']     = makeDirTextures(drawRoach,     TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']   = makeDirTextures(drawEnemy,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']   = makeDirTextures(drawEnemy,    TEAM_COLOR_ENEMY);
 }

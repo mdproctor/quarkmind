@@ -1044,6 +1044,51 @@ class VisualizerRenderTest {
     }
 
     /**
+     * drawRoach must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawRoach is defined.
+     */
+    @Test
+    @Tag("browser")
+    void roachDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawRoach', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawRoach dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    /**
+     * Happy path: Roach enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['ROACH_E'] must be registered and dispatch must resolve it.
+     */
+    @Test
+    @Tag("browser")
+    void roachEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.ROACH, new Point2d(22, 22));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Roach enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
      * Invariant: every object in the Three.js scene must be within the map bounds.
      *
      * The SC2 map is 64x64 tiles × TILE=0.7 = 44.8 world units, centred at origin.
