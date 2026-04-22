@@ -11,6 +11,8 @@ import io.quarkmind.sc2.intent.BuildIntent;
 import io.quarkmind.sc2.intent.TrainIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
@@ -116,13 +118,34 @@ class BasicEconomicsTaskTest {
         assertThat(intentQueue.pending().get(1)).isInstanceOf(TrainIntent.class); // Probe second
     }
 
-    // --- Pylon position spread ---
+    // --- Pylon position ---
 
     @Test
     void pylonPositionsSpreadAcrossGrid() {
         assertThat(BasicEconomicsTask.pylonPosition(0)).isEqualTo(new Point2d(15, 15));
         assertThat(BasicEconomicsTask.pylonPosition(1)).isEqualTo(new Point2d(18, 15));
         assertThat(BasicEconomicsTask.pylonPosition(4)).isEqualTo(new Point2d(15, 18));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 4, 15, 16, 17, 100, 1000, 10000, Integer.MAX_VALUE / 2})
+    void pylonPositionIsAlwaysWithinMapBounds(int buildingCount) {
+        Point2d p = BasicEconomicsTask.pylonPosition(buildingCount);
+        assertThat(p.x()).as("pylon x for buildingCount=%d", buildingCount).isBetween(0f, 63f);
+        assertThat(p.y()).as("pylon y for buildingCount=%d", buildingCount).isBetween(0f, 63f);
+    }
+
+    @Test
+    void doesNotQueueSecondPylonWhileOneIsUnderConstruction() {
+        Building pendingPylon = new Building("pylon-0", BuildingType.PYLON,
+            new Point2d(15, 15), 100, 100, false); // isComplete=false → still building
+        var cf = caseFile(200, 13, 15, workers(12),
+            buildings(nexus("n-0"), pendingPylon));
+        task.execute(cf);
+        long pylonIntents = intentQueue.pending().stream()
+            .filter(i -> i instanceof BuildIntent bi && bi.buildingType() == BuildingType.PYLON)
+            .count();
+        assertThat(pylonIntents).as("must not queue another Pylon while one is building").isZero();
     }
 
     // --- Helpers ---

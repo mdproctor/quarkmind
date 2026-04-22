@@ -995,4 +995,57 @@ class VisualizerRenderTest {
         assertTrue(hud.contains("Frame:"), "HUD should still be updating after 20 ticks: " + hud);
         page.close();
     }
+
+    /**
+     * Invariant: every object in the Three.js scene must be within the map bounds.
+     *
+     * The SC2 map is 64x64 tiles × TILE=0.7 = 44.8 world units, centred at origin.
+     * Max valid world coordinate: ±23. Max valid Y: 5 (allows for buildings + flying units).
+     *
+     * Catches off-map geometry like the Pylon position overflow bug (tile y=1752 →
+     * world z=1204) which appeared as purple rectangles floating in the distance.
+     * Any future positioning bug — wrong tile calculation, missing bounds check,
+     * stale mesh not cleaned up — will fail here without needing to look at the UI.
+     */
+    @Test
+    @Tag("browser")
+    void allSceneObjectsAreWithinMapBounds() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        // Run 10 ticks so the AI has a chance to build/train
+        for (int i = 0; i < 10; i++) orchestrator.gameTick();
+        engine.observe();
+        page.waitForFunction("() => window.__test.buildingCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        List<Map<?,?>> outliers = (List<Map<?,?>>) page.evaluate("""
+            () => {
+              const out = [];
+              const MAX_XZ = 23, MAX_Y = 5;
+              window._three.scene.traverse(obj => {
+                if (!obj.isMesh && !obj.isSprite) return;
+                const p = obj.getWorldPosition(new THREE.Vector3());
+                if (Math.abs(p.x) > MAX_XZ || Math.abs(p.z) > MAX_XZ || p.y > MAX_Y || p.y < -1) {
+                  out.push({
+                    type: obj.type,
+                    x: p.x.toFixed(1), y: p.y.toFixed(1), z: p.z.toFixed(1),
+                    color: obj.material?.color?.getHexString() ?? 'none'
+                  });
+                }
+              });
+              return out;
+            }
+        """);
+
+        assertThat(outliers)
+            .as("Scene objects outside map bounds — indicates a tile position overflow or " +
+                "stale mesh not cleaned up: " + outliers)
+            .isEmpty();
+
+        page.close();
+    }
 }
