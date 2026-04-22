@@ -106,7 +106,7 @@ window.__test = {
     if (typeof drawMarine   !== 'undefined') lookup.drawMarine   = drawMarine;
     if (typeof drawMarauder !== 'undefined') lookup.drawMarauder = drawMarauder;
     if (typeof drawMedivac  !== 'undefined') lookup.drawMedivac  = drawMedivac;
-    if (typeof drawZergling  !== 'undefined') lookup.drawZergling  = drawZergling;
+    if (typeof drawZergling !== 'undefined') lookup.drawZergling = drawZergling;
     if (typeof drawRoach     !== 'undefined') lookup.drawRoach     = drawRoach;
     if (typeof drawHydralisk !== 'undefined') lookup.drawHydralisk = drawHydralisk;
     const fn = lookup[name];
