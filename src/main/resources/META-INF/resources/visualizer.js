@@ -455,14 +455,18 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
       const sp = new THREE.Sprite(mats[0]);
       sp.userData.mats = mats;
       sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
-      const unitY = FLYING_UNITS.has(u.type) ? TILE * 1.5 : TILE * 0.65;
+      // Base both sprite and 3D model on TERRAIN_SURFACE_Y so they sit above ground
+      // in both mock (TERRAIN_SURFACE_Y=0.08) and emulated (TERRAIN_SURFACE_Y=TILE) profiles.
+      const groundY = TERRAIN_SURFACE_Y + TILE * 0.5;
+      const flyingY = TERRAIN_SURFACE_Y + TILE * 1.1;
+      const unitY   = FLYING_UNITS.has(u.type) ? flyingY : groundY;
       sp.position.set(wp.x, unitY, wp.z);
       group2d.add(sp);
       spriteMap.set(u.tag, sp);
 
-      // 3D sphere model
+      // 3D sphere model — ground center one sphere-radius above terrain surface
       const g = make3dModel(isEnemy ? 0xcc3322 : 0x4488dd, isEnemy ? 0x330000 : 0x112244);
-      g.position.set(wp.x, FLYING_UNITS.has(u.type) ? TILE * 1.5 : TERRAIN_SURFACE_Y, wp.z);
+      g.position.set(wp.x, FLYING_UNITS.has(u.type) ? flyingY : TERRAIN_SURFACE_Y + TILE * 0.4, wp.z);
       group3d.add(g);
       if (meshMap instanceof Map) meshMap.set(u.tag, g);
     } else {

@@ -65,6 +65,9 @@ class VisualizerRenderTest {
     @TestHTTPResource("/visualizer.html")
     URL pageUrl;
 
+    @TestHTTPResource("/sc2/showcase")
+    URL showcaseUrl;
+
     @Inject AgentOrchestrator orchestrator;
     @Inject SC2Engine engine;
     @Inject SimulatedGame simulatedGame;
@@ -1279,5 +1282,79 @@ class VisualizerRenderTest {
         assertThat(mutaliskY)
             .as("Mutalisk Y (%.3f) must be higher than Zergling Y (%.3f)".formatted(mutaliskY, zerglingY))
             .isGreaterThan(zerglingY + 0.3);
+    }
+
+    /**
+     * Showcase validation: POST /sc2/showcase must render all 10 units with sprites above
+     * terrain surface and all objects within map bounds.
+     *
+     * Prevents the recurring class of showcase regressions:
+     *   1. Unit count — all 10 enemies rendered (catches fog placement, broken endpoint,
+     *      units off-screen or not pushed to browser)
+     *   2. Y positions — every enemy sprite above TERRAIN_SURFACE_Y (catches ground-sinking
+     *      regressions where sprite Y < terrain height; reads TERRAIN_SURFACE_Y from the
+     *      live JS so the threshold is profile-aware)
+     *   3. Map bounds — no mesh/sprite outside ±23 world units or y > 5 (catches tile-
+     *      position overflow like the Pylon y=1752 bug that produced off-screen geometry)
+     *
+     * Note: runs in %test (mock) profile — no fog, flat terrain. The Y check catches
+     * gross regressions (y ≤ TERRAIN_SURFACE_Y). Subtle emulated-mode sinking and fog
+     * placement still require manual verification per the Showcase Validation section of
+     * CLAUDE.md.
+     */
+    @Test
+    @Tag("browser")
+    void showcaseRendersAllUnitsAboveTerrainSurface() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        // Seed via the QA endpoint — tests the full HTTP → game state → broadcast → render path
+        java.net.http.HttpClient http = java.net.http.HttpClient.newHttpClient();
+        java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+            .uri(showcaseUrl.toURI())
+            .POST(java.net.http.HttpRequest.BodyPublishers.noBody())
+            .build();
+        http.send(req, java.net.http.HttpResponse.BodyHandlers.discarding());
+
+        // 1. All 10 enemies rendered
+        page.waitForFunction("() => window.__test.enemyCount() >= 10",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("all 10 showcase enemy units must render").isEqualTo(10);
+
+        // 2. No unit sunk at or below terrain surface
+        double terrainSurfaceY = ((Number) page.evaluate("() => TERRAIN_SURFACE_Y")).doubleValue();
+        @SuppressWarnings("unchecked")
+        List<Double> ys = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList();
+        for (double y : ys) {
+            assertThat(y)
+                .as("enemy sprite Y %.3f must be above terrain surface %.3f".formatted(y, terrainSurfaceY))
+                .isGreaterThan(terrainSurfaceY);
+        }
+
+        // 3. No objects outside map bounds (±23 world units, y ≤ 5)
+        @SuppressWarnings("unchecked")
+        List<Map<?,?>> outliers = (List<Map<?,?>>) page.evaluate("""
+            () => {
+              const out = [];
+              const MAX_XZ = 23, MAX_Y = 5;
+              window._three.scene.traverse(obj => {
+                if (!obj.isMesh && !obj.isSprite) return;
+                const p = obj.getWorldPosition(new THREE.Vector3());
+                if (Math.abs(p.x) > MAX_XZ || Math.abs(p.z) > MAX_XZ || p.y > MAX_Y || p.y < -1) {
+                  out.push({type: obj.type, x: p.x.toFixed(1), y: p.y.toFixed(1), z: p.z.toFixed(1)});
+                }
+              });
+              return out;
+            }
+        """);
+        assertThat(outliers)
+            .as("no showcase objects outside map bounds — indicates position overflow or stale mesh: " + outliers)
+            .isEmpty();
+
+        page.close();
     }
 }

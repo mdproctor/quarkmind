@@ -34,25 +34,26 @@ public class ShowcaseResource {
         // With AI off, no Pylons/Gateways accumulate and units stay frozen for the showcase.
         simulatedGame.reset();
 
-        // Nexus is at tile (8,8), geysers nearby. The default isometric camera
-        // is positioned in the +x/+z corner, so tiles 8-20 appear in the foreground.
-        // Place units around the Nexus so they're immediately visible.
+        // Nexus at tile (8,8), starting probes near (9,9). Sight ranges: Nexus=9, Probe=8.
+        // All units placed within distance 8.5 of Nexus so they are visible in emulated mode.
+        // Camera default target is world (-16,0,-16) = tile (9,9) — units at x/y 10-14 are
+        // in the foreground of the default isometric view.
 
-        // Row 1 (y=12): Protoss enemies spread east of Nexus
-        simulatedGame.spawnEnemyUnit(UnitType.PROBE,    new Point2d(12, 12));
-        simulatedGame.spawnEnemyUnit(UnitType.ZEALOT,   new Point2d(16, 12));
-        simulatedGame.spawnEnemyUnit(UnitType.STALKER,  new Point2d(20, 12));
+        // Row 1 (y=11): Protoss — max dist from Nexus(8,8) = 6.7 tiles
+        simulatedGame.spawnEnemyUnit(UnitType.PROBE,    new Point2d(10, 11));
+        simulatedGame.spawnEnemyUnit(UnitType.ZEALOT,   new Point2d(12, 11));
+        simulatedGame.spawnEnemyUnit(UnitType.STALKER,  new Point2d(14, 11));
 
-        // Row 2 (y=16): Terran enemies
-        simulatedGame.spawnEnemyUnit(UnitType.MARINE,   new Point2d(12, 16));
-        simulatedGame.spawnEnemyUnit(UnitType.MARAUDER, new Point2d(16, 16));
-        simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC,  new Point2d(20, 16));  // floats higher
+        // Row 2 (y=13): Terran — max dist = 7.8 tiles
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE,   new Point2d(10, 13));
+        simulatedGame.spawnEnemyUnit(UnitType.MARAUDER, new Point2d(12, 13));
+        simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC,  new Point2d(14, 13));  // floats higher
 
-        // Row 3 (y=20): Zerg enemies — now with proper sprites
-        simulatedGame.spawnEnemyUnit(UnitType.ZERGLING,  new Point2d(10, 20));
-        simulatedGame.spawnEnemyUnit(UnitType.ROACH,     new Point2d(14, 20));
-        simulatedGame.spawnEnemyUnit(UnitType.HYDRALISK, new Point2d(18, 20));
-        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK,  new Point2d(22, 20));  // floats higher
+        // Row 3 (y=14-15): Zerg — max dist = 8.1 tiles
+        simulatedGame.spawnEnemyUnit(UnitType.ZERGLING,  new Point2d(10, 15));
+        simulatedGame.spawnEnemyUnit(UnitType.ROACH,     new Point2d(12, 15));
+        simulatedGame.spawnEnemyUnit(UnitType.HYDRALISK, new Point2d(10, 14));
+        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK,  new Point2d(12, 14));  // floats higher
 
         // Push state to all connected browser sessions.
         // Engine stays running so new browser connections immediately get state.
@@ -61,7 +62,7 @@ public class ShowcaseResource {
         return Response.ok(Map.of(
             "status",  "showcase seeded",
             "centre",  "tiles 8-20, world coords -16 to -8",
-            "enemies", "Row1(y=12): Probe/Zealot/Stalker | Row2(y=16): Marine/Marauder/Medivac | Row3(y=20): Zergling/Roach/Hydralisk/Mutalisk"
+            "enemies", "Row1(y=11): Probe/Zealot/Stalker | Row2(y=13): Marine/Marauder/Medivac | Row3(y=14-15): Zergling/Roach/Hydralisk/Mutalisk"
         )).build();
     }
 }
