@@ -1089,6 +1089,51 @@ class VisualizerRenderTest {
     }
 
     /**
+     * drawHydralisk must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawHydralisk is defined.
+     */
+    @Test
+    @Tag("browser")
+    void hydraliskDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawHydralisk', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawHydralisk dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    /**
+     * Happy path: Hydralisk enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['HYDRALISK_E'] must be registered and dispatch must resolve it.
+     */
+    @Test
+    @Tag("browser")
+    void hydraliskEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.HYDRALISK, new Point2d(24, 24));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Hydralisk enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
      * Invariant: every object in the Three.js scene must be within the map bounds.
      *
      * The SC2 map is 64x64 tiles × TILE=0.7 = 44.8 world units, centred at origin.

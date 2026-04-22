@@ -106,8 +106,9 @@ window.__test = {
     if (typeof drawMarine   !== 'undefined') lookup.drawMarine   = drawMarine;
     if (typeof drawMarauder !== 'undefined') lookup.drawMarauder = drawMarauder;
     if (typeof drawMedivac  !== 'undefined') lookup.drawMedivac  = drawMedivac;
-    if (typeof drawZergling !== 'undefined') lookup.drawZergling = drawZergling;
+    if (typeof drawZergling  !== 'undefined') lookup.drawZergling  = drawZergling;
     if (typeof drawRoach     !== 'undefined') lookup.drawRoach     = drawRoach;
+    if (typeof drawHydralisk !== 'undefined') lookup.drawHydralisk = drawHydralisk;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1191,6 +1192,113 @@ function drawRoach(ctx, S, dir, teamColor) {
   }
 }
 
+function drawHydralisk(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawHydralisk(ctx, S, 1, teamColor);
+    ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S * 0.5;
+
+  if (dir === 0 || dir === 2) {
+    // Snake lower body (drawn first)
+    ctx.strokeStyle = '#2a0a3a'; ctx.lineWidth = 18;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.06, cy + S * 0.44);
+    ctx.quadraticCurveTo(cx + S * 0.08, cy + S * 0.28, cx, cy + S * 0.12);
+    ctx.stroke();
+    ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 10;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.06, cy + S * 0.44);
+    ctx.quadraticCurveTo(cx + S * 0.08, cy + S * 0.28, cx, cy + S * 0.12);
+    ctx.stroke();
+    // Cobra frill
+    ctx.fillStyle = '#5c1a6e';
+    if (dir === 0) {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - S * 0.04);
+      ctx.quadraticCurveTo(cx - S * 0.32, cy - S * 0.02, cx - S * 0.26, cy + S * 0.14);
+      ctx.lineTo(cx - S * 0.14, cy + S * 0.12); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - S * 0.04);
+      ctx.quadraticCurveTo(cx + S * 0.32, cy - S * 0.02, cx + S * 0.26, cy + S * 0.14);
+      ctx.lineTo(cx + S * 0.14, cy + S * 0.12); ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.quadraticCurveTo(cx - S * 0.28, cy - S * 0.04, cx - S * 0.22, cy + S * 0.12);
+      ctx.lineTo(cx - S * 0.12, cy + S * 0.1); ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.quadraticCurveTo(cx + S * 0.28, cy - S * 0.04, cx + S * 0.22, cy + S * 0.12);
+      ctx.lineTo(cx + S * 0.12, cy + S * 0.1); ctx.closePath(); ctx.fill();
+    }
+    // Torso
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.06, S * 0.18, S * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8b3a9e';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.02, S * 0.12, S * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    // Head
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.12, S * 0.13, S * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    if (dir === 0) {
+      ctx.fillStyle = '#ffe066';
+      ctx.beginPath(); ctx.arc(cx - S * 0.055, cy - S * 0.13, S * 0.035, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + S * 0.055, cy - S * 0.13, S * 0.035, 0, Math.PI * 2); ctx.fill();
+    }
+    // Throat sac
+    const g = ctx.createRadialGradient(cx, cy + S * 0.01, 2, cx, cy + S * 0.01, S * 0.085);
+    g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.55, teamColor + '88'); g.addColorStop(1, teamColor + '00');
+    ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 9;
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.01, S * 0.075, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    // Shoulder pustules
+    [cx - S * 0.16, cx + S * 0.16].forEach(x => {
+      const g2 = ctx.createRadialGradient(x, cy + S * 0.06, 1, x, cy + S * 0.06, S * 0.055);
+      g2.addColorStop(0, teamColor + 'dd'); g2.addColorStop(1, teamColor + '00');
+      ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x, cy + S * 0.06, S * 0.05, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  } else {
+    // dir=1: side profile
+    ctx.strokeStyle = '#2a0a3a'; ctx.lineWidth = 16;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.08, cy + S * 0.44);
+    ctx.quadraticCurveTo(cx + S * 0.14, cy + S * 0.28, cx, cy + S * 0.14);
+    ctx.stroke();
+    ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.08, cy + S * 0.44);
+    ctx.quadraticCurveTo(cx + S * 0.14, cy + S * 0.28, cx, cy + S * 0.14);
+    ctx.stroke();
+    // Side frill
+    ctx.fillStyle = '#5c1a6e';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.02);
+    ctx.quadraticCurveTo(cx + S * 0.28, cy - S * 0.1, cx + S * 0.24, cy + S * 0.14);
+    ctx.lineTo(cx + S * 0.12, cy + S * 0.12); ctx.closePath(); ctx.fill();
+    // Torso
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.06, S * 0.16, S * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8b3a9e';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.02, cy + S * 0.02, S * 0.1, S * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    // Head
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.04, cy - S * 0.12, S * 0.12, S * 0.11, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath(); ctx.arc(cx - S * 0.1, cy - S * 0.14, S * 0.032, 0, Math.PI * 2); ctx.fill();
+    // Throat sac
+    const g = ctx.createRadialGradient(cx, cy + S * 0.01, 2, cx, cy + S * 0.01, S * 0.08);
+    g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.5, teamColor + '88'); g.addColorStop(1, teamColor + '00');
+    ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.01, S * 0.07, S * 0.065, 0, 0, Math.PI * 2); ctx.fill();
+    // One shoulder pustule
+    const g2 = ctx.createRadialGradient(cx - S * 0.14, cy + S * 0.08, 1, cx - S * 0.14, cy + S * 0.08, S * 0.05);
+    g2.addColorStop(0, teamColor + 'dd'); g2.addColorStop(1, teamColor + '00');
+    ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(cx - S * 0.14, cy + S * 0.08, S * 0.045, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1209,10 +1317,12 @@ function initSpriteMaterials() {
   UNIT_MATS['MEDIVAC_E']   = makeDirTextures(drawMedivac,   TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
-  UNIT_MATS['ROACH_F']     = makeDirTextures(drawRoach,     TEAM_COLOR_FRIENDLY);
-  UNIT_MATS['ROACH_E']     = makeDirTextures(drawRoach,     TEAM_COLOR_ENEMY);
-  UNIT_MATS['UNKNOWN_F']   = makeDirTextures(drawEnemy,    TEAM_COLOR_FRIENDLY);
-  UNIT_MATS['UNKNOWN_E']   = makeDirTextures(drawEnemy,    TEAM_COLOR_ENEMY);
+  UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
+  UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['HYDRALISK_E']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['UNKNOWN_F']    = makeDirTextures(drawEnemy,      TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['UNKNOWN_E']    = makeDirTextures(drawEnemy,      TEAM_COLOR_ENEMY);
 }
 
 function updateSpriteDirs() {
