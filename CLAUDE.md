@@ -120,14 +120,16 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Showcase seeding pattern:** Use `simulatedGame.reset()` directly (not `orchestrator.startGame()`) when seeding dev/QA demo state. `reset()` clears game state without firing `GameStarted`, so the AI scheduler never activates and the showcased state stays static. `engine.observe()` still pushes the seeded state to connected browser sessions.
 
-**Showcase validation (mandatory before showing the user):** After any change to `ShowcaseResource` or unit Y positioning in `visualizer.js`, run the automated check then manually verify in emulated mode:
+**Showcase must run in mock mode (default profile).** `ShowcaseResource` seeds `SimulatedGame`. In emulated mode, `EmulatedEngine` broadcasts `EmulatedGame`'s state — a completely separate object — so seeded units never appear. Always start with `mvn quarkus:dev` (no profile flag) for showcases.
 
-- **Automated** — `mvn test -Pplaywright -Dtest=VisualizerRenderTest#showcaseRendersAllUnitsAboveTerrainSurface`: asserts all 10 units render, every sprite Y > `TERRAIN_SURFACE_Y`, no objects outside map bounds. Runs in mock profile (no fog, flat terrain).
-- **Manual in emulated mode** (`mvn quarkus:dev -Dquarkus.profile=emulated`, open visualizer, seed via `curl -X POST http://localhost:8080/sc2/showcase`):
-  - All 10 units visible — not obscured by fog. Units must be within Nexus sight range (9 tiles from tile 8,8) and starting probe range (8 tiles from tile 9,9).
-  - No units sunk into terrain — sprite Y and 3D model Y must use `TERRAIN_SURFACE_Y` as base. In emulated mode `TERRAIN_SURFACE_Y = TILE = 0.7`; any hardcoded `TILE * 0.65 = 0.455` is below the surface.
-  - Both 2D sprites and 3D sphere models appear correct for all unit types.
-  - Camera movement is smooth — pan and rotate around the showcase area with no visible frame-rate drop.
+**Showcase validation (mandatory before showing the user):** After any change to `ShowcaseResource` or unit Y positioning in `visualizer.js`:
+
+1. **Automated** — run `mvn test -Pplaywright -Dtest=VisualizerRenderTest#showcaseRendersAllUnitsAboveTerrainSurface`: asserts all 10 units render, every sprite Y > `TERRAIN_SURFACE_Y`, no objects outside map bounds.
+2. **Manual** — start `mvn quarkus:dev`, open visualizer, seed with `curl -X POST http://localhost:8080/sc2/showcase`, then verify:
+   - All 10 units visible in the camera's default view — no missing units
+   - No units sunk into the terrain grid (sprite Y and 3D model Y use `TERRAIN_SURFACE_Y` as base)
+   - Both 2D sprites and 3D sphere models render correctly for all unit types
+   - Camera panning and rotation is smooth with no frame-rate drop
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 
