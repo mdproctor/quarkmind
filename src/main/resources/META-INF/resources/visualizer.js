@@ -106,6 +106,7 @@ window.__test = {
     if (typeof drawMarine   !== 'undefined') lookup.drawMarine   = drawMarine;
     if (typeof drawMarauder !== 'undefined') lookup.drawMarauder = drawMarauder;
     if (typeof drawMedivac  !== 'undefined') lookup.drawMedivac  = drawMedivac;
+    if (typeof drawZergling  !== 'undefined') lookup.drawZergling  = drawZergling;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1010,6 +1011,109 @@ function drawMedivac(ctx, S, dir, teamColor) {
   ctx.beginPath(); ctx.ellipse(cx,cy,S*.42,S*.26,0,0,Math.PI*2); ctx.stroke();
 }
 
+function drawZergling(ctx, S, dir, teamColor) {
+  // dir=3 is mirror of dir=1
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawZergling(ctx, S, 1, teamColor);
+    ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S * 0.52;
+
+  if (dir === 0 || dir === 2) {
+    // Legs drawn first (behind body)
+    ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 3;
+    [[-0.28, 0.14], [-0.14, 0.2], [0.14, 0.2], [0.28, 0.14]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * S * 0.6, cy + S * 0.08);
+      ctx.lineTo(cx + dx * S, cy + dy * S + S * 0.14);
+      ctx.stroke();
+    });
+    // Carapace body
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.22, S * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    // Dorsal plates
+    ctx.fillStyle = '#8b3a9e';
+    [[-0.08, -0.08], [0, -0.12], [0.08, -0.08]].forEach(([dx, dy]) => {
+      ctx.beginPath(); ctx.ellipse(cx + dx * S, cy + dy * S, S * 0.055, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    });
+    if (dir === 0) {
+      // Flesh belly
+      ctx.fillStyle = '#5c1a6e';
+      ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.06, S * 0.13, S * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+      // Scythe blades
+      ctx.strokeStyle = '#8b3a9e'; ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx - S * 0.14, cy - S * 0.1);
+      ctx.quadraticCurveTo(cx - S * 0.34, cy - S * 0.22, cx - S * 0.28, cy - S * 0.38);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + S * 0.14, cy - S * 0.1);
+      ctx.quadraticCurveTo(cx + S * 0.34, cy - S * 0.22, cx + S * 0.28, cy - S * 0.38);
+      ctx.stroke();
+      // Head
+      ctx.fillStyle = '#2a0a3a';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.22, S * 0.12, S * 0.11, 0, 0, Math.PI * 2); ctx.fill();
+      // Eyes
+      ctx.fillStyle = '#ffe066';
+      ctx.beginPath(); ctx.arc(cx - S * 0.05, cy - S * 0.24, S * 0.03, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + S * 0.05, cy - S * 0.24, S * 0.03, 0, Math.PI * 2); ctx.fill();
+      // Belly bio-sac
+      const g = ctx.createRadialGradient(cx, cy + S * 0.09, 2, cx, cy + S * 0.09, S * 0.09);
+      g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.55, teamColor + '88'); g.addColorStop(1, teamColor + '00');
+      ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.09, S * 0.08, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+      // Shoulder sacs
+      [cx - S * 0.18, cx + S * 0.18].forEach(x => {
+        const g2 = ctx.createRadialGradient(x, cy, 1, x, cy, S * 0.05);
+        g2.addColorStop(0, teamColor + 'cc'); g2.addColorStop(1, teamColor + '00');
+        ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(x, cy, S * 0.045, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.shadowBlur = 0;
+    } else {
+      // Back: carapace highlight, back of head
+      ctx.fillStyle = '#8b3a9e';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.05, S * 0.15, S * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2a0a3a';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.22, S * 0.11, S * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8b3a9e';
+      ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.24, S * 0.07, S * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  } else {
+    // dir=1: right side profile
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.28, S * 0.17, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#8b3a9e';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.04, cy - S * 0.1, S * 0.2, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#5c1a6e';
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.04, cy + S * 0.05, S * 0.16, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    // Legs
+    ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 3;
+    [[cx - S * 0.1, cy + S * 0.1, cx - S * 0.2, cy + S * 0.28],
+     [cx + S * 0.08, cy + S * 0.1, cx + S * 0.16, cy + S * 0.28]].forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    });
+    // Head
+    ctx.fillStyle = '#2a0a3a';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.2, cy - S * 0.04, S * 0.1, S * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+    // Blade
+    ctx.strokeStyle = '#8b3a9e'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.22, cy - S * 0.09);
+    ctx.quadraticCurveTo(cx - S * 0.4, cy - S * 0.22, cx - S * 0.32, cy - S * 0.36);
+    ctx.stroke();
+    // Eye
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath(); ctx.arc(cx - S * 0.24, cy - S * 0.07, S * 0.028, 0, Math.PI * 2); ctx.fill();
+    // Belly bio-sac
+    const g = ctx.createRadialGradient(cx + S * 0.06, cy + S * 0.05, 1, cx + S * 0.06, cy + S * 0.05, S * 0.07);
+    g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.5, teamColor + '77'); g.addColorStop(1, teamColor + '00');
+    ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 7;
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.06, cy + S * 0.05, S * 0.06, S * 0.055, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1026,6 +1130,8 @@ function initSpriteMaterials() {
   UNIT_MATS['MARAUDER_E']  = makeDirTextures(drawMarauder,  TEAM_COLOR_ENEMY);
   UNIT_MATS['MEDIVAC_F']   = makeDirTextures(drawMedivac,   TEAM_COLOR_FRIENDLY);
   UNIT_MATS['MEDIVAC_E']   = makeDirTextures(drawMedivac,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']   = makeDirTextures(drawEnemy,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']   = makeDirTextures(drawEnemy,    TEAM_COLOR_ENEMY);
 }
