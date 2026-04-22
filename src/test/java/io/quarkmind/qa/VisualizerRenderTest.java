@@ -945,7 +945,7 @@ class VisualizerRenderTest {
     }
 
     /**
-     * Coverage: all 7 unit types × 2 teams must be registered after initSpriteMaterials().
+     * Coverage: all 11 unit types × 2 teams must be registered after initSpriteMaterials().
      * This catches any unit type missing from initSpriteMaterials registrations.
      */
     @Test
@@ -959,13 +959,17 @@ class VisualizerRenderTest {
         @SuppressWarnings("unchecked")
         List<String> keys = (List<String>) page.evaluate("() => window.__test.unitMatsKeys()");
         assertThat(keys).contains(
-            "PROBE_F",    "PROBE_E",
-            "ZEALOT_F",   "ZEALOT_E",
-            "STALKER_F",  "STALKER_E",
-            "MARINE_F",   "MARINE_E",
-            "MARAUDER_F", "MARAUDER_E",
-            "MEDIVAC_F",  "MEDIVAC_E",
-            "UNKNOWN_F",  "UNKNOWN_E"
+            "PROBE_F",     "PROBE_E",
+            "ZEALOT_F",    "ZEALOT_E",
+            "STALKER_F",   "STALKER_E",
+            "MARINE_F",    "MARINE_E",
+            "MARAUDER_F",  "MARAUDER_E",
+            "MEDIVAC_F",   "MEDIVAC_E",
+            "ZERGLING_F",  "ZERGLING_E",
+            "ROACH_F",     "ROACH_E",
+            "HYDRALISK_F", "HYDRALISK_E",
+            "MUTALISK_F",  "MUTALISK_E",
+            "UNKNOWN_F",   "UNKNOWN_E"
         );
         page.close();
     }

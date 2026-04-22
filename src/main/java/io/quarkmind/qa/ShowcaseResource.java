@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Seeds a showcase layout — one of every sprite type spread across the map.
- * Shows all 7 unit types (Protoss + Terran) in both friendly and enemy team colours.
+ * Shows all 11 unit types (Protoss + Terran + Zerg) in enemy team colour.
  * Dev/test only.
  */
 @UnlessBuildProfile("prod")
@@ -48,8 +48,11 @@ public class ShowcaseResource {
         simulatedGame.spawnEnemyUnit(UnitType.MARAUDER, new Point2d(16, 16));
         simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC,  new Point2d(20, 16));  // floats higher
 
-        // Row 3 (y=20): Zergling fallback blob
-        simulatedGame.spawnEnemyUnit(UnitType.ZERGLING, new Point2d(16, 20));
+        // Row 3 (y=20): Zerg enemies — now with proper sprites
+        simulatedGame.spawnEnemyUnit(UnitType.ZERGLING,  new Point2d(10, 20));
+        simulatedGame.spawnEnemyUnit(UnitType.ROACH,     new Point2d(14, 20));
+        simulatedGame.spawnEnemyUnit(UnitType.HYDRALISK, new Point2d(18, 20));
+        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK,  new Point2d(22, 20));  // floats higher
 
         // Push state to all connected browser sessions.
         // Engine stays running so new browser connections immediately get state.
@@ -58,7 +61,7 @@ public class ShowcaseResource {
         return Response.ok(Map.of(
             "status",  "showcase seeded",
             "centre",  "tiles 8-20, world coords -16 to -8",
-            "enemies", "Row1(y=12): Probe/Zealot/Stalker | Row2(y=16): Marine/Marauder/Medivac | Row3(y=20): Zergling"
+            "enemies", "Row1(y=12): Probe/Zealot/Stalker | Row2(y=16): Marine/Marauder/Medivac | Row3(y=20): Zergling/Roach/Hydralisk/Mutalisk"
         )).build();
     }
 }
