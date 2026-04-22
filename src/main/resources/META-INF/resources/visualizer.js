@@ -32,11 +32,11 @@ const unitFacings    = new Map();
 
 let mGround, mWall, mHigh, mRamp, lineMat;
 function initMaterials() {
-  mGround = new THREE.MeshLambertMaterial({ color: 0x1a2233 });
-  mWall   = new THREE.MeshLambertMaterial({ color: 0x2e4055 });
-  mHigh   = new THREE.MeshLambertMaterial({ color: 0x3a3020 });
-  mRamp   = new THREE.MeshLambertMaterial({ color: 0x2a3a44 });
-  lineMat = new THREE.LineBasicMaterial({ color: 0x1e2a3a, transparent: true, opacity: 0.4 });
+  mGround = new THREE.MeshLambertMaterial({ color: 0xb8956a }); // sandy light brown — visible ground
+  mWall   = new THREE.MeshLambertMaterial({ color: 0x3a3028 }); // dark stone
+  mHigh   = new THREE.MeshLambertMaterial({ color: 0xc8a870 }); // lighter sandy — high ground
+  mRamp   = new THREE.MeshLambertMaterial({ color: 0x9a7a50 }); // medium brown — ramps
+  lineMat = new THREE.LineBasicMaterial({ color: 0x7a5a30, transparent: true, opacity: 0.5 });
 }
 
 let terrainLoaded = false;
@@ -222,8 +222,8 @@ function setMode(m) {
 }
 
 function setupLighting() {
-  scene.add(new THREE.AmbientLight(0x223355, 0.9));
-  const sun = new THREE.DirectionalLight(0xaabbff, 1.3);
+  scene.add(new THREE.AmbientLight(0x706050, 0.8)); // warm neutral ambient
+  const sun = new THREE.DirectionalLight(0xffffff, 1.2);  // neutral white — lets brown read as brown
   sun.position.set(20, 40, 20);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -231,7 +231,7 @@ function setupLighting() {
   sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
   sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
   scene.add(sun);
-  const fill = new THREE.DirectionalLight(0x334466, 0.4);
+  const fill = new THREE.DirectionalLight(0x806040, 0.3); // warm fill from opposite side
   fill.position.set(-10, 20, -10);
   scene.add(fill);
 }
@@ -287,7 +287,7 @@ async function loadTerrain() {
   // cutting per-frame traversal cost roughly in half.
   if (hasRealTerrain) {
     const fogMat = new THREE.MeshBasicMaterial({
-      color: 0x000000, transparent: true,
+      color: 0x888888, transparent: true,  // light grey for out-of-vision areas
       side: THREE.DoubleSide, depthWrite: false
     });
     const fogGeo = new THREE.PlaneGeometry(TILE*0.98, TILE*0.98);

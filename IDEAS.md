@@ -5,6 +5,19 @@ Promote to an ADR when ready to decide; discard when no longer relevant.
 
 ---
 
+## 2026-04-23 — 3D unit models to replace sphere placeholders
+
+**Priority:** medium
+**Status:** active
+
+Replace the current coloured-sphere 3D models with low-poly compound Three.js geometry per unit type (e.g. Zealot = torso box + shoulder spheres + blade cones). All geometry hand-built in JS — no external model pipeline needed. Hard gate: the isometric view must not become sluggish; run a `GameLoopBenchmarkTest` equivalent before and after to confirm no FPS regression.
+
+**Context:** After E16 Zerg sprites the 2D directional cartoon sprites look solid across all three races. User wants to finish the remaining 2D sprite episodes first, then revisit 3D. Option 1 (stylised low-poly primitives) was agreed as the right starting approach.
+
+**Promoted to:**
+
+---
+
 ## 2026-04-15 — E8: Terrain height — high/low ground mechanics
 
 **Priority:** high
