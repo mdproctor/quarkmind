@@ -3,7 +3,7 @@
 const TILE = 0.7;
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
-const FLYING_UNITS = new Set(['MEDIVAC']);
+const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK']);
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -109,6 +109,7 @@ window.__test = {
     if (typeof drawZergling !== 'undefined') lookup.drawZergling = drawZergling;
     if (typeof drawRoach     !== 'undefined') lookup.drawRoach     = drawRoach;
     if (typeof drawHydralisk !== 'undefined') lookup.drawHydralisk = drawHydralisk;
+    if (typeof drawMutalisk  !== 'undefined') lookup.drawMutalisk  = drawMutalisk;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1299,6 +1300,68 @@ function drawHydralisk(ctx, S, dir, teamColor) {
   }
 }
 
+function drawMutalisk(ctx, S, dir, teamColor) {
+  // All 4 directions show the manta silhouette — slight rotation per dir for variety
+  const cx = S / 2, cy = S / 2;
+  const angle = dir === 0 ? 0 : dir === 1 ? Math.PI * 0.06 : dir === 2 ? Math.PI * 0.1 : -Math.PI * 0.06;
+  ctx.save();
+  ctx.translate(cx, cy); ctx.rotate(angle); ctx.translate(-cx, -cy);
+
+  // Wing membranes (behind body)
+  ctx.fillStyle = '#5c1a6e';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + S * 0.02);
+  ctx.quadraticCurveTo(cx - S * 0.44, cy - S * 0.1, cx - S * 0.46, cy + S * 0.14);
+  ctx.quadraticCurveTo(cx - S * 0.28, cy + S * 0.2, cx, cy + S * 0.1);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + S * 0.02);
+  ctx.quadraticCurveTo(cx + S * 0.44, cy - S * 0.1, cx + S * 0.46, cy + S * 0.14);
+  ctx.quadraticCurveTo(cx + S * 0.28, cy + S * 0.2, cx, cy + S * 0.1);
+  ctx.closePath(); ctx.fill();
+  // Wing veins
+  ctx.strokeStyle = '#8b3a9e'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.5;
+  [[cx, cy + S * 0.06, cx - S * 0.36, cy + S * 0.14],
+   [cx, cy + S * 0.06, cx - S * 0.24, cy - S * 0.06],
+   [cx, cy + S * 0.06, cx + S * 0.36, cy + S * 0.14],
+   [cx, cy + S * 0.06, cx + S * 0.24, cy - S * 0.06]].forEach(([x1, y1, x2, y2]) => {
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+  // Central body
+  ctx.fillStyle = '#2a0a3a';
+  ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.04, S * 0.1, S * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+  // Tail
+  ctx.strokeStyle = '#2a0a3a'; ctx.lineWidth = 8;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + S * 0.18);
+  ctx.quadraticCurveTo(cx + S * 0.06, cy + S * 0.32, cx + S * 0.04, cy + S * 0.44);
+  ctx.stroke();
+  ctx.strokeStyle = '#5c1a6e'; ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + S * 0.18);
+  ctx.quadraticCurveTo(cx + S * 0.06, cy + S * 0.32, cx + S * 0.04, cy + S * 0.44);
+  ctx.stroke();
+  // Head
+  ctx.fillStyle = '#8b3a9e';
+  ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.12, S * 0.09, S * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2a0a3a';
+  ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.12, S * 0.07, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#ffe066';
+  ctx.beginPath(); ctx.arc(cx - S * 0.035, cy - S * 0.14, S * 0.028, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.035, cy - S * 0.14, S * 0.028, 0, Math.PI * 2); ctx.fill();
+  // Wing-joint bio-sacs
+  [[cx - S * 0.18, cy + S * 0.06], [cx + S * 0.18, cy + S * 0.06]].forEach(([x, y]) => {
+    const g = ctx.createRadialGradient(x, y, 1, x, y, S * 0.062);
+    g.addColorStop(0, teamColor + 'ff'); g.addColorStop(0.5, teamColor + '88'); g.addColorStop(1, teamColor + '00');
+    ctx.fillStyle = g; ctx.shadowColor = teamColor; ctx.shadowBlur = 9;
+    ctx.beginPath(); ctx.ellipse(x, y, S * 0.055, S * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1321,6 +1384,8 @@ function initSpriteMaterials() {
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['HYDRALISK_E']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['MUTALISK_F']   = makeDirTextures(drawMutalisk,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MUTALISK_E']   = makeDirTextures(drawMutalisk,   TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']    = makeDirTextures(drawEnemy,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']    = makeDirTextures(drawEnemy,      TEAM_COLOR_ENEMY);
 }

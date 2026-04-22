@@ -1185,4 +1185,95 @@ class VisualizerRenderTest {
 
         page.close();
     }
+
+    /**
+     * drawMutalisk must produce non-transparent output for all 4 directions
+     * and both team colours. Returns -1 (not > 0) until drawMutalisk is defined.
+     */
+    @Test
+    @Tag("browser")
+    void mutaliskDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawMutalisk', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawMutalisk dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    /**
+     * Happy path: Mutalisk enemy unit spawns and renders as a sprite.
+     * UNIT_MATS['MUTALISK_E'] must be registered and dispatch must resolve it.
+     */
+    @Test
+    @Tag("browser")
+    void mutaliskEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Mutalisk enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
+     * Correctness: Mutalisk must spawn at a higher Three.js world Y than a ground Zergling.
+     * TILE=0.7: ground Y = 0.7*0.65 = 0.455; flying Y = 0.7*1.5 = 1.05.
+     * Uses two separate browser pages to avoid shared enemy state.
+     */
+    @Test
+    @Tag("browser")
+    void mutaliskSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.ZERGLING, new Point2d(20, 20));
+        engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        List<Double> zerglingYs = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList();
+        double zerglingY = zerglingYs.get(0);
+        page.close();
+
+        orchestrator.startGame();
+        Page page2 = browser.newPage();
+        page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK, new Point2d(20, 20));
+        engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        List<Double> mutaliskYs = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList();
+        double mutaliskY = mutaliskYs.get(0);
+        page2.close();
+
+        assertThat(mutaliskY)
+            .as("Mutalisk Y (%.3f) must be higher than Zergling Y (%.3f)".formatted(mutaliskY, zerglingY))
+            .isGreaterThan(zerglingY + 0.3);
+    }
 }
