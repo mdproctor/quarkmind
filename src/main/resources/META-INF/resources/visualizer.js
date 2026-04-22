@@ -8,8 +8,10 @@ const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
 let HALF_W, HALF_H;
-let camTheta = Math.PI*0.25, camPhi = Math.PI/3.5, camDist = 30;
-const camTarget = new THREE.Vector3(0, 0, 0);
+let TERRAIN_SURFACE_Y = 0.08; // updated in loadTerrain — mock=0.08, emulated=TILE
+let camTheta = Math.PI*0.25, camPhi = Math.PI/3.5, camDist = 18;
+// Game content starts at tile (9,9) = world (-16.1, -16.1). Start camera looking there.
+const camTarget = new THREE.Vector3(-16, 0, -16);
 let tTheta = camTheta, tPhi = camPhi, tDist = camDist;
 
 let renderer, scene, camera;
@@ -232,6 +234,7 @@ function setupLighting() {
 
 async function loadTerrain() {
   let walls = [], highGround = [], ramps = [];
+  let hasRealTerrain = false;
   try {
     const r = await fetch('/qa/emulated/terrain');
     if (r.ok) {
@@ -240,6 +243,7 @@ async function loadTerrain() {
       walls      = d.walls      || [];
       highGround = d.highGround || [];
       ramps      = d.ramps      || [];
+      hasRealTerrain = true;
     }
   } catch (_) { /* non-emulated profiles: flat grid */ }
 
@@ -264,7 +268,7 @@ async function loadTerrain() {
 
       const tile = new THREE.Mesh(new THREE.BoxGeometry(TILE*0.98, h, TILE*0.98), mat);
       tile.position.set(cx, h/2, cz);
-      tile.receiveShadow = true;
+      if (h >= TILE * 0.4) tile.receiveShadow = true; // only emulated terrain has real depth worth shadowing
       if (mat === mWall) tile.castShadow = true;
       scene.add(tile);
 
@@ -274,29 +278,38 @@ async function loadTerrain() {
     }
   }
 
-  // Fog planes — one per tile, updated from visibility string each frame
-  const fogMat = new THREE.MeshBasicMaterial({
-    color: 0x000000, transparent: true,
-    side: THREE.DoubleSide, depthWrite: false
-  });
-  const fogGeo = new THREE.PlaneGeometry(TILE*0.98, TILE*0.98);
-  for (let gz = 0; gz < GRID_H; gz++) {
-    for (let gx = 0; gx < GRID_W; gx++) {
-      const cx = gx * TILE - HALF_W + TILE/2;
-      const cz = gz * TILE - HALF_H + TILE/2;
-      const plane = new THREE.Mesh(fogGeo, fogMat.clone());
-      plane.rotation.x = -Math.PI/2;
-      plane.position.set(cx, 0.18, cz);
-      plane.renderOrder = 5;
-      plane.userData.isFog = true;
-      plane.visible = true;
-      plane.material.opacity = 1.0; // start fully UNSEEN
-      scene.add(plane);
-      fogPlanes.set(`${gx},${gz}`, plane);
+  // Fog planes — only created in emulated mode where visibility data exists.
+  // Skipping them in mock/replay modes removes 4096 objects from the scene graph,
+  // cutting per-frame traversal cost roughly in half.
+  if (hasRealTerrain) {
+    const fogMat = new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true,
+      side: THREE.DoubleSide, depthWrite: false
+    });
+    const fogGeo = new THREE.PlaneGeometry(TILE*0.98, TILE*0.98);
+    for (let gz = 0; gz < GRID_H; gz++) {
+      for (let gx = 0; gx < GRID_W; gx++) {
+        const cx = gx * TILE - HALF_W + TILE/2;
+        const cz = gz * TILE - HALF_H + TILE/2;
+        const plane = new THREE.Mesh(fogGeo, fogMat.clone());
+        plane.rotation.x = -Math.PI/2;
+        plane.position.set(cx, 0.18, cz);
+        plane.renderOrder = 5;
+        plane.userData.isFog = true;
+        plane.visible = true;
+        plane.material.opacity = 1.0; // start fully UNSEEN — updateFog reveals tiles
+        scene.add(plane);
+        fogPlanes.set(`${gx},${gz}`, plane);
+      }
     }
   }
 
-  tDist = camDist = Math.max(GRID_W, GRID_H) * TILE * 0.7;
+  // Only set camera distance for emulated mode (real terrain). Mock mode keeps the
+  // closer default distance so the player base at tile (9,9) fills the frame.
+  if (hasRealTerrain) {
+    tDist = camDist = Math.max(GRID_W, GRID_H) * TILE * 0.7;
+    TERRAIN_SURFACE_Y = TILE; // emulated ground tiles are TILE tall
+  }
   updateCamera();
   terrainLoaded = true;
 }
@@ -445,7 +458,7 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
 
       // 3D sphere model
       const g = make3dModel(isEnemy ? 0xcc3322 : 0x4488dd, isEnemy ? 0x330000 : 0x112244);
-      g.position.set(wp.x, FLYING_UNITS.has(u.type) ? TILE * 0.85 : 0, wp.z);
+      g.position.set(wp.x, FLYING_UNITS.has(u.type) ? TILE * 1.5 : TERRAIN_SURFACE_Y, wp.z);
       group3d.add(g);
       if (meshMap instanceof Map) meshMap.set(u.tag, g);
     } else {
@@ -1034,7 +1047,7 @@ function make3dModel(color, emissive) {
     new THREE.SphereGeometry(TILE*0.38, 16, 12),
     new THREE.MeshLambertMaterial({ color, emissive })
   );
-  body.position.y = TILE*0.42; body.castShadow = true; g.add(body);
+  body.position.y = TILE*0.42; g.add(body);
   const eyeM = new THREE.MeshLambertMaterial({ color: 0xffffff });
   const pupM = new THREE.MeshLambertMaterial({ color: 0x111122 });
   [-0.14, 0.14].forEach(ex => {

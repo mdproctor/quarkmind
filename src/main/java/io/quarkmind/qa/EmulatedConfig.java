@@ -89,6 +89,7 @@ public class EmulatedConfig {
     public void setWaveUnitType(String v) { this.waveUnitType   = v; }
     public void setUnitSpeed(double v)    { this.unitSpeed      = v; }
 
+    public boolean isActive()                       { return active;         }
     public EnemyStrategy getEnemyStrategy()        { return enemyStrategy; }
     public void setEnemyStrategy(EnemyStrategy s)  { this.enemyStrategy = s; }
 

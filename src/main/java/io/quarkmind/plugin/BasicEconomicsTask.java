@@ -70,6 +70,10 @@ public class BasicEconomicsTask implements EconomicsTask {
                                  List<Unit> workers, List<Building> buildings) {
         if (supplyCap >= MAX_SUPPLY) return;
         if (supplyUsed < supplyCap - SUPPLY_HEADROOM) return;
+        // Skip if a Pylon is already under construction — prevents runaway queuing
+        boolean pylonPending = buildings.stream()
+            .anyMatch(b -> b.type() == BuildingType.PYLON && !b.isComplete());
+        if (pylonPending) return;
         if (!budget.spendMinerals(PYLON_COST)) return;
         workers.stream().findFirst().ifPresent(probe -> {
             Point2d pos = pylonPosition(buildings.size());
@@ -91,12 +95,15 @@ public class BasicEconomicsTask implements EconomicsTask {
     }
 
     /**
-     * Returns a Pylon placement position. Spreads up to 4 pylons per row,
-     * starting at (15,15) — safe for standard mock/bot maps.
+     * Returns a Pylon placement position. Cycles through a 4x4 grid of slots
+     * starting at tile (15,15) — capped at 16 positions to keep buildings on-map.
+     * The slot index wraps modulo 16 so this never generates out-of-bounds coordinates
+     * regardless of how many buildings have already been built.
      */
     public static Point2d pylonPosition(int buildingCount) {
-        int col = buildingCount % 4;
-        int row = buildingCount / 4;
+        int slot = buildingCount % 16;
+        int col  = slot % 4;
+        int row  = slot / 4;
         return new Point2d(15 + col * 3, 15 + row * 3);
     }
 }

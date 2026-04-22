@@ -49,6 +49,10 @@ public class EconomicsDecisionService {
     public void checkSupply(GameStateTick tick) {
         if (tick.supplyCap() >= MAX_SUPPLY) return;
         if (tick.supplyUsed() < tick.supplyCap() - SUPPLY_HEADROOM) return;
+        // Skip if a Pylon is already under construction — prevents runaway queuing
+        boolean pylonPending = tick.buildings().stream()
+            .anyMatch(b -> b.type() == BuildingType.PYLON && !b.isComplete());
+        if (pylonPending) return;
         if (!tick.budget().spendMinerals(PYLON_COST)) return;
         tick.workers().stream().findFirst().ifPresent(probe -> {
             Point2d pos = BasicEconomicsTask.pylonPosition(tick.buildings().size());
