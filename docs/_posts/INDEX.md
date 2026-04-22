@@ -17,3 +17,4 @@
 | [2026-04-20-mdp01-e12-stalker-blink.md](2026-04-20-mdp01-e12-stalker-blink.md) | 2026-04-20 | E12 — Stalker Blink: sealed interface gotcha, Drools salience ≠ mutual exclusion, 446 tests |
 | [2026-04-20-mdp02-e13-scouting-calibration.md](2026-04-20-mdp02-e13-scouting-calibration.md) | 2026-04-20 | E13 — two replay parsers, BZip2 surprise, calibration reveals ROACH_RUSH threshold was set without replays |
 | [2026-04-21-mdp01-e14-a-new-visualizer.md](2026-04-21-mdp01-e14-a-new-visualizer.md) | 2026-04-21 | E14 — Three.js replaces PixiJS: 3D terrain, directional cartoon sprites, three silent bugs |
+| [2026-04-22-mdp01-e15-terran-sprites-and-testing.md](2026-04-22-mdp01-e15-terran-sprites-and-testing.md) | 2026-04-22 | E15: Terran sprites (Marine/Marauder/Medivac) + team colour system; debugging lesson re: invariant tests |
