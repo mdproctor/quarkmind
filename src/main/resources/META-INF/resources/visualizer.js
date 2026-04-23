@@ -123,6 +123,7 @@ window.__test = {
     if (typeof drawSentry !== 'undefined') lookup.drawSentry = drawSentry;
     if (typeof drawAdept !== 'undefined') lookup.drawAdept = drawAdept;
     if (typeof drawDarkTemplar !== 'undefined') lookup.drawDarkTemplar = drawDarkTemplar;
+    if (typeof drawHighTemplar !== 'undefined') lookup.drawHighTemplar = drawHighTemplar;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2147,6 +2148,86 @@ function drawDarkTemplar(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+function drawHighTemplar(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawHighTemplar(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  // Robe — wide trapezoid: narrow shoulders, wide hem, Protoss dark blue-grey
+  const robeTop    = cy - S * 0.14;
+  const robeBottom = cy + S * 0.26;
+  const shoulderW  = dir === 1 ? S * 0.10 : S * 0.20;
+  const hemW       = dir === 1 ? S * 0.12 : S * 0.38;
+
+  const robeGrad = ctx.createLinearGradient(cx, robeTop, cx, robeBottom);
+  robeGrad.addColorStop(0, hexToRgba('#3a3a58', 0.95));
+  robeGrad.addColorStop(1, hexToRgba('#1e1e30', 0.92));
+  ctx.fillStyle = robeGrad;
+  ctx.beginPath();
+  ctx.moveTo(cx - shoulderW, robeTop);
+  ctx.lineTo(cx + shoulderW, robeTop);
+  ctx.lineTo(cx + hemW,      robeBottom);
+  ctx.lineTo(cx - hemW,      robeBottom);
+  ctx.closePath();
+  ctx.fill();
+
+  // Gold trim along hem
+  ctx.strokeStyle = hexToRgba('#7a6a30', 0.85);
+  ctx.lineWidth = S * 0.025;
+  ctx.beginPath();
+  ctx.moveTo(cx - hemW, robeBottom);
+  ctx.lineTo(cx + hemW, robeBottom);
+  ctx.stroke();
+
+  // Upper torso / head — small rounded ellipse above robe
+  const headCy = cy - S * 0.21;
+  const torsoGrad = ctx.createRadialGradient(cx, headCy, S * 0.01, cx, headCy, S * 0.13);
+  torsoGrad.addColorStop(0, hexToRgba('#4a4870', 0.95));
+  torsoGrad.addColorStop(1, hexToRgba('#2a2a40', 0.90));
+  ctx.fillStyle = torsoGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, headCy, S * 0.10, S * 0.13, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Staff — thin vertical rect running through body centre
+  const staffX    = dir === 1 ? cx - S * 0.04 : cx;
+  const staffTop  = cy - S * 0.35;
+  const staffBot  = robeBottom;
+  ctx.fillStyle = hexToRgba('#8a7a40', 0.90);
+  ctx.fillRect(staffX - S * 0.010, staffTop, S * 0.020, staffBot - staffTop);
+  // Staff orb at top
+  ctx.fillStyle = hexToRgba(teamColor, 0.90);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(staffX, staffTop, S * 0.030, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Psionic energy arcs at hand positions (lower body sides)
+  const energyPositions = dir === 1
+    ? [{ x: cx + S * 0.07, y: cy + S * 0.06 }]
+    : [{ x: cx - S * 0.18, y: cy + S * 0.06 }, { x: cx + S * 0.18, y: cy + S * 0.06 }];
+
+  ctx.strokeStyle = hexToRgba(teamColor, 0.85);
+  ctx.lineWidth = S * 0.018;
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 16;
+
+  for (const ep of energyPositions) {
+    for (let i = 0; i < 4; i++) {
+      const startAngle = (i / 4) * Math.PI * 2 - Math.PI * 0.25;
+      const endAngle   = startAngle + Math.PI * 0.45;
+      ctx.beginPath();
+      ctx.arc(ep.x, ep.y, S * 0.055 + i * S * 0.012, startAngle, endAngle);
+      ctx.stroke();
+    }
+  }
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2189,6 +2270,8 @@ function initSpriteMaterials() {
   UNIT_MATS['ADEPT_E'] = makeDirTextures(drawAdept, TEAM_COLOR_ENEMY);
   UNIT_MATS['DARK_TEMPLAR_F'] = makeDirTextures(drawDarkTemplar, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['DARK_TEMPLAR_E'] = makeDirTextures(drawDarkTemplar, TEAM_COLOR_ENEMY);
+  UNIT_MATS['HIGH_TEMPLAR_F'] = makeDirTextures(drawHighTemplar, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['HIGH_TEMPLAR_E'] = makeDirTextures(drawHighTemplar, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
