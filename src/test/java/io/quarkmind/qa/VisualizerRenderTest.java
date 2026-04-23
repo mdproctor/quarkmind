@@ -1321,6 +1321,43 @@ class VisualizerRenderTest {
         page.close();
     }
 
+    @Test
+    @Tag("browser")
+    void cycloneDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawCyclone', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawCyclone dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void cycloneEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.CYCLONE, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Cyclone enemy must render").isEqualTo(1);
+        page.close();
+    }
+
     /**
      * Showcase validation: POST /sc2/showcase must render all 10 units with sprites above
      * terrain surface and all objects within map bounds.
