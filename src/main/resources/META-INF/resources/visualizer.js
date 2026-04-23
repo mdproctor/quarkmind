@@ -138,6 +138,7 @@ window.__test = {
     if (typeof drawRavager !== 'undefined') lookup.drawRavager = drawRavager;
     if (typeof drawInfestor !== 'undefined') lookup.drawInfestor = drawInfestor;
     if (typeof drawLurker   !== 'undefined') lookup.drawLurker   = drawLurker;
+    if (typeof drawSwarmHost !== 'undefined') lookup.drawSwarmHost = drawSwarmHost;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3232,6 +3233,129 @@ function drawLurker(ctx, S, dir, teamColor) {
   });
 }
 
+// drawSwarmHost — large armoured beetle, always on ground (never flies).
+// Carapace centred at (S/2, S/2+4), horizontal radius S×0.36, vertical S×0.22.
+// Top edge of ellipse: (S/2+4) - S×0.22 = 68 - 28.2 ≈ 40, so pixel (64,64) is inside.
+// Dir-3 mirrors dir-1.
+function drawSwarmHost(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawSwarmHost(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 4;
+  const carapaceColor  = '#2a3010';
+  const undersideColor = '#1a2008';
+  const ridgeColor     = '#3d4a18';
+
+  if (dir === 0 || dir === 2) {
+    // Top-down / bottom-up: wide oval carapace fills most of canvas.
+
+    // Underside shadow ring (slightly larger, darker oval)
+    ctx.fillStyle = undersideColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy + S * 0.04, S * 0.38, S * 0.20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Main carapace — wide rounded oval
+    ctx.fillStyle = carapaceColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.36, S * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ridge line across carapace centre
+    ctx.strokeStyle = ridgeColor;
+    ctx.lineWidth = S * 0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.30, cy);
+    ctx.bezierCurveTo(cx - S * 0.12, cy - S * 0.08, cx + S * 0.12, cy - S * 0.08, cx + S * 0.30, cy);
+    ctx.stroke();
+
+    // 3 legs per side — short angled lines from underside
+    const legColor = '#1a2008';
+    ctx.strokeStyle = legColor;
+    ctx.lineWidth = S * 0.020;
+    const legOffsets = [-0.22, 0, 0.22];
+    legOffsets.forEach(ox => {
+      // Left legs
+      ctx.beginPath();
+      ctx.moveTo(cx + ox * S, cy + S * 0.10);
+      ctx.lineTo(cx + ox * S - S * 0.12, cy + S * 0.20);
+      ctx.stroke();
+      // Right legs
+      ctx.beginPath();
+      ctx.moveTo(cx + ox * S, cy + S * 0.10);
+      ctx.lineTo(cx + ox * S + S * 0.12, cy + S * 0.20);
+      ctx.stroke();
+    });
+
+    // Spawn vents — 3 dark ellipses on carapace, team colour glow within
+    const ventCentres = [cx - S * 0.16, cx, cx + S * 0.16];
+    ventCentres.forEach(vx => {
+      // Vent hole (dark ellipse)
+      ctx.fillStyle = '#0a0e04';
+      ctx.beginPath();
+      ctx.ellipse(vx, cy - S * 0.04, S * 0.055, S * 0.035, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Team colour glow from within
+      ctx.fillStyle = hexToRgba(teamColor, 0.80);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(vx, cy - S * 0.04, S * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+  } else {
+    // dir === 1: side profile — raised carapace hump, vents on top, legs below.
+    const profCx = cx, profCy = cy;
+
+    // Body underside (dark lower ellipse)
+    ctx.fillStyle = undersideColor;
+    ctx.beginPath();
+    ctx.ellipse(profCx, profCy + S * 0.06, S * 0.36, S * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Carapace hump — tall-ish ellipse, shifted upward
+    ctx.fillStyle = carapaceColor;
+    ctx.beginPath();
+    ctx.ellipse(profCx, profCy - S * 0.04, S * 0.36, S * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ridge along top arc
+    ctx.strokeStyle = ridgeColor;
+    ctx.lineWidth = S * 0.018;
+    ctx.beginPath();
+    ctx.moveTo(profCx - S * 0.30, profCy - S * 0.04);
+    ctx.bezierCurveTo(profCx - S * 0.12, profCy - S * 0.16, profCx + S * 0.12, profCy - S * 0.16, profCx + S * 0.30, profCy - S * 0.04);
+    ctx.stroke();
+
+    // 2 visible legs below body
+    ctx.strokeStyle = '#1a2008';
+    ctx.lineWidth = S * 0.022;
+    [cx - S * 0.14, cx + S * 0.14].forEach(lx => {
+      ctx.beginPath();
+      ctx.moveTo(lx, profCy + S * 0.06);
+      ctx.lineTo(lx - S * 0.06, profCy + S * 0.18);
+      ctx.stroke();
+    });
+
+    // 2 spawn vents on carapace top surface
+    const ventCentresSide = [profCx - S * 0.12, profCx + S * 0.12];
+    ventCentresSide.forEach(vx => {
+      ctx.fillStyle = '#0a0e04';
+      ctx.beginPath();
+      ctx.ellipse(vx, profCy - S * 0.10, S * 0.055, S * 0.030, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = hexToRgba(teamColor, 0.80);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(vx, profCy - S * 0.10, S * 0.022, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3298,6 +3422,8 @@ function initSpriteMaterials() {
   UNIT_MATS['INFESTOR_E']  = makeDirTextures(drawInfestor,  TEAM_COLOR_ENEMY);
   UNIT_MATS['LURKER_F']    = makeDirTextures(drawLurker,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['LURKER_E']    = makeDirTextures(drawLurker,    TEAM_COLOR_ENEMY);
+  UNIT_MATS['SWARM_HOST_F'] = makeDirTextures(drawSwarmHost, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['SWARM_HOST_E'] = makeDirTextures(drawSwarmHost, TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
