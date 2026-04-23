@@ -6,7 +6,7 @@ const TEAM_COLOR_ENEMY    = '#ff4422';
 const FLYING_UNITS = new Set([
   'MEDIVAC', 'MUTALISK',
   'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER',
-  'OBSERVER', 'VOID_RAY'
+  'OBSERVER', 'VOID_RAY', 'CARRIER'
 ]);
 const RECONNECT_MS = 2000;
 
@@ -134,6 +134,7 @@ window.__test = {
     if (typeof drawColossus !== 'undefined') lookup.drawColossus = drawColossus;
     if (typeof drawObserver !== 'undefined') lookup.drawObserver = drawObserver;
     if (typeof drawVoidRay  !== 'undefined') lookup.drawVoidRay  = drawVoidRay;
+    if (typeof drawCarrier  !== 'undefined') lookup.drawCarrier  = drawCarrier;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2798,6 +2799,108 @@ function drawVoidRay(ctx, S, dir, teamColor) {
   }
 }
 
+// drawCarrier — massive Protoss capital ship, dark navy palette (~#1a1a30).
+// Wide elliptical hull with central hangar bay and interceptor silhouettes.
+// Dir-3 mirrors dir-1. Hull ellipse centred at (S/2, S/2) covers smoke test pixel (64,64).
+function drawCarrier(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.scale(-1, 1); ctx.translate(-S, 0); drawCarrier(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor   = '#1a1a30';
+  const panelColor  = '#252545';
+  const hangarColor = '#0f0f20';
+  const interceptorColor = '#303050';
+
+  if (dir === 0 || dir === 2) {
+    // Top-down / bottom-up — wide elliptical hull centred at canvas centre
+    const flip = dir === 2 ? -1 : 1;
+
+    // Main hull ellipse — wide and flat, covering centre
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.44, S * 0.30, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hull panel — slightly lighter inner ellipse for depth
+    ctx.fillStyle = panelColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.36, S * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Central hangar bay — darker rectangular fill in the belly
+    ctx.fillStyle = hangarColor;
+    ctx.fillRect(cx - S * 0.14, cy - S * 0.07, S * 0.28, S * 0.14);
+
+    // Interceptor silhouettes inside bay — 4 tiny diamonds arranged in the bay
+    ctx.fillStyle = interceptorColor;
+    const iposX = [-S * 0.09, -S * 0.03, S * 0.03, S * 0.09];
+    const iSize = S * 0.04;
+    for (const ix of iposX) {
+      ctx.beginPath();
+      ctx.moveTo(cx + ix,          cy - iSize); // top
+      ctx.lineTo(cx + ix + iSize,  cy);          // right
+      ctx.lineTo(cx + ix,          cy + iSize); // bottom
+      ctx.lineTo(cx + ix - iSize,  cy);          // left
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Running lights — 4 small team colour circles at hull corners
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 8;
+    const cornerPositions = [
+      [cx - S * 0.34, cy - S * 0.18],
+      [cx + S * 0.34, cy - S * 0.18],
+      [cx - S * 0.34, cy + S * 0.18],
+      [cx + S * 0.34, cy + S * 0.18],
+    ];
+    for (const [lx, ly] of cornerPositions) {
+      ctx.beginPath();
+      ctx.arc(lx, ly, S * 0.025, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Two rear engine ports — slightly larger team colour ellipses at stern
+    const sternY = cy + flip * S * 0.24;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.10, sternY, S * 0.04, S * 0.028, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.10, sternY, S * 0.04, S * 0.028, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else {
+    // Dir 1 — side profile: broad flat silhouette, engine at right
+    // Wide horizontal hull ellipse covering canvas centre
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.46, S * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hull ridge line along the middle
+    ctx.strokeStyle = panelColor;
+    ctx.lineWidth = S * 0.015;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.40, cy);
+    ctx.lineTo(cx + S * 0.40, cy);
+    ctx.stroke();
+
+    // Rear engine glow — 3 team colour dots at the right end
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 10;
+    const engineOffsets = [-S * 0.04, 0, S * 0.04];
+    for (const ey of engineOffsets) {
+      ctx.beginPath();
+      ctx.arc(cx + S * 0.43, cy + ey, S * 0.022, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2854,6 +2957,8 @@ function initSpriteMaterials() {
   UNIT_MATS['OBSERVER_E'] = makeDirTextures(drawObserver, TEAM_COLOR_ENEMY);
   UNIT_MATS['VOID_RAY_F'] = makeDirTextures(drawVoidRay, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['VOID_RAY_E'] = makeDirTextures(drawVoidRay, TEAM_COLOR_ENEMY);
+  UNIT_MATS['CARRIER_F']  = makeDirTextures(drawCarrier, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['CARRIER_E']  = makeDirTextures(drawCarrier, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
