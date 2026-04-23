@@ -1622,6 +1622,81 @@ class VisualizerRenderTest {
             .isGreaterThan(marineY + 0.3);
     }
 
+    @Test
+    @Tag("browser")
+    void bansheeDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawBanshee', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawBanshee dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void bansheeEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.BANSHEE, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Banshee enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void bansheeSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20));
+        engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+
+        orchestrator.startGame();
+        Page page2 = browser.newPage();
+        page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.BANSHEE, new Point2d(20, 20));
+        engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        double bansheeY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+
+        assertThat(bansheeY).as("Banshee Y (%.3f) must be higher than Marine Y (%.3f)".formatted(bansheeY, marineY))
+            .isGreaterThan(marineY + 0.3);
+    }
+
     /**
      * Showcase validation: POST /sc2/showcase must render all 10 units with sprites above
      * terrain surface and all objects within map bounds.
