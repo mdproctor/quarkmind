@@ -30,39 +30,43 @@ public class ShowcaseResource {
     @POST
     @Consumes(MediaType.WILDCARD)
     public Response seedShowcase() {
-        // Reset game state directly — avoids firing GameStarted which starts the AI scheduler.
-        // With AI off, no Pylons/Gateways accumulate and units stay frozen for the showcase.
         simulatedGame.reset();
 
-        // Nexus at tile (8,8), starting probes near (9,9). Sight ranges: Nexus=9, Probe=8.
-        // All units placed within distance 8.5 of Nexus so they are visible in emulated mode.
-        // Camera default target is world (-16,0,-16) = tile (9,9) — units at x/y 10-14 are
-        // in the foreground of the default isometric view.
-
-        // Row 1 (y=11): Protoss — max dist from Nexus(8,8) = 6.7 tiles
+        // Row 1 (y=11): Protoss ground
         simulatedGame.spawnEnemyUnit(UnitType.PROBE,    new Point2d(10, 11));
         simulatedGame.spawnEnemyUnit(UnitType.ZEALOT,   new Point2d(12, 11));
         simulatedGame.spawnEnemyUnit(UnitType.STALKER,  new Point2d(14, 11));
 
-        // Row 2 (y=13): Terran — max dist = 7.8 tiles
+        // Row 2 (y=13): original Terran ground/air
         simulatedGame.spawnEnemyUnit(UnitType.MARINE,   new Point2d(10, 13));
         simulatedGame.spawnEnemyUnit(UnitType.MARAUDER, new Point2d(12, 13));
-        simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC,  new Point2d(14, 13));  // floats higher
+        simulatedGame.spawnEnemyUnit(UnitType.MEDIVAC,  new Point2d(14, 13));
 
-        // Row 3 (y=14-15): Zerg — max dist = 8.1 tiles
+        // Row 3 (y=14-15): Zerg
         simulatedGame.spawnEnemyUnit(UnitType.ZERGLING,  new Point2d(10, 15));
         simulatedGame.spawnEnemyUnit(UnitType.ROACH,     new Point2d(12, 15));
         simulatedGame.spawnEnemyUnit(UnitType.HYDRALISK, new Point2d(10, 14));
-        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK,  new Point2d(12, 14));  // floats higher
+        simulatedGame.spawnEnemyUnit(UnitType.MUTALISK,  new Point2d(12, 14));
 
-        // Push state to all connected browser sessions.
-        // Engine stays running so new browser connections immediately get state.
+        // Column (x=16, y=9-12) + (15,12): new Terran ground
+        simulatedGame.spawnEnemyUnit(UnitType.GHOST,      new Point2d(16, 9));
+        simulatedGame.spawnEnemyUnit(UnitType.CYCLONE,    new Point2d(16, 10));
+        simulatedGame.spawnEnemyUnit(UnitType.WIDOW_MINE, new Point2d(16, 11));
+        simulatedGame.spawnEnemyUnit(UnitType.SIEGE_TANK, new Point2d(16, 12));
+        simulatedGame.spawnEnemyUnit(UnitType.THOR,       new Point2d(15, 12));
+
+        // Row (y=8, x=10-14): new Terran air
+        simulatedGame.spawnEnemyUnit(UnitType.VIKING,        new Point2d(10, 8));
+        simulatedGame.spawnEnemyUnit(UnitType.RAVEN,         new Point2d(11, 8));
+        simulatedGame.spawnEnemyUnit(UnitType.BANSHEE,       new Point2d(12, 8));
+        simulatedGame.spawnEnemyUnit(UnitType.LIBERATOR,     new Point2d(13, 8));
+        simulatedGame.spawnEnemyUnit(UnitType.BATTLECRUISER, new Point2d(14, 8));
+
         engine.observe();
 
         return Response.ok(Map.of(
             "status",  "showcase seeded",
-            "centre",  "tiles 8-20, world coords -16 to -8",
-            "enemies", "Row1(y=11): Probe/Zealot/Stalker | Row2(y=13): Marine/Marauder/Medivac | Row3(y=14-15): Zergling/Roach/Hydralisk/Mutalisk"
+            "enemies", "20 units: Protoss(3) + Terran-orig(3) + Zerg(4) + Terran-new-ground(5) + Terran-new-air(5)"
         )).build();
     }
 }
