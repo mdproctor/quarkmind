@@ -146,6 +146,7 @@ window.__test = {
     if (typeof drawCorruptor !== 'undefined') lookup.drawCorruptor = drawCorruptor;
     if (typeof drawViper !== 'undefined') lookup.drawViper = drawViper;
     if (typeof drawBroodLord !== 'undefined') lookup.drawBroodLord = drawBroodLord;
+    if (typeof drawSCV !== 'undefined') lookup.drawSCV = drawSCV;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -4106,6 +4107,183 @@ function drawBroodLord(ctx, S, dir, teamColor) {
   }
 }
 
+function drawSCV(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2 + 2;
+
+  if (dir === 3) {
+    // dir 3 = mirror of dir 1 (left-side view)
+    ctx.save();
+    ctx.translate(S, 0);
+    ctx.scale(-1, 1);
+    drawSCV(ctx, S, 1, teamColor);
+    ctx.restore();
+    return;
+  }
+
+  if (dir === 2) {
+    // BACK — no tool arm, backpack visible
+    // Shadow glow
+    const grd = ctx.createRadialGradient(cx, cy, S * 0.04, cx, cy, S * 0.42);
+    grd.addColorStop(0, 'rgba(74,74,74,0.35)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.42, S * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Torso
+    ctx.fillStyle = '#4a4a4a';
+    const torsoX = cx - S * 0.18, torsoY = cy - S * 0.14, torsoW = S * 0.36, torsoH = S * 0.3;
+    ctx.beginPath();
+    ctx.roundRect(torsoX, torsoY, torsoW, torsoH, S * 0.04);
+    ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.014;
+    ctx.stroke();
+
+    // Helmet dome
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.arc(cx, cy - S * 0.18, S * 0.15, Math.PI, 0, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.012;
+    ctx.stroke();
+    // Visor slit (back — narrow back strip)
+    ctx.fillStyle = hexToRgba(teamColor, 0.5);
+    ctx.fillRect(cx - S * 0.06, cy - S * 0.21, S * 0.12, S * 0.045);
+
+    // Backpack box on back (clearly visible from behind)
+    ctx.fillStyle = '#383838';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.1, cy - S * 0.1, S * 0.2, S * 0.16, S * 0.025);
+    ctx.fill();
+    ctx.strokeStyle = '#222'; ctx.lineWidth = S * 0.012;
+    ctx.stroke();
+    // Backpack accent
+    ctx.fillStyle = hexToRgba(teamColor, 0.6);
+    ctx.fillRect(cx - S * 0.04, cy - S * 0.08, S * 0.08, S * 0.04);
+
+    // Legs
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(cx - S * 0.14, cy + S * 0.16, S * 0.1, S * 0.14, S * 0.02); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(cx + S * 0.04, cy + S * 0.16, S * 0.1, S * 0.14, S * 0.02); ctx.fill();
+    // Boot tips
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.09, cy + S * 0.31, S * 0.09, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.09, cy + S * 0.31, S * 0.09, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+
+  if (dir === 1) {
+    // RIGHT SIDE — welding arm extends right with spark tip
+    // Shadow glow
+    const grd = ctx.createRadialGradient(cx, cy, S * 0.04, cx, cy, S * 0.42);
+    grd.addColorStop(0, 'rgba(74,74,74,0.35)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.42, S * 0.42, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Torso (side — slightly narrower)
+    ctx.fillStyle = '#4a4a4a';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.13, cy - S * 0.14, S * 0.26, S * 0.3, S * 0.04);
+    ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.014;
+    ctx.stroke();
+
+    // Helmet dome (side profile)
+    ctx.fillStyle = '#555';
+    ctx.beginPath();
+    ctx.arc(cx, cy - S * 0.18, S * 0.14, Math.PI, 0, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.012;
+    ctx.stroke();
+    // Visor slit (side)
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+    ctx.fillRect(cx + S * 0.04, cy - S * 0.22, S * 0.1, S * 0.04);
+    ctx.shadowBlur = 0;
+
+    // Small backpack protrusion (visible on left side in dir 1)
+    ctx.fillStyle = '#383838';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.18, cy - S * 0.08, S * 0.08, S * 0.12, S * 0.02);
+    ctx.fill();
+    ctx.strokeStyle = '#222'; ctx.lineWidth = S * 0.01;
+    ctx.stroke();
+
+    // Welding arm extends right
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillRect(cx + S * 0.12, cy - S * 0.04, S * 0.24, S * 0.07);
+    // Welder tool tip — small circle with bright spark in team colour
+    ctx.fillStyle = '#555';
+    ctx.beginPath(); ctx.arc(cx + S * 0.38, cy - S * 0.005, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(cx + S * 0.38, cy - S * 0.005, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Leg (single profile)
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.roundRect(cx - S * 0.08, cy + S * 0.16, S * 0.16, S * 0.14, S * 0.02); ctx.fill();
+    // Boot
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.04, cy + S * 0.31, S * 0.12, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+
+  // FRONT (dir 0)
+  // Shadow glow
+  const grd = ctx.createRadialGradient(cx, cy, S * 0.04, cx, cy, S * 0.44);
+  grd.addColorStop(0, 'rgba(74,74,74,0.35)'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.44, S * 0.44, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Torso — rounded rect centred at (cx, cy)
+  ctx.fillStyle = '#4a4a4a';
+  const tX = cx - S * 0.19, tY = cy - S * 0.14, tW = S * 0.38, tH = S * 0.3;
+  ctx.beginPath();
+  ctx.roundRect(tX, tY, tW, tH, S * 0.05);
+  ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.015;
+  ctx.stroke();
+
+  // Chest panel detail (team colour strip)
+  ctx.fillStyle = hexToRgba(teamColor, 0.55);
+  ctx.fillRect(cx - S * 0.08, cy - S * 0.06, S * 0.16, S * 0.1);
+
+  // Helmet dome
+  ctx.fillStyle = '#555';
+  ctx.beginPath();
+  ctx.arc(cx, cy - S * 0.18, S * 0.16, Math.PI, 0, false);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.014;
+  ctx.stroke();
+
+  // Visor slit in team colour with shadowBlur ~6
+  ctx.fillStyle = hexToRgba(teamColor, 0.9);
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+  ctx.fillRect(cx - S * 0.1, cy - S * 0.22, S * 0.2, S * 0.05);
+  ctx.shadowBlur = 0;
+
+  // Tool arm — right side, arm at shoulder with small tool circle tip
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillRect(cx + S * 0.19, cy - S * 0.09, S * 0.12, S * 0.07);
+  // Tool tip circle
+  ctx.fillStyle = '#555';
+  ctx.beginPath(); ctx.arc(cx + S * 0.33, cy - S * 0.055, S * 0.04, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = hexToRgba(teamColor, 0.7);
+  ctx.beginPath(); ctx.arc(cx + S * 0.33, cy - S * 0.055, S * 0.022, 0, Math.PI * 2); ctx.fill();
+
+  // Left arm (plain)
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillRect(cx - S * 0.31, cy - S * 0.09, S * 0.12, S * 0.07);
+
+  // Legs
+  ctx.fillStyle = '#333';
+  ctx.beginPath(); ctx.roundRect(cx - S * 0.14, cy + S * 0.16, S * 0.1, S * 0.14, S * 0.02); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(cx + S * 0.04, cy + S * 0.16, S * 0.1, S * 0.14, S * 0.02); ctx.fill();
+  // Boot tips
+  ctx.fillStyle = '#222';
+  ctx.beginPath(); ctx.ellipse(cx - S * 0.09, cy + S * 0.31, S * 0.09, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + S * 0.09, cy + S * 0.31, S * 0.09, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -4144,6 +4322,8 @@ function initSpriteMaterials() {
   UNIT_MATS['LIBERATOR_E']  = makeDirTextures(drawLiberator, TEAM_COLOR_ENEMY);
   UNIT_MATS['BATTLECRUISER_F'] = makeDirTextures(drawBattlecruiser, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['BATTLECRUISER_E'] = makeDirTextures(drawBattlecruiser, TEAM_COLOR_ENEMY);
+  UNIT_MATS['SCV_F'] = makeDirTextures(drawSCV, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['SCV_E'] = makeDirTextures(drawSCV, TEAM_COLOR_ENEMY);
   UNIT_MATS['SENTRY_F'] = makeDirTextures(drawSentry, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SENTRY_E'] = makeDirTextures(drawSentry, TEAM_COLOR_ENEMY);
   UNIT_MATS['ADEPT_F'] = makeDirTextures(drawAdept, TEAM_COLOR_FRIENDLY);
