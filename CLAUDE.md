@@ -62,6 +62,8 @@ pkill -f 'quarkus:dev' && sleep 2 && rm -f /tmp/quarkmind-emulated.log*
 mvn quarkus:dev -Dquarkus.profile=sc2
 ```
 
+**If `quarkus:dev` fails with `ClassTooLargeException`:** run `mvn clean` first. Occurs after large additions to enums or switch statements cause the Quarkus-generated startup class to exceed JVM bytecode limits. Clean removes the stale augmentation cache.
+
 ## Quarkus Profiles
 
 | Profile | SC2 needed | Purpose |
@@ -117,6 +119,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - `addStagedUnitForTesting(UnitType, Point2d)` — inject a staged enemy unit into `enemyStagingArea` snapshot (for VisualizerRenderTest)
 - `clearStagedUnitsForTesting()` — clear the staging area; also called by `reset()`
 - `spawnEnemyUnit(UnitType, Point2d)` — add an enemy to `enemyUnits` (for Playwright render tests)
+- `spawnFriendlyUnitForTesting(UnitType, Point2d)` — add a friendly unit to `myUnits`; use in ShowcaseResource to scatter observer units that provide fog-of-war coverage across a large map
 
 **Showcase seeding pattern:** Use `simulatedGame.reset()` directly (not `orchestrator.startGame()`) when seeding dev/QA demo state. `reset()` clears game state without firing `GameStarted`, so the AI scheduler never activates and the showcased state stays static. `engine.observe()` still pushes the seeded state to connected browser sessions.
 
@@ -124,9 +127,9 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Showcase validation (mandatory before showing the user):** After any change to `ShowcaseResource` or unit Y positioning in `visualizer.js`:
 
-1. **Automated** — run `mvn test -Pplaywright -Dtest=VisualizerRenderTest#showcaseRendersAllUnitsAboveTerrainSurface`: asserts all 10 units render, every sprite Y > `TERRAIN_SURFACE_Y`, no objects outside map bounds.
+1. **Automated** — run `mvn test -Pplaywright -Dtest=VisualizerRenderTest#showcaseRendersAllUnitsAboveTerrainSurface`: asserts all 65 units render, every sprite Y > `TERRAIN_SURFACE_Y`, no objects outside map bounds.
 2. **Manual** — start `mvn quarkus:dev`, open visualizer, seed with `curl -X POST http://localhost:8080/sc2/showcase`, then verify:
-   - All 10 units visible in the camera's default view — no missing units
+   - All 65 units visible in the camera's default view — no missing units
    - No units sunk into the terrain grid (sprite Y and 3D model Y use `TERRAIN_SURFACE_Y` as base)
    - Both 2D sprites and 3D sphere models render correctly for all unit types
    - Camera panning and rotation is smooth with no frame-rate drop
