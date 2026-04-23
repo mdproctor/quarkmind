@@ -9,7 +9,8 @@ const FLYING_UNITS = new Set([
   'OBSERVER', 'VOID_RAY', 'CARRIER',
   'BROOD_LORD', 'CORRUPTOR', 'VIPER',
   'PHOENIX', 'ORACLE', 'TEMPEST', 'MOTHERSHIP',
-  'WARP_PRISM', 'WARP_PRISM_PHASING', 'INTERCEPTOR'
+  'WARP_PRISM', 'WARP_PRISM_PHASING', 'INTERCEPTOR',
+  'OVERLORD', 'OVERSEER', 'LOCUST'
 ]);
 const RECONNECT_MS = 2000;
 
@@ -163,6 +164,15 @@ window.__test = {
     if (typeof drawWarpPrismPhasing !== 'undefined') lookup.drawWarpPrismPhasing = drawWarpPrismPhasing;
     if (typeof drawInterceptor !== 'undefined') lookup.drawInterceptor = drawInterceptor;
     if (typeof drawAdeptPhaseShift !== 'undefined') lookup.drawAdeptPhaseShift = drawAdeptPhaseShift;
+    if (typeof drawDrone !== 'undefined') lookup.drawDrone = drawDrone;
+    if (typeof drawOverlord !== 'undefined') lookup.drawOverlord = drawOverlord;
+    if (typeof drawOverseer !== 'undefined') lookup.drawOverseer = drawOverseer;
+    if (typeof drawBaneling !== 'undefined') lookup.drawBaneling = drawBaneling;
+    if (typeof drawLocust !== 'undefined') lookup.drawLocust = drawLocust;
+    if (typeof drawBroodling !== 'undefined') lookup.drawBroodling = drawBroodling;
+    if (typeof drawInfestedTerran !== 'undefined') lookup.drawInfestedTerran = drawInfestedTerran;
+    if (typeof drawChangeling !== 'undefined') lookup.drawChangeling = drawChangeling;
+    if (typeof drawAutoTurret !== 'undefined') lookup.drawAutoTurret = drawAutoTurret;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -5346,6 +5356,609 @@ function drawAdeptPhaseShift(ctx, S, dir, teamColor) {
   ctx.restore();
 }
 
+// drawDrone — Zerg worker unit. Small insectoid, rounder and smaller than Zergling.
+// Dir-3 mirrors dir-1.
+function drawDrone(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawDrone(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Body — rounded ellipse covers (64,64)
+  ctx.fillStyle = '#2a1a08';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S * 0.22, S * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Carapace highlight
+  ctx.fillStyle = '#3a2510';
+  ctx.beginPath();
+  ctx.ellipse(cx - S * 0.04, cy - S * 0.04, S * 0.12, S * 0.08, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wing buds — two small swept-back stubs above body
+  ctx.fillStyle = '#1a0f04';
+  ctx.beginPath();
+  ctx.ellipse(cx - S * 0.10, cy - S * 0.14, S * 0.06, S * 0.03, -0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + S * 0.10, cy - S * 0.14, S * 0.06, S * 0.03, 0.6, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Claws — two small pointed paths at front
+  ctx.fillStyle = '#3a2a10';
+  if (dir === 0) {
+    // Front claws extend upward
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.08, cy - S * 0.16); ctx.lineTo(cx - S * 0.14, cy - S * 0.26); ctx.lineTo(cx - S * 0.04, cy - S * 0.20); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.08, cy - S * 0.16); ctx.lineTo(cx + S * 0.14, cy - S * 0.26); ctx.lineTo(cx + S * 0.04, cy - S * 0.20); ctx.closePath(); ctx.fill();
+  } else if (dir === 1) {
+    // Side claws extend right
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.18, cy - S * 0.06); ctx.lineTo(cx + S * 0.30, cy - S * 0.10); ctx.lineTo(cx + S * 0.26, cy + S * 0.00); ctx.closePath(); ctx.fill();
+  } else {
+    // dir === 2 — back, small claw stubs
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.08, cy + S * 0.16); ctx.lineTo(cx - S * 0.14, cy + S * 0.26); ctx.lineTo(cx - S * 0.04, cy + S * 0.20); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.08, cy + S * 0.16); ctx.lineTo(cx + S * 0.14, cy + S * 0.26); ctx.lineTo(cx + S * 0.04, cy + S * 0.20); ctx.closePath(); ctx.fill();
+  }
+
+  // Legs — short strokes below body
+  ctx.strokeStyle = '#1a0f04'; ctx.lineWidth = S * 0.025;
+  const legCount = (dir === 1) ? 2 : 3;
+  for (let i = 0; i < legCount; i++) {
+    const angle = (dir === 1)
+      ? (Math.PI * 0.55 + i * Math.PI * 0.3)
+      : (Math.PI * 0.35 + i * Math.PI * 0.28);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * S * 0.15, cy + Math.sin(angle) * S * 0.12);
+    ctx.lineTo(cx + Math.cos(angle) * S * 0.30, cy + Math.sin(angle) * S * 0.24);
+    ctx.stroke();
+  }
+
+  // Eyes — two tiny bright spots in team colour at centre of body
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+  ctx.fillStyle = hexToRgba(teamColor, 0.90);
+  ctx.beginPath(); ctx.arc(cx - S * 0.05, cy - S * 0.02, S * 0.022, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.05, cy - S * 0.02, S * 0.022, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// drawOverlord — Zerg large flying transport/supply unit. Bloated jellyfish-like organism.
+// Dir-3 mirrors dir-1.
+function drawOverlord(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawOverlord(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Tentacles — drawn first (behind body)
+  ctx.strokeStyle = '#100618'; ctx.lineWidth = S * 0.028;
+  const tentacleCount = (dir === 0 || dir === 2) ? 7 : 5;
+  for (let i = 0; i < tentacleCount; i++) {
+    const spread = (dir === 0 || dir === 2) ? 0.38 : 0.22;
+    const tx = cx + (i / (tentacleCount - 1) - 0.5) * 2 * S * spread;
+    const startY = cy + S * 0.22;
+    const endY = cy + S * 0.42 + (i % 2 === 0 ? S * 0.06 : 0);
+    const cpX = tx + (i % 2 === 0 ? S * 0.06 : -S * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(tx, startY);
+    ctx.quadraticCurveTo(cpX, startY + (endY - startY) * 0.5, tx, endY);
+    ctx.stroke();
+  }
+
+  // Body — large rounded blob covering (64,64)
+  ctx.fillStyle = '#1a0a1a';
+  ctx.beginPath();
+  if (dir === 0 || dir === 2) {
+    ctx.ellipse(cx, cy, S * 0.38, S * 0.30, 0, 0, Math.PI * 2);
+  } else {
+    ctx.ellipse(cx, cy, S * 0.32, S * 0.26, 0, 0, Math.PI * 2);
+  }
+  ctx.fill();
+
+  // Bio-sacs — 2–3 rounded bumps on body surface
+  ctx.fillStyle = '#2a102a';
+  const sacData = (dir === 0 || dir === 2)
+    ? [[-S * 0.18, -S * 0.06], [0, -S * 0.14], [S * 0.18, -S * 0.06]]
+    : [[-S * 0.10, -S * 0.08], [S * 0.08, -S * 0.04]];
+  sacData.forEach(([dx, dy]) => {
+    ctx.beginPath();
+    ctx.ellipse(cx + dx, cy + dy, S * 0.08, S * 0.06, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Eyes — two small team colour glowing dots near front/top
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.85);
+  ctx.beginPath(); ctx.arc(cx - S * 0.08, cy - S * 0.08, S * 0.028, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.08, cy - S * 0.08, S * 0.028, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// drawOverseer — Evolved Overlord with detection. Similar blob but more angular/evolved.
+// Dir-3 mirrors dir-1.
+function drawOverseer(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawOverseer(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Tentacles — fewer and shorter than Overlord
+  ctx.strokeStyle = '#100618'; ctx.lineWidth = S * 0.026;
+  const tentacleCount = (dir === 0 || dir === 2) ? 4 : 3;
+  for (let i = 0; i < tentacleCount; i++) {
+    const spread = (dir === 0 || dir === 2) ? 0.28 : 0.18;
+    const tx = cx + (i / (tentacleCount - 1) - 0.5) * 2 * S * spread;
+    const startY = cy + S * 0.18;
+    const endY = cy + S * 0.34 + (i % 2 === 0 ? S * 0.04 : 0);
+    ctx.beginPath();
+    ctx.moveTo(tx, startY);
+    ctx.quadraticCurveTo(tx + (i % 2 === 0 ? S * 0.04 : -S * 0.04), startY + (endY - startY) * 0.5, tx, endY);
+    ctx.stroke();
+  }
+
+  // Body — slightly smaller than Overlord, more elongated
+  ctx.fillStyle = '#1a0a1a';
+  ctx.beginPath();
+  if (dir === 0 || dir === 2) {
+    ctx.ellipse(cx, cy, S * 0.32, S * 0.24, 0, 0, Math.PI * 2);
+  } else {
+    ctx.ellipse(cx, cy, S * 0.28, S * 0.20, 0, 0, Math.PI * 2);
+  }
+  ctx.fill();
+
+  // Detection eye cluster — 3–4 large compound eye protrusions (KEY visual difference)
+  const eyePositions = (dir === 0 || dir === 2)
+    ? [[-S * 0.14, -S * 0.14], [0, -S * 0.20], [S * 0.14, -S * 0.14]]
+    : [[-S * 0.06, -S * 0.14], [S * 0.08, -S * 0.10], [S * 0.18, -S * 0.04]];
+
+  eyePositions.forEach(([dx, dy], idx) => {
+    // Eye protrusion body — rounded ellipse extending from body
+    ctx.fillStyle = '#280828';
+    ctx.beginPath();
+    ctx.ellipse(cx + dx, cy + dy, S * 0.07, S * 0.055, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Eye glow — team colour with strong shadowBlur
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, idx === 1 ? 0.95 : 0.75);
+    ctx.beginPath();
+    ctx.ellipse(cx + dx, cy + dy, S * 0.035, S * 0.028, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+// drawBaneling — Zerg rolling acid bomb. Nearly spherical, short legs.
+// Dir-3 mirrors dir-1.
+function drawBaneling(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawBaneling(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 4;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Body — large central circle covers (64,64)
+  ctx.fillStyle = '#1a2a08';
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.24, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Acid sac — bulging brighter rounded ellipse on body top/front
+  ctx.fillStyle = '#5a8a10';
+  ctx.beginPath();
+  ctx.ellipse(cx - S * 0.04, cy - S * 0.10, S * 0.12, S * 0.09, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+  // Acid sac highlight
+  ctx.fillStyle = '#7aaa20';
+  ctx.beginPath();
+  ctx.ellipse(cx - S * 0.06, cy - S * 0.12, S * 0.06, S * 0.04, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Legs — 4 very short stubby strokes below body
+  ctx.strokeStyle = '#0f1a04'; ctx.lineWidth = S * 0.03;
+  const legAngles = [Math.PI * 0.55, Math.PI * 0.70, Math.PI * 0.85, Math.PI * 1.00];
+  legAngles.forEach(a => {
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * S * 0.20, cy + Math.sin(a) * S * 0.20);
+    ctx.lineTo(cx + Math.cos(a) * S * 0.30, cy + Math.sin(a) * S * 0.30);
+    ctx.stroke();
+  });
+
+  // Eyes — two small bright spots in team colour
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.90);
+  ctx.beginPath(); ctx.arc(cx - S * 0.07, cy - S * 0.04, S * 0.025, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.07, cy - S * 0.04, S * 0.025, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // Acid drip — small drop at bottom
+  ctx.fillStyle = hexToRgba(teamColor, 0.50);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S * 0.26, S * 0.025, S * 0.035, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// drawLocust — Zerg flying insectoid spawned by Swarm Host. Angular and predatory.
+// Dir-3 mirrors dir-1.
+function drawLocust(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawLocust(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Wings — two pairs of angular insect wings giving dragonfly silhouette
+  ctx.fillStyle = '#1a1a08';
+  if (dir === 0 || dir === 2) {
+    // Top-down: 4 wings extend out from centre
+    // Upper-left wing
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.04);
+    ctx.lineTo(cx - S * 0.38, cy - S * 0.28);
+    ctx.lineTo(cx - S * 0.28, cy - S * 0.10);
+    ctx.closePath(); ctx.fill();
+    // Upper-right wing
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.04);
+    ctx.lineTo(cx + S * 0.38, cy - S * 0.28);
+    ctx.lineTo(cx + S * 0.28, cy - S * 0.10);
+    ctx.closePath(); ctx.fill();
+    // Lower-left wing
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + S * 0.04);
+    ctx.lineTo(cx - S * 0.32, cy + S * 0.22);
+    ctx.lineTo(cx - S * 0.18, cy + S * 0.08);
+    ctx.closePath(); ctx.fill();
+    // Lower-right wing
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + S * 0.04);
+    ctx.lineTo(cx + S * 0.32, cy + S * 0.22);
+    ctx.lineTo(cx + S * 0.18, cy + S * 0.08);
+    ctx.closePath(); ctx.fill();
+  } else {
+    // dir === 1 — side: wings angled up
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.06, cy - S * 0.02);
+    ctx.lineTo(cx - S * 0.36, cy - S * 0.26);
+    ctx.lineTo(cx - S * 0.14, cy - S * 0.04);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.06, cy - S * 0.02);
+    ctx.lineTo(cx + S * 0.36, cy - S * 0.22);
+    ctx.lineTo(cx + S * 0.16, cy - S * 0.02);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.06, cy + S * 0.04);
+    ctx.lineTo(cx - S * 0.28, cy + S * 0.24);
+    ctx.lineTo(cx - S * 0.08, cy + S * 0.08);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.06, cy + S * 0.04);
+    ctx.lineTo(cx + S * 0.28, cy + S * 0.20);
+    ctx.lineTo(cx + S * 0.10, cy + S * 0.06);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Body — narrow elongated ellipse covers (64,64)
+  ctx.fillStyle = '#282808';
+  ctx.beginPath();
+  if (dir === 0 || dir === 2) {
+    ctx.ellipse(cx, cy, S * 0.10, S * 0.18, 0, 0, Math.PI * 2);
+  } else {
+    ctx.ellipse(cx, cy, S * 0.18, S * 0.08, 0, 0, Math.PI * 2);
+  }
+  ctx.fill();
+
+  // Mandibles — two short pointed paths at front in team colour
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+  ctx.fillStyle = hexToRgba(teamColor, 0.80);
+  if (dir === 0) {
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.04, cy - S * 0.16); ctx.lineTo(cx - S * 0.08, cy - S * 0.24); ctx.lineTo(cx, cy - S * 0.18); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.04, cy - S * 0.16); ctx.lineTo(cx + S * 0.08, cy - S * 0.24); ctx.lineTo(cx, cy - S * 0.18); ctx.closePath(); ctx.fill();
+  } else if (dir === 1) {
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.14, cy - S * 0.04); ctx.lineTo(cx + S * 0.24, cy - S * 0.08); ctx.lineTo(cx + S * 0.18, cy + S * 0.02); ctx.closePath(); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.04, cy + S * 0.14); ctx.lineTo(cx - S * 0.08, cy + S * 0.22); ctx.lineTo(cx, cy + S * 0.16); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.04, cy + S * 0.14); ctx.lineTo(cx + S * 0.08, cy + S * 0.22); ctx.lineTo(cx, cy + S * 0.16); ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// drawBroodling — Tiny spider-like creature, smallest Zerg unit. 6 radiating legs.
+// Dir-3 mirrors dir-1.
+function drawBroodling(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawBroodling(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Legs — 6 thin line strokes radiating at 60° apart from body
+  ctx.strokeStyle = '#222222'; ctx.lineWidth = S * 0.018;
+  for (let i = 0; i < 6; i++) {
+    const angle = (i * Math.PI / 3) + (dir === 1 ? Math.PI * 0.08 : 0);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * S * 0.10, cy + Math.sin(angle) * S * 0.10);
+    ctx.lineTo(cx + Math.cos(angle) * S * 0.30, cy + Math.sin(angle) * S * 0.28);
+    ctx.stroke();
+  }
+
+  // Body — small rounded ellipse covers (64,64)
+  ctx.fillStyle = '#0a0a0a';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S * 0.14, S * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Body highlight
+  ctx.fillStyle = '#181818';
+  ctx.beginPath();
+  ctx.ellipse(cx - S * 0.03, cy - S * 0.03, S * 0.07, S * 0.05, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mandibles — 2 short curved paths at front
+  ctx.strokeStyle = '#2a2a2a'; ctx.lineWidth = S * 0.02;
+  if (dir === 0) {
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.06, cy - S * 0.10); ctx.quadraticCurveTo(cx - S * 0.10, cy - S * 0.16, cx - S * 0.04, cy - S * 0.14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.06, cy - S * 0.10); ctx.quadraticCurveTo(cx + S * 0.10, cy - S * 0.16, cx + S * 0.04, cy - S * 0.14); ctx.stroke();
+  } else if (dir === 1) {
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.10, cy - S * 0.04); ctx.quadraticCurveTo(cx + S * 0.16, cy - S * 0.08, cx + S * 0.14, cy + S * 0.02); ctx.stroke();
+  } else {
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.06, cy + S * 0.10); ctx.quadraticCurveTo(cx - S * 0.10, cy + S * 0.16, cx - S * 0.04, cy + S * 0.14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.06, cy + S * 0.10); ctx.quadraticCurveTo(cx + S * 0.10, cy + S * 0.16, cx + S * 0.04, cy + S * 0.14); ctx.stroke();
+  }
+
+  // Eyes — 2 tiny team colour dots
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 4;
+  ctx.fillStyle = hexToRgba(teamColor, 0.85);
+  ctx.beginPath(); ctx.arc(cx - S * 0.04, cy - S * 0.02, S * 0.018, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.04, cy - S * 0.02, S * 0.018, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// drawInfestedTerran — Zombie Marine consumed by Zerg infestation. Humanoid but corrupted.
+// Dir-3 mirrors dir-1.
+function drawInfestedTerran(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawInfestedTerran(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Infestation tendrils — wavy green growths from torso (drawn behind body)
+  ctx.strokeStyle = '#3a6a08'; ctx.lineWidth = S * 0.03;
+  const tendrilData = [
+    [-S * 0.16, -S * 0.02, -S * 0.28, S * 0.10, -S * 0.22, S * 0.18],
+    [-S * 0.14, S * 0.06, -S * 0.30, S * 0.16, -S * 0.26, S * 0.26],
+    [S * 0.16, -S * 0.02, S * 0.30, S * 0.08, S * 0.24, S * 0.18],
+    [S * 0.12, S * 0.08, S * 0.26, S * 0.20, S * 0.18, S * 0.30],
+  ];
+  const drawCount = (dir === 0 || dir === 2) ? 4 : 2;
+  for (let i = 0; i < drawCount; i++) {
+    const [dx1, dy1, dx2, dy2, dx3, dy3] = tendrilData[i];
+    ctx.beginPath();
+    ctx.moveTo(cx + dx1, cy + dy1);
+    ctx.quadraticCurveTo(cx + dx2, cy + dy2, cx + dx3, cy + dy3);
+    ctx.stroke();
+  }
+
+  // Torso — degraded armour covers (64,64)
+  ctx.fillStyle = '#1a2a1a';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.16, cy - S * 0.10, S * 0.32, S * 0.28, S * 0.04);
+  ctx.fill();
+  ctx.strokeStyle = '#0f1f0f'; ctx.lineWidth = S * 0.014;
+  ctx.stroke();
+
+  // Helmet — cracked/damaged version of Marine helmet
+  ctx.fillStyle = '#1e2e1e';
+  ctx.beginPath();
+  ctx.arc(cx, cy - S * 0.18, S * 0.14, Math.PI, 0, false);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#0f1f0f'; ctx.lineWidth = S * 0.012;
+  ctx.stroke();
+
+  // Helmet crack
+  ctx.strokeStyle = '#0a100a'; ctx.lineWidth = S * 0.018;
+  ctx.beginPath();
+  ctx.moveTo(cx - S * 0.04, cy - S * 0.28);
+  ctx.lineTo(cx + S * 0.02, cy - S * 0.20);
+  ctx.lineTo(cx - S * 0.01, cy - S * 0.14);
+  ctx.stroke();
+
+  // Zerg eye glow through visor in team colour
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.90);
+  if (dir === 0 || dir === 2) {
+    ctx.fillRect(cx - S * 0.08, cy - S * 0.22, S * 0.16, S * 0.04);
+  } else {
+    ctx.fillRect(cx - S * 0.02, cy - S * 0.22, S * 0.12, S * 0.04);
+  }
+  ctx.restore();
+
+  // One arm with grenade stub
+  if (dir === 0 || dir === 1) {
+    ctx.fillStyle = '#1a2a1a';
+    ctx.beginPath();
+    ctx.roundRect(
+      dir === 1 ? cx + S * 0.12 : cx + S * 0.16,
+      cy - S * 0.02, S * 0.10, S * 0.12, S * 0.02
+    );
+    ctx.fill();
+    // Grenade
+    ctx.fillStyle = '#3a6a08';
+    ctx.beginPath();
+    ctx.arc(
+      dir === 1 ? cx + S * 0.26 : cx + S * 0.22,
+      cy + S * 0.06, S * 0.04, 0, Math.PI * 2
+    );
+    ctx.fill();
+  }
+
+  // Legs — short stubs below torso
+  ctx.fillStyle = '#111a11';
+  ctx.beginPath(); ctx.roundRect(cx - S * 0.12, cy + S * 0.18, S * 0.09, S * 0.14, S * 0.02); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(cx + S * 0.03, cy + S * 0.18, S * 0.09, S * 0.14, S * 0.02); ctx.fill();
+}
+
+// drawChangeling — Zerg shapeshifting spy. Amorphous blob with shimmer.
+// Dir-3 mirrors dir-1.
+function drawChangeling(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawChangeling(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Solid dark base — ensures non-zero alpha at (64,64) in all cases
+  ctx.fillStyle = '#0e0a12';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S * 0.28, S * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Amoeba-like irregular blob outline (bezier blob)
+  ctx.fillStyle = '#16101e';
+  ctx.beginPath();
+  // Irregular blob roughly centred at (cx, cy)
+  ctx.moveTo(cx, cy - S * 0.22);
+  ctx.bezierCurveTo(cx + S * 0.18, cy - S * 0.26, cx + S * 0.32, cy - S * 0.08, cx + S * 0.28, cy + S * 0.06);
+  ctx.bezierCurveTo(cx + S * 0.24, cy + S * 0.20, cx + S * 0.10, cy + S * 0.28, cx, cy + S * 0.24);
+  ctx.bezierCurveTo(cx - S * 0.14, cy + S * 0.28, cx - S * 0.30, cy + S * 0.14, cx - S * 0.28, cy);
+  ctx.bezierCurveTo(cx - S * 0.30, cy - S * 0.14, cx - S * 0.16, cy - S * 0.24, cx, cy - S * 0.22);
+  ctx.closePath();
+  ctx.fill();
+
+  // Pseudopods — 3–4 rounded protrusions
+  ctx.fillStyle = '#1e1428';
+  const pseudoPods = [
+    [cx + S * 0.24, cy - S * 0.18, S * 0.06, S * 0.05],
+    [cx - S * 0.22, cy + S * 0.12, S * 0.05, S * 0.07],
+    [cx + S * 0.10, cy + S * 0.24, S * 0.07, S * 0.05],
+    [cx - S * 0.08, cy - S * 0.26, S * 0.05, S * 0.04],
+  ];
+  pseudoPods.forEach(([px, py, rx, ry]) => {
+    ctx.beginPath();
+    ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Shimmer — radial gradient from team colour at centre to transparent
+  const grd = ctx.createRadialGradient(cx, cy, S * 0.02, cx, cy, S * 0.26);
+  grd.addColorStop(0, hexToRgba(teamColor, 0.35));
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S * 0.26, S * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes — two small team colour dots slightly off-centre
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.90);
+  ctx.beginPath(); ctx.arc(cx - S * 0.06, cy - S * 0.04, S * 0.022, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.06, cy - S * 0.04, S * 0.022, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// drawAutoTurret — Deployed Raven gun turret. Military dark grey, stationary.
+// Dir-3 mirrors dir-1.
+function drawAutoTurret(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawAutoTurret(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 4;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+  // Mounting plate — flat octagonal base at canvas bottom-centre
+  ctx.fillStyle = '#2a2a2a';
+  const baseY = cy + S * 0.16;
+  ctx.beginPath();
+  ctx.moveTo(cx - S * 0.22, baseY - S * 0.03);
+  ctx.lineTo(cx - S * 0.26, baseY + S * 0.01);
+  ctx.lineTo(cx - S * 0.26, baseY + S * 0.05);
+  ctx.lineTo(cx - S * 0.22, baseY + S * 0.09);
+  ctx.lineTo(cx + S * 0.22, baseY + S * 0.09);
+  ctx.lineTo(cx + S * 0.26, baseY + S * 0.05);
+  ctx.lineTo(cx + S * 0.26, baseY + S * 0.01);
+  ctx.lineTo(cx + S * 0.22, baseY - S * 0.03);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = S * 0.014;
+  ctx.stroke();
+
+  // Turret body — raised rounded box covers (64,64)
+  ctx.fillStyle = '#3a3a3a';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.20, cy - S * 0.16, S * 0.40, S * 0.28, S * 0.04);
+  ctx.fill();
+  ctx.strokeStyle = '#252525'; ctx.lineWidth = S * 0.014;
+  ctx.stroke();
+
+  // Armour panel lines
+  ctx.strokeStyle = '#282828'; ctx.lineWidth = S * 0.012;
+  ctx.beginPath(); ctx.moveTo(cx - S * 0.20, cy); ctx.lineTo(cx + S * 0.20, cy); ctx.stroke();
+
+  // Twin autocannon barrels
+  ctx.fillStyle = '#222222';
+  if (dir === 0) {
+    // Barrels extend upward
+    ctx.fillRect(cx - S * 0.08, cy - S * 0.38, S * 0.05, S * 0.24);
+    ctx.fillRect(cx + S * 0.03, cy - S * 0.38, S * 0.05, S * 0.24);
+    // Barrel tips — slightly wider
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(cx - S * 0.09, cy - S * 0.40, S * 0.07, S * 0.04);
+    ctx.fillRect(cx + S * 0.02, cy - S * 0.40, S * 0.07, S * 0.04);
+  } else if (dir === 2) {
+    // Barrels extend downward
+    ctx.fillRect(cx - S * 0.08, cy + S * 0.14, S * 0.05, S * 0.22);
+    ctx.fillRect(cx + S * 0.03, cy + S * 0.14, S * 0.05, S * 0.22);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(cx - S * 0.09, cy + S * 0.32, S * 0.07, S * 0.04);
+    ctx.fillRect(cx + S * 0.02, cy + S * 0.32, S * 0.07, S * 0.04);
+  } else {
+    // dir === 1 — barrels extend to right
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.05, S * 0.24, S * 0.04);
+    ctx.fillRect(cx + S * 0.18, cy + S * 0.02, S * 0.24, S * 0.04);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(cx + S * 0.38, cy - S * 0.06, S * 0.04, S * 0.06);
+    ctx.fillRect(cx + S * 0.38, cy + S * 0.01, S * 0.04, S * 0.06);
+  }
+
+  // Sensor dome on turret top
+  ctx.fillStyle = '#444444';
+  ctx.beginPath();
+  ctx.arc(cx, cy - S * 0.14, S * 0.08, Math.PI, 0, false);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#333'; ctx.lineWidth = S * 0.01;
+  ctx.stroke();
+
+  // Sensor dot — team colour
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.95);
+  ctx.beginPath();
+  ctx.arc(cx, cy - S * 0.17, S * 0.028, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -5464,6 +6077,24 @@ function initSpriteMaterials() {
   UNIT_MATS['INTERCEPTOR_E'] = makeDirTextures(drawInterceptor, TEAM_COLOR_ENEMY);
   UNIT_MATS['ADEPT_PHASE_SHIFT_F'] = makeDirTextures(drawAdeptPhaseShift, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ADEPT_PHASE_SHIFT_E'] = makeDirTextures(drawAdeptPhaseShift, TEAM_COLOR_ENEMY);
+  UNIT_MATS['DRONE_F'] = makeDirTextures(drawDrone, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['DRONE_E'] = makeDirTextures(drawDrone, TEAM_COLOR_ENEMY);
+  UNIT_MATS['OVERLORD_F'] = makeDirTextures(drawOverlord, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['OVERLORD_E'] = makeDirTextures(drawOverlord, TEAM_COLOR_ENEMY);
+  UNIT_MATS['OVERSEER_F'] = makeDirTextures(drawOverseer, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['OVERSEER_E'] = makeDirTextures(drawOverseer, TEAM_COLOR_ENEMY);
+  UNIT_MATS['BANELING_F'] = makeDirTextures(drawBaneling, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['BANELING_E'] = makeDirTextures(drawBaneling, TEAM_COLOR_ENEMY);
+  UNIT_MATS['LOCUST_F'] = makeDirTextures(drawLocust, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['LOCUST_E'] = makeDirTextures(drawLocust, TEAM_COLOR_ENEMY);
+  UNIT_MATS['BROODLING_F'] = makeDirTextures(drawBroodling, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['BROODLING_E'] = makeDirTextures(drawBroodling, TEAM_COLOR_ENEMY);
+  UNIT_MATS['INFESTED_TERRAN_F'] = makeDirTextures(drawInfestedTerran, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['INFESTED_TERRAN_E'] = makeDirTextures(drawInfestedTerran, TEAM_COLOR_ENEMY);
+  UNIT_MATS['CHANGELING_F'] = makeDirTextures(drawChangeling, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['CHANGELING_E'] = makeDirTextures(drawChangeling, TEAM_COLOR_ENEMY);
+  UNIT_MATS['AUTO_TURRET_F'] = makeDirTextures(drawAutoTurret, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['AUTO_TURRET_E'] = makeDirTextures(drawAutoTurret, TEAM_COLOR_ENEMY);
 }
 
 function updateSpriteDirs() {

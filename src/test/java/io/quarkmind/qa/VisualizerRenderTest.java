@@ -3423,4 +3423,259 @@ class VisualizerRenderTest {
         assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Adept Phase Shift enemy must render").isEqualTo(1);
         page.close();
     }
+
+    @Test @Tag("browser")
+    void droneDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawDrone', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawDrone dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void droneEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.DRONE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Drone enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void overlordDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawOverlord', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawOverlord dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void overlordEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.OVERLORD, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Overlord enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void overlordSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.OVERLORD, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double overlordY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(overlordY).as("Overlord Y (%.3f) must be higher than Marine Y (%.3f)".formatted(overlordY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void overseerDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawOverseer', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawOverseer dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void overseerEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.OVERSEER, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Overseer enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void overseerSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.OVERSEER, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double overseerY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(overseerY).as("Overseer Y (%.3f) must be higher than Marine Y (%.3f)".formatted(overseerY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void banelingDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawBaneling', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawBaneling dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void banelingEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.BANELING, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Baneling enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void locustDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawLocust', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawLocust dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void locustEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.LOCUST, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Locust enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void locustSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.LOCUST, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double locustY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(locustY).as("Locust Y (%.3f) must be higher than Marine Y (%.3f)".formatted(locustY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void broodlingDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawBroodling', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawBroodling dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void broodlingEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.BROODLING, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Broodling enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void infestedTerranDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawInfestedTerran', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawInfestedTerran dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void infestedTerranEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.INFESTED_TERRAN, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Infested Terran enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void changelingDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawChangeling', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawChangeling dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void changelingEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.CHANGELING, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Changeling enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void autoTurretDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawAutoTurret', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawAutoTurret dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void autoTurretEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.AUTO_TURRET, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Auto Turret enemy must render").isEqualTo(1);
+        page.close();
+    }
 }
