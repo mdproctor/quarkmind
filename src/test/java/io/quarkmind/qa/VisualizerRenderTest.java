@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import io.quarkmind.agent.AgentOrchestrator;
+import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.Point2d;
 import io.quarkmind.domain.SC2Data;
 import io.quarkmind.domain.UnitType;
@@ -1887,7 +1888,13 @@ class VisualizerRenderTest {
         int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
         assertThat(count).as("all 65 showcase enemy units must render").isEqualTo(65);
 
-        // 2. No unit sunk at or below terrain surface
+        // 2. All 10 buildings rendered (1 Nexus from reset + 9 showcase spawned)
+        page.waitForFunction("() => window.__test.buildingCount() >= 10",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        int buildings = ((Number) page.evaluate("() => window.__test.buildingCount()")).intValue();
+        assertThat(buildings).as("10 showcase buildings must render").isEqualTo(10);
+
+        // 3. No unit sunk at or below terrain surface
         double terrainSurfaceY = ((Number) page.evaluate("() => TERRAIN_SURFACE_Y")).doubleValue();
         @SuppressWarnings("unchecked")
         List<Double> ys = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()"))
@@ -1898,7 +1905,7 @@ class VisualizerRenderTest {
                 .isGreaterThan(terrainSurfaceY);
         }
 
-        // 3. No objects outside map bounds (±23 world units, y ≤ 5)
+        // 4. No objects outside map bounds (±23 world units, y ≤ 5)
         @SuppressWarnings("unchecked")
         List<Map<?,?>> outliers = (List<Map<?,?>>) page.evaluate("""
             () => {
@@ -3676,6 +3683,102 @@ class VisualizerRenderTest {
         simulatedGame.spawnEnemyUnit(UnitType.AUTO_TURRET, new Point2d(20, 20)); engine.observe();
         page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
         assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Auto Turret enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    // ── Building sprite smoke tests ───────────────────────────────────────────
+
+    @Test @Tag("browser")
+    void nexusDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawNexus', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawNexus must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void pylonDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawPylon', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawPylon must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void gatewayDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawGateway', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawGateway must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void cyberneticsDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawCyberneticsCore', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawCyberneticsCore must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void assimilatorDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawAssimilator', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawAssimilator must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void roboticsFacilityDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawRoboticsFacility', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawRoboticsFacility must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void stargateDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawStargate', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawStargate must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void forgeDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawForge', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawForge must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void twilightCouncilDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawTwilightCouncil', 0, '" + TEAM_COLOR_FRIENDLY + "')");
+        assertThat(alpha.intValue()).as("drawTwilightCouncil must produce non-transparent output").isGreaterThan(0);
+        page.close();
+    }
+
+    @Test @Tag("browser")
+    void buildingSpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        // reset() gives 1 building (nexus-0); spawnBuildingForTesting adds a second
+        simulatedGame.spawnBuildingForTesting(BuildingType.STARGATE, new Point2d(20, 20));
+        engine.observe();
+        page.waitForFunction("() => window.__test.buildingCount() >= 2", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        int buildings = ((Number) page.evaluate("() => window.__test.buildingCount()")).intValue();
+        assertThat(buildings).as("nexus from reset + spawned Stargate must both render").isEqualTo(2);
         page.close();
     }
 }

@@ -173,6 +173,16 @@ window.__test = {
     if (typeof drawInfestedTerran !== 'undefined') lookup.drawInfestedTerran = drawInfestedTerran;
     if (typeof drawChangeling !== 'undefined') lookup.drawChangeling = drawChangeling;
     if (typeof drawAutoTurret !== 'undefined') lookup.drawAutoTurret = drawAutoTurret;
+    if (typeof drawNexus             !== 'undefined') lookup.drawNexus             = drawNexus;
+    if (typeof drawPylon             !== 'undefined') lookup.drawPylon             = drawPylon;
+    if (typeof drawGateway           !== 'undefined') lookup.drawGateway           = drawGateway;
+    if (typeof drawCyberneticsCore   !== 'undefined') lookup.drawCyberneticsCore   = drawCyberneticsCore;
+    if (typeof drawAssimilator       !== 'undefined') lookup.drawAssimilator       = drawAssimilator;
+    if (typeof drawRoboticsFacility  !== 'undefined') lookup.drawRoboticsFacility  = drawRoboticsFacility;
+    if (typeof drawStargate          !== 'undefined') lookup.drawStargate          = drawStargate;
+    if (typeof drawForge             !== 'undefined') lookup.drawForge             = drawForge;
+    if (typeof drawTwilightCouncil   !== 'undefined') lookup.drawTwilightCouncil   = drawTwilightCouncil;
+    if (typeof drawUnknownBuilding   !== 'undefined') lookup.drawUnknownBuilding   = drawUnknownBuilding;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -433,12 +443,16 @@ function updateFog(visibility) {
   }
 }
 
-const BUILDING_H = { NEXUS: 1.4, PYLON: 1.7, GATEWAY: 1.1 };
-const BUILDING_W = { NEXUS: 2.5, PYLON: 0.8, GATEWAY: 1.8 };
-const BUILDING_COLOUR = {
-  NEXUS:   [0x2255aa, 0x112244],
-  PYLON:   [0x553399, 0x221144],
-  GATEWAY: [0x336688, 0x112233],
+const BUILDING_SCALE = {
+  NEXUS:             { w: 2.8, h: 2.8 },
+  PYLON:             { w: 1.2, h: 1.8 },
+  GATEWAY:           { w: 2.2, h: 1.8 },
+  CYBERNETICS_CORE:  { w: 1.8, h: 1.8 },
+  ASSIMILATOR:       { w: 1.6, h: 1.4 },
+  ROBOTICS_FACILITY: { w: 2.4, h: 1.8 },
+  STARGATE:          { w: 2.6, h: 2.2 },
+  FORGE:             { w: 2.0, h: 1.8 },
+  TWILIGHT_COUNCIL:  { w: 1.8, h: 2.2 },
 };
 
 function syncUnits(state) {
@@ -454,19 +468,14 @@ function syncBuildings(buildings) {
   buildings.forEach(b => {
     seen.add(b.tag);
     if (!buildingMeshes.has(b.tag)) {
-      const h = BUILDING_H[b.type] ?? 1.0;
-      const w = BUILDING_W[b.type] ?? 1.5;
-      const [color, emissive] = BUILDING_COLOUR[b.type] ?? [0x334455, 0x111122];
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(w * TILE * 0.7, h, w * TILE * 0.7),
-        new THREE.MeshLambertMaterial({ color, emissive })
-      );
-      mesh.castShadow = mesh.receiveShadow = true;
+      const mat = BUILDING_MATS[b.type] ?? BUILDING_MATS['UNKNOWN'];
+      const { w, h } = BUILDING_SCALE[b.type] ?? { w: 1.8, h: 1.8 };
+      const sp = new THREE.Sprite(mat);
+      sp.scale.set(TILE * w, TILE * h, 1);
       const wp = gw(b.position.x, b.position.y);
-      mesh.position.set(wp.x, h/2, wp.z);
-      // Buildings are always-visible anchors like terrain tiles — not in group2d/group3d
-      scene.add(mesh);
-      buildingMeshes.set(b.tag, mesh);
+      sp.position.set(wp.x, TERRAIN_SURFACE_Y + TILE * h * 0.5, wp.z);
+      scene.add(sp);
+      buildingMeshes.set(b.tag, sp);
     }
   });
   buildingMeshes.forEach((m, tag) => {
@@ -5959,8 +5968,479 @@ function drawAutoTurret(ctx, S, dir, teamColor) {
   ctx.restore();
 }
 
+// ── Building draw functions ───────────────────────────────────────────────────
+
+function drawNexus(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  const r = S * 0.37;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 8;
+    i === 0 ? ctx.moveTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
+            : ctx.lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a));
+  }
+  ctx.closePath();
+  const bg = ctx.createRadialGradient(cx, cy - S*0.05, 0, cx, cy, r);
+  bg.addColorStop(0, '#3a6ab8');
+  bg.addColorStop(0.65, '#1a3a6e');
+  bg.addColorStop(1, '#0d1f3c');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S * 0.038;
+  ctx.stroke();
+  ctx.strokeStyle = '#ffcc44';
+  ctx.lineWidth = S * 0.018;
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + r*0.28 * Math.cos(a), cy + r*0.28 * Math.sin(a));
+    ctx.lineTo(cx + r*0.72 * Math.cos(a), cy + r*0.72 * Math.sin(a));
+    ctx.stroke();
+  }
+  const dr = S * 0.13;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - dr);
+  ctx.lineTo(cx + dr * 0.65, cy);
+  ctx.lineTo(cx, cy + dr);
+  ctx.lineTo(cx - dr * 0.65, cy);
+  ctx.closePath();
+  const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, dr);
+  cg.addColorStop(0, '#ffffff');
+  cg.addColorStop(0.4, '#88ccff');
+  cg.addColorStop(1, '#2266cc');
+  ctx.fillStyle = cg;
+  ctx.fill();
+  const hg = ctx.createRadialGradient(cx, cy, r*0.8, cx, cy, r*1.1);
+  hg.addColorStop(0, 'rgba(80,140,255,0.2)');
+  hg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 1.1, 0, Math.PI * 2);
+  ctx.fillStyle = hg;
+  ctx.fill();
+}
+
+function drawPylon(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.44, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(140,70,255,0.18)';
+  ctx.lineWidth = S*0.035;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.35, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(140,70,255,0.28)';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  ctx.beginPath();
+  const br = S * 0.22;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 - Math.PI/6;
+    i === 0 ? ctx.moveTo(cx + br * Math.cos(a), cy + S*0.1 + br * 0.5 * Math.sin(a))
+            : ctx.lineTo(cx + br * Math.cos(a), cy + S*0.1 + br * 0.5 * Math.sin(a));
+  }
+  ctx.closePath();
+  ctx.fillStyle = '#2a1a4e';
+  ctx.fill();
+  ctx.strokeStyle = '#7744cc';
+  ctx.lineWidth = S*0.022;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - S*0.4);
+  ctx.lineTo(cx + S*0.07, cy - S*0.08);
+  ctx.lineTo(cx + S*0.05, cy + S*0.12);
+  ctx.lineTo(cx - S*0.05, cy + S*0.12);
+  ctx.lineTo(cx - S*0.07, cy - S*0.08);
+  ctx.closePath();
+  const sg = ctx.createLinearGradient(cx - S*0.07, 0, cx + S*0.07, 0);
+  sg.addColorStop(0, '#5533aa');
+  sg.addColorStop(0.5, '#9966dd');
+  sg.addColorStop(1, '#5533aa');
+  ctx.fillStyle = sg;
+  ctx.fill();
+  ctx.strokeStyle = '#aa77ff';
+  ctx.lineWidth = S*0.015;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.36, S*0.07, 0, Math.PI*2);
+  const og = ctx.createRadialGradient(cx, cy - S*0.36, 0, cx, cy - S*0.36, S*0.07);
+  og.addColorStop(0, '#ffffff');
+  og.addColorStop(0.45, '#dd99ff');
+  og.addColorStop(1, 'rgba(180,100,255,0)');
+  ctx.fillStyle = og;
+  ctx.fill();
+}
+
+function drawGateway(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Main body between pillars
+  ctx.fillStyle = '#122840';
+  ctx.fillRect(cx - S*0.18, S*0.06, S*0.36, S*0.88);
+  // Rune lines on body
+  ctx.strokeStyle = '#1e4a70';
+  ctx.lineWidth = S*0.013;
+  [S*0.2, S*0.36, S*0.5].forEach(ry => {
+    ctx.beginPath();
+    ctx.moveTo(cx - S*0.14, ry);
+    ctx.lineTo(cx + S*0.14, ry);
+    ctx.stroke();
+  });
+  // Arch opening in lower half (center at cy+S*0.22 keeps (cx,cy) safely outside)
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.22, S*0.14, Math.PI, 0);
+  ctx.lineTo(cx + S*0.14, S*0.94);
+  ctx.lineTo(cx - S*0.14, S*0.94);
+  ctx.closePath();
+  ctx.fillStyle = '#040810';
+  ctx.fill();
+  const ag = ctx.createRadialGradient(cx, cy + S*0.22, 0, cx, cy + S*0.22, S*0.15);
+  ag.addColorStop(0, 'rgba(80,180,255,0.35)');
+  ag.addColorStop(1, 'rgba(0,40,100,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.22, S*0.15, 0, Math.PI*2);
+  ctx.fillStyle = ag;
+  ctx.fill();
+  // Two flanking pillars on top of body
+  [cx - S*0.3, cx + S*0.18].forEach(px => {
+    const pg = ctx.createLinearGradient(px, 0, px + S*0.12, 0);
+    pg.addColorStop(0, '#2a5580');
+    pg.addColorStop(0.5, '#3a6a99');
+    pg.addColorStop(1, '#2a5580');
+    ctx.fillStyle = pg;
+    ctx.fillRect(px, S*0.06, S*0.12, S*0.88);
+    ctx.strokeStyle = '#4488bb';
+    ctx.lineWidth = S*0.02;
+    ctx.strokeRect(px, S*0.06, S*0.12, S*0.88);
+    ctx.beginPath();
+    ctx.arc(px + S*0.06, S*0.16, S*0.04, 0, Math.PI*2);
+    ctx.fillStyle = '#88ddff';
+    ctx.fill();
+  });
+  // Gold trim at top
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.025;
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.3, S*0.2);
+  ctx.lineTo(cx + S*0.3, S*0.2);
+  ctx.stroke();
+}
+
+function drawCyberneticsCore(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  const m = S*0.1;
+  ctx.fillStyle = '#0e2040';
+  ctx.fillRect(m, m, S - m*2, S - m*2);
+  ctx.strokeStyle = '#336699';
+  ctx.lineWidth = S*0.028;
+  ctx.strokeRect(m, m, S - m*2, S - m*2);
+  ctx.strokeStyle = '#2a5580';
+  ctx.lineWidth = S*0.013;
+  [0.32, 0.5, 0.68].forEach(t => {
+    ctx.beginPath();
+    ctx.moveTo(m + S*0.04, m + (S - m*2)*t);
+    ctx.lineTo(S - m - S*0.04, m + (S - m*2)*t);
+    ctx.stroke();
+  });
+  [0.32, 0.68].forEach(t => {
+    ctx.beginPath();
+    ctx.moveTo(m + (S - m*2)*t, m + S*0.04);
+    ctx.lineTo(m + (S - m*2)*t, S - m - S*0.04);
+    ctx.stroke();
+  });
+  const inset = m + S*0.05;
+  [[inset, inset],[S - inset, inset],[inset, S - inset],[S - inset, S - inset]].forEach(([nx, ny]) => {
+    ctx.beginPath();
+    ctx.arc(nx, ny, S*0.038, 0, Math.PI*2);
+    ctx.fillStyle = '#4499cc';
+    ctx.fill();
+    ctx.strokeStyle = '#dda020';
+    ctx.lineWidth = S*0.02;
+    ctx.stroke();
+  });
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.11, 0, Math.PI*2);
+  const eg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S*0.11);
+  eg.addColorStop(0, '#ffffff');
+  eg.addColorStop(0.5, '#66ccff');
+  eg.addColorStop(1, 'rgba(40,120,200,0)');
+  ctx.fillStyle = eg;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.16, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(100,200,255,0.4)';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+}
+
+function drawAssimilator(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S*0.58;
+  ctx.fillStyle = '#1a3322';
+  ctx.fillRect(S*0.12, cy + S*0.1, S*0.76, S*0.15);
+  ctx.strokeStyle = '#2a5533';
+  ctx.lineWidth = S*0.015;
+  ctx.strokeRect(S*0.12, cy + S*0.1, S*0.76, S*0.15);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.34, S*0.26, 0, Math.PI, 0);
+  ctx.lineTo(cx + S*0.34, cy);
+  ctx.lineTo(cx - S*0.34, cy);
+  ctx.closePath();
+  const dg = ctx.createRadialGradient(cx, cy - S*0.06, 0, cx, cy, S*0.34);
+  dg.addColorStop(0, '#3a6650');
+  dg.addColorStop(0.6, '#1a4433');
+  dg.addColorStop(1, '#0d2219');
+  ctx.fillStyle = dg;
+  ctx.fill();
+  ctx.strokeStyle = '#44aa77';
+  ctx.lineWidth = S*0.025;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.34, S*0.26, 0, Math.PI, 0);
+  ctx.stroke();
+  [-S*0.14, 0, S*0.14].forEach(ox => {
+    ctx.fillStyle = '#2a5540';
+    ctx.fillRect(cx + ox - S*0.028, cy - S*0.38, S*0.056, S*0.14);
+    ctx.beginPath();
+    ctx.arc(cx + ox, cy - S*0.34, S*0.038, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(100,220,140,0.55)';
+    ctx.fill();
+  });
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.1, S*0.09, 0, Math.PI*2);
+  const wg = ctx.createRadialGradient(cx, cy - S*0.1, 0, cx, cy - S*0.1, S*0.09);
+  wg.addColorStop(0, 'rgba(210,255,230,0.85)');
+  wg.addColorStop(0.7, 'rgba(60,180,100,0.4)');
+  wg.addColorStop(1, 'rgba(20,80,40,0.1)');
+  ctx.fillStyle = wg;
+  ctx.fill();
+}
+
+function drawRoboticsFacility(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  const bg = ctx.createLinearGradient(S*0.06, S*0.22, S*0.06, S*0.78);
+  bg.addColorStop(0, '#1e3a55');
+  bg.addColorStop(1, '#0c1e2e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.06, S*0.22, S*0.88, S*0.52);
+  ctx.strokeStyle = '#2a5577';
+  ctx.lineWidth = S*0.026;
+  ctx.strokeRect(S*0.06, S*0.22, S*0.88, S*0.52);
+  ctx.fillStyle = '#264d6e';
+  ctx.fillRect(S*0.06, S*0.22, S*0.88, S*0.08);
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.02;
+  ctx.beginPath();
+  ctx.moveTo(S*0.06, S*0.3);
+  ctx.lineTo(S*0.94, S*0.3);
+  ctx.stroke();
+  ctx.strokeStyle = '#4499bb';
+  ctx.lineWidth = S*0.038;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.05, S*0.3);
+  ctx.lineTo(cx + S*0.18, S*0.42);
+  ctx.lineTo(cx + S*0.26, S*0.55);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.arc(cx + S*0.26, S*0.55, S*0.048, 0, Math.PI*2);
+  ctx.fillStyle = '#66bbdd';
+  ctx.fill();
+  ctx.strokeStyle = '#88ccee';
+  ctx.lineWidth = S*0.015;
+  ctx.stroke();
+  [0.15, 0.32, 0.52, 0.70].forEach(t => {
+    ctx.fillStyle = '#0a1520';
+    ctx.fillRect(S*0.06 + S*0.88*t, S*0.57, S*0.048, S*0.12);
+  });
+  [S*0.16, S*0.5, S*0.82].forEach(px => {
+    ctx.beginPath();
+    ctx.arc(px, S*0.27, S*0.022, 0, Math.PI*2);
+    ctx.fillStyle = '#44ffaa';
+    ctx.fill();
+  });
+}
+
+function drawStargate(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.46, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(180,130,30,0.12)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.39, 0, Math.PI*2);
+  ctx.strokeStyle = '#cc8822';
+  ctx.lineWidth = S*0.072;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.39, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(255,200,80,0.35)';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.21, 0, Math.PI*2);
+  ctx.strokeStyle = '#ffcc44';
+  ctx.lineWidth = S*0.028;
+  ctx.stroke();
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a)*S*0.21, cy + Math.sin(a)*S*0.21);
+    ctx.lineTo(cx + Math.cos(a)*S*0.35, cy + Math.sin(a)*S*0.35);
+    ctx.strokeStyle = '#dda020';
+    ctx.lineWidth = S*0.042;
+    ctx.stroke();
+  }
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI/4;
+    const nx = cx + Math.cos(a)*S*0.39, ny = cy + Math.sin(a)*S*0.39;
+    ctx.beginPath();
+    ctx.arc(nx, ny, S*0.055, 0, Math.PI*2);
+    ctx.fillStyle = '#1a0d22';
+    ctx.fill();
+    ctx.strokeStyle = '#bb8800';
+    ctx.lineWidth = S*0.018;
+    ctx.stroke();
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.185, 0, Math.PI*2);
+  const pg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S*0.185);
+  pg.addColorStop(0, 'rgba(255,255,255,0.92)');
+  pg.addColorStop(0.35, 'rgba(190,225,255,0.75)');
+  pg.addColorStop(0.7, 'rgba(100,180,255,0.4)');
+  pg.addColorStop(1, 'rgba(50,100,200,0.08)');
+  ctx.fillStyle = pg;
+  ctx.fill();
+}
+
+function drawForge(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  const bg = ctx.createLinearGradient(S*0.1, S*0.28, S*0.1, S*0.8);
+  bg.addColorStop(0, '#1a2a3e');
+  bg.addColorStop(1, '#0c1520');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.1, S*0.28, S*0.8, S*0.5);
+  ctx.strokeStyle = '#2a4466';
+  ctx.lineWidth = S*0.03;
+  ctx.strokeRect(S*0.1, S*0.28, S*0.8, S*0.5);
+  ctx.fillStyle = '#1e2e44';
+  ctx.fillRect(cx - S*0.12, S*0.1, S*0.24, S*0.22);
+  ctx.strokeStyle = '#335577';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(cx - S*0.12, S*0.1, S*0.24, S*0.22);
+  ctx.fillStyle = '#253d55';
+  ctx.fillRect(cx - S*0.15, S*0.08, S*0.3, S*0.05);
+  ctx.beginPath();
+  ctx.arc(cx, S*0.78, S*0.28, 0, Math.PI*2);
+  const hg = ctx.createRadialGradient(cx, S*0.78, 0, cx, S*0.78, S*0.28);
+  hg.addColorStop(0, 'rgba(255,160,30,0.75)');
+  hg.addColorStop(0.4, 'rgba(210,70,10,0.35)');
+  hg.addColorStop(1, 'rgba(120,20,0,0)');
+  ctx.fillStyle = hg;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, S*0.14, S*0.042, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,150,30,0.65)';
+  ctx.fill();
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.022;
+  ctx.beginPath();
+  ctx.moveTo(S*0.1, S*0.38);
+  ctx.lineTo(S*0.9, S*0.38);
+  ctx.stroke();
+  [S*0.16, S*0.42, S*0.64].forEach(px => {
+    ctx.fillStyle = '#0a1218';
+    ctx.fillRect(px, S*0.42, S*0.14, S*0.24);
+    ctx.strokeStyle = '#2255aa';
+    ctx.lineWidth = S*0.012;
+    ctx.strokeRect(px, S*0.42, S*0.14, S*0.24);
+  });
+}
+
+function drawTwilightCouncil(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  [cx - S*0.3, cx + S*0.18].forEach(tx => {
+    ctx.fillStyle = '#1a0d33';
+    ctx.fillRect(tx, S*0.3, S*0.12, S*0.58);
+    ctx.strokeStyle = '#553399';
+    ctx.lineWidth = S*0.015;
+    ctx.strokeRect(tx, S*0.3, S*0.12, S*0.58);
+    ctx.beginPath();
+    ctx.moveTo(tx + S*0.06, S*0.22);
+    ctx.lineTo(tx + S*0.12, S*0.3);
+    ctx.lineTo(tx, S*0.3);
+    ctx.closePath();
+    ctx.fillStyle = '#6633aa';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(tx + S*0.06, S*0.48, S*0.03, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(200,100,255,0.6)';
+    ctx.fill();
+  });
+  const sg = ctx.createLinearGradient(cx - S*0.2, 0, cx + S*0.2, 0);
+  sg.addColorStop(0, '#2a1550');
+  sg.addColorStop(0.5, '#1a0d38');
+  sg.addColorStop(1, '#2a1550');
+  ctx.beginPath();
+  ctx.moveTo(cx, S*0.04);
+  ctx.lineTo(cx + S*0.18, S*0.28);
+  ctx.lineTo(cx + S*0.2, S*0.88);
+  ctx.lineTo(cx - S*0.2, S*0.88);
+  ctx.lineTo(cx - S*0.18, S*0.28);
+  ctx.closePath();
+  ctx.fillStyle = sg;
+  ctx.fill();
+  ctx.strokeStyle = '#7733cc';
+  ctx.lineWidth = S*0.028;
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(210,110,255,0.55)';
+  ctx.lineWidth = S*0.011;
+  [S*0.4, S*0.54, S*0.68].forEach(ry => {
+    ctx.beginPath();
+    ctx.moveTo(cx - S*0.13, ry);
+    ctx.lineTo(cx + S*0.13, ry);
+    ctx.stroke();
+  });
+  ctx.beginPath();
+  ctx.arc(cx, S*0.09, S*0.075, 0, Math.PI*2);
+  const mg = ctx.createRadialGradient(cx, S*0.09, 0, cx, S*0.09, S*0.075);
+  mg.addColorStop(0, '#ffffff');
+  mg.addColorStop(0.4, '#dd99ff');
+  mg.addColorStop(1, 'rgba(160,60,255,0)');
+  ctx.fillStyle = mg;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, S*0.09, S*0.13, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(180,70,255,0.28)';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+}
+
+function drawUnknownBuilding(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  ctx.fillStyle = '#1a2233';
+  ctx.fillRect(S*0.15, S*0.15, S*0.7, S*0.7);
+  ctx.strokeStyle = '#334455';
+  ctx.lineWidth = S*0.03;
+  ctx.strokeRect(S*0.15, S*0.15, S*0.7, S*0.7);
+  ctx.fillStyle = '#556677';
+  ctx.font = `bold ${Math.round(S*0.45)}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('?', cx, cy);
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
+const BUILDING_MATS = {};
 
 function initSpriteMaterials() {
   UNIT_MATS['PROBE_F']    = makeDirTextures(drawProbe,   TEAM_COLOR_FRIENDLY);
@@ -6095,6 +6575,26 @@ function initSpriteMaterials() {
   UNIT_MATS['CHANGELING_E'] = makeDirTextures(drawChangeling, TEAM_COLOR_ENEMY);
   UNIT_MATS['AUTO_TURRET_F'] = makeDirTextures(drawAutoTurret, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['AUTO_TURRET_E'] = makeDirTextures(drawAutoTurret, TEAM_COLOR_ENEMY);
+
+  // Building materials — single texture per type (no directional variants; always friendly)
+  function makeBuildingTexture(drawFn, size = 128) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    drawFn(c.getContext('2d'), size, 0, TEAM_COLOR_FRIENDLY);
+    const tex = new THREE.CanvasTexture(c);
+    tex.premultiplyAlpha = true;
+    return new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: true, alphaTest: 0.05 });
+  }
+  BUILDING_MATS['NEXUS']              = makeBuildingTexture(drawNexus);
+  BUILDING_MATS['PYLON']              = makeBuildingTexture(drawPylon);
+  BUILDING_MATS['GATEWAY']            = makeBuildingTexture(drawGateway);
+  BUILDING_MATS['CYBERNETICS_CORE']   = makeBuildingTexture(drawCyberneticsCore);
+  BUILDING_MATS['ASSIMILATOR']        = makeBuildingTexture(drawAssimilator);
+  BUILDING_MATS['ROBOTICS_FACILITY']  = makeBuildingTexture(drawRoboticsFacility);
+  BUILDING_MATS['STARGATE']           = makeBuildingTexture(drawStargate);
+  BUILDING_MATS['FORGE']              = makeBuildingTexture(drawForge);
+  BUILDING_MATS['TWILIGHT_COUNCIL']   = makeBuildingTexture(drawTwilightCouncil);
+  BUILDING_MATS['UNKNOWN']            = makeBuildingTexture(drawUnknownBuilding);
 }
 
 function updateSpriteDirs() {

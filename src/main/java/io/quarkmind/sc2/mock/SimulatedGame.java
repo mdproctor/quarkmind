@@ -121,6 +121,12 @@ public class SimulatedGame {
             SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
     }
 
+    /** Adds a complete building at a specific position — used by ShowcaseResource and VisualizerRenderTest. */
+    public synchronized void spawnBuildingForTesting(BuildingType type, Point2d position) {
+        myBuildings.add(new Building("bldg-test-" + nextTag++, type, position,
+            SC2Data.maxBuildingHealth(type), SC2Data.maxBuildingHealth(type), true));
+    }
+
     public void setMinerals(int amount) { this.minerals = amount; }
     public void setVespene(int amount) { this.vespene = amount; }
     public void setSupply(int cap) { this.supply = cap; }

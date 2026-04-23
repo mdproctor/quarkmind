@@ -108,10 +108,10 @@ class LiveServerScreenshotTest {
         System.out.println("=== OUTLIER OBJECTS (|x|>25 or |z|>25 or |y|>3) ===");
         System.out.println(outliersJson);
 
-        // 5. Print BUILDING_COLOUR to see building colors
-        Object buildingColour = page.evaluate("() => JSON.stringify(BUILDING_COLOUR)");
-        System.out.println("=== BUILDING_COLOUR ===");
-        System.out.println(buildingColour);
+        // 5. Print BUILDING_SCALE to see building dimensions
+        Object buildingScale = page.evaluate("() => JSON.stringify(BUILDING_SCALE)");
+        System.out.println("=== BUILDING_SCALE ===");
+        System.out.println(buildingScale);
 
         // 6. Print ALL building mesh positions (not just outliers)
         Object buildingMeshPositions = page.evaluate("""

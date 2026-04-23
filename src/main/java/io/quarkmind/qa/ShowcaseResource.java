@@ -6,6 +6,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import io.quarkmind.agent.AgentOrchestrator;
+import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.Point2d;
 import io.quarkmind.domain.UnitType;
 import io.quarkmind.sc2.SC2Engine;
@@ -14,8 +15,9 @@ import io.quarkmind.sc2.mock.SimulatedGame;
 import java.util.Map;
 
 /**
- * Seeds a showcase layout — one of every sprite type (65 units total, all 3 races).
- * Four friendly Probes are scattered as observers to provide fog-of-war coverage.
+ * Seeds a showcase layout — one of every sprite type (65 units + 9 buildings, all 3 races).
+ * Probe observers at (4,5),(11,5),(4,15),(11,15) cover the unit grid (z=2..20).
+ * Two more at (6,22),(14,22) cover the building row (z=22).
  * Dev/test only.
  */
 @UnlessBuildProfile("prod")
@@ -125,11 +127,25 @@ public class ShowcaseResource {
         simulatedGame.spawnEnemyUnit(UnitType.BROOD_LORD,       new Point2d(2,  20));
         simulatedGame.spawnEnemyUnit(UnitType.LOCUST,           new Point2d(4,  20));
 
+        // z=22: All 9 Protoss building types — two extra probe observers provide fog coverage
+        simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(6,  22));
+        simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(14, 22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.NEXUS,             new Point2d(2,  22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.PYLON,             new Point2d(4,  22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.GATEWAY,           new Point2d(6,  22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.CYBERNETICS_CORE,  new Point2d(8,  22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ASSIMILATOR,       new Point2d(10, 22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ROBOTICS_FACILITY, new Point2d(12, 22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.STARGATE,          new Point2d(14, 22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.FORGE,             new Point2d(16, 22));
+        simulatedGame.spawnBuildingForTesting(BuildingType.TWILIGHT_COUNCIL,  new Point2d(18, 22));
+
         engine.observe();
 
         return Response.ok(Map.of(
-            "status",  "showcase seeded",
-            "enemies", "65 units: Terran(22) + Protoss(22) + Zerg(21)"
+            "status",    "showcase seeded",
+            "enemies",   "65 units: Terran(22) + Protoss(22) + Zerg(21)",
+            "buildings", "10 buildings: 1 Nexus (reset) + 9 Protoss showcase"
         )).build();
     }
 }
