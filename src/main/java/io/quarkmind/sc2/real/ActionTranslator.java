@@ -141,9 +141,13 @@ public final class ActionTranslator {
             // Zerg and Terran types exist for scouting recognition, not Protoss training
             case ZERGLING, ROACH, HYDRALISK, MUTALISK, ULTRALISK,
                  BROOD_LORD, CORRUPTOR, INFESTOR, SWARM_HOST, VIPER, QUEEN, RAVAGER, LURKER,
+                 DRONE, OVERLORD, OVERSEER, BANELING, LOCUST, BROODLING, INFESTED_TERRAN, CHANGELING,
                  MARINE, MARAUDER, MEDIVAC, SIEGE_TANK, SIEGE_TANK_SIEGED, THOR, VIKING,
                  GHOST, RAVEN, BANSHEE, BATTLECRUISER, CYCLONE, LIBERATOR, WIDOW_MINE,
+                 SCV, REAPER, HELLION, HELLBAT, MULE, VIKING_ASSAULT, LIBERATOR_AG, AUTO_TURRET,
                  ADEPT, DISRUPTOR, SENTRY,
+                 PHOENIX, ORACLE, TEMPEST, MOTHERSHIP, WARP_PRISM, WARP_PRISM_PHASING,
+                 INTERCEPTOR, ADEPT_PHASE_SHIFT,
                  UNKNOWN      -> null;
         };
     }
