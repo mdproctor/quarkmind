@@ -1,59 +1,54 @@
-# Handover — 2026-04-22
+# Handover — 2026-04-23
 
-**Head commit:** `58e3009` — docs: add blog entry E15 — Terran sprites and the cost of looking instead of testing
+**Head commit:** `b285200` — docs: add blog entry E16 — Zerg sprites and the showcase that lied
 
 ## What Changed This Session
 
-**E15 complete — Terran sprites + team colour decal system (closes #85, refs epic #83)**
+**E16 complete — Zerg sprites (closes #86, refs epic #83)**
 
-- Marine, Marauder, Medivac draw functions — all 4 directions × 2 team colours
-- `makeDirTextures(drawFn, teamColor, size)` — teamColor drives SC2-style decal zones (visor, shoulder pads, knee plates, engine glow)
-- `UNIT_MATS['TYPE_F']`/`['TYPE_E']` dispatch — unknown types fall back to `UNKNOWN_F`/`UNKNOWN_E`
-- `FLYING_UNITS = new Set(['MEDIVAC'])` — drives Y-offset (sprite at `TILE*1.5`, 3D model at `TERRAIN_SURFACE_Y` + offset)
-- `TERRAIN_SURFACE_Y` JS variable — 0.08 mock / `TILE` emulated — fixes 3D model ground height per profile
-- Fog planes only created in emulated mode (`hasRealTerrain` guard) — removes 4096 objects from scene graph in mock, restoring 60 FPS
-- Camera default target moved to `(-16, 0, -16)` — near tile (9,9) where player base lives
-- `ShowcaseResource` — seeds all 7 sprite types for visual demo; uses `simulatedGame.reset()` not `orchestrator.startGame()` to keep AI idle
+- `drawZergling`, `drawRoach`, `drawHydralisk`, `drawMutalisk` — canvas 2D draw functions, all 4 dirs × 2 team colours, bio-sac teamColor decal (radial gradient + shadowBlur)
+- `FLYING_UNITS` now includes `'MUTALISK'`
+- 22 `UNIT_MATS` keys registered (was 14 after E15)
+- 12 new Playwright tests — smoke, spawn, elevation (mutaliskSpawnsHigherThanGroundUnit)
+- `ShowcaseResource` updated — Zerg row at tiles (10,11)–(14,13) area, all within Nexus sight range
 
-**Bug fixes (found during showcase debugging):**
-- `BasicEconomicsTask.pylonPosition()` — unbounded row index produced tile y=1752 at buildingCount=2317; fixed with `% 16` wrap
-- `EconomicsDecisionService.checkSupply()` — no duplicate-Pylon guard; added in-progress check
+**Showcase fixes (two recurring bugs killed)**
 
-**New tests:**
-- `GameStateInvariantTest` — plain JUnit; positions on-map, tags unique, building count plausible, health ≤ max after N ticks
-- `BasicEconomicsTaskTest` additions — parameterized `pylonPositionIsAlwaysWithinMapBounds`, `doesNotQueueSecondPylonWhileOneIsUnderConstruction`
-- `VisualizerRenderTest.allSceneObjectsAreWithinMapBounds` — Playwright; traverses full Three.js scene, fails if any mesh outside ±23 world units
+- Root cause of fog/wrong-units bug: `ShowcaseResource` seeds `SimulatedGame` but in emulated mode `EmulatedEngine` broadcasts `EmulatedGame` — different CDI bean, no error. Showcase must always run in mock mode (`mvn quarkus:dev`, no profile flag). Documented in CLAUDE.md.
+- Sprite/3D model Y fixed: was `TILE * 0.65 = 0.455` (below terrain surface in emulated mode where `TERRAIN_SURFACE_Y = TILE = 0.7`). Now `TERRAIN_SURFACE_Y + TILE * 0.5` (ground) / `TERRAIN_SURFACE_Y + TILE * 1.1` (flying).
+- New Playwright test: `showcaseRendersAllUnitsAboveTerrainSurface` — must pass before showing any showcase. Asserts 10 enemies render, all Y > `TERRAIN_SURFACE_Y`, no bounds overflows.
 
-**Garden:** 4 entries submitted — PR #96 (Hortora/garden): leaveGame WebSocket gotcha, Quarkus hot-reload silent failure, Three.js visible=false scene-graph trap, scene.traverse Playwright technique
+**Terrain colour scheme changed**
 
-**Blog:** `docs/_posts/2026-04-22-mdp01-e15-terran-sprites-and-testing.md`
+- Sun: `0xaabbff` (blue-white) → `0xffffff` (neutral white) — blue-white sun killed warm tile colours
+- Ground tiles: `0x1a2233` → `0xb8956a` (sandy light brown)
+- Fog planes (emulated): `0x000000` → `0x888888` (light grey for out-of-vision)
+
+**3D unit models — idea logged in IDEAS.md** (after 2D sprites complete, low-poly Three.js compound geometry, perf gate)
 
 ## Immediate Next Step
 
-No active epic. Open issues:
+No active epic. Recommended: E17 — continue 2D sprites (11 Protoss remaining, 10 Terran, 9 Zerg; all on UNKNOWN fallback).
+
 ```bash
 gh issue list --state open
 ```
 
-Options: E16 (Zerg cartoon art), E17 (combat indicators), E18 (replay controls), or #74 (YAML genericisation).
-
-**Recommended:** E16 Zerg sprites — follows directly from E15 foundation. Same architecture, new race.
-
 ## Key Technical Notes
 
-*E14 and earlier notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
+*E15 and earlier notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
 
-**E15 additions:**
-- `ShowcaseResource` at `/sc2/showcase` (POST) — seeds showcase; call AFTER browser connects
-- Dev server showcase workflow: `mvn quarkus:dev` → open browser → `curl -X POST http://localhost:8080/sc2/showcase`
-- `TERRAIN_SURFACE_Y` — module-level JS var set in `loadTerrain()`; use this (not hardcoded `TILE`) for 3D model Y
-- 4096 fog planes only exist in emulated mode — `fogPlanes.size === 0` in mock is correct behaviour
+**E16 additions:**
+- Showcase must run mock mode — `mvn quarkus:dev` (no profile). Seeding in emulated mode silently shows EmulatedGame state, not SimulatedGame.
+- `TERRAIN_SURFACE_Y` is the profile-aware vertical anchor — all unit Y must be relative to it, never absolute `TILE * n`
+- `smokeTestDrawFn` lookup uses `typeof` hoisting — draw functions must be `function` declarations, not arrow fns
+- `showcaseRendersAllUnitsAboveTerrainSurface` Playwright test is mandatory before showing any showcase result
 
 ## Open Issues
 
 | # | What | Status |
 |---|------|--------|
-| #83 | Epic E14: 3D Visualizer (E16/E17/E18 remain) | Open |
+| #83 | Epic E14: 3D Visualizer (E17/E18/… remain) | Open |
 | #74 | Unit genericisation / configurable YAML | Parked |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
@@ -62,8 +57,9 @@ Options: E16 (Zerg cartoon art), E17 (combat indicators), E18 (replay controls),
 
 | Context | Where |
 |---------|-------|
-| E15 design spec | `docs/superpowers/specs/2026-04-21-e15-terran-sprites-design.md` |
-| E15 implementation plan | `docs/superpowers/plans/2026-04-21-e15-terran-sprites.md` |
-| Blog entry | `docs/_posts/2026-04-22-mdp01-e15-terran-sprites-and-testing.md` |
-| E14 handover (prior) | `git show HEAD~1:HANDOFF.md` |
-| GitHub | mdproctor/quarkmind (#85 closed; epic #83 open) |
+| E16 design spec | `docs/superpowers/specs/2026-04-22-e16-zerg-sprites-design.md` |
+| E16 implementation plan | `docs/superpowers/plans/2026-04-22-e16-zerg-sprites.md` |
+| Blog entry | `docs/_posts/2026-04-23-mdp01-e16-zerg-sprites-showcase-lies.md` |
+| 3D models idea | `IDEAS.md` (entry 2026-04-23) |
+| E15 handover (prior) | `git show HEAD~1:HANDOFF.md` |
+| GitHub | mdproctor/quarkmind (#86 closed; epic #83 open) |
