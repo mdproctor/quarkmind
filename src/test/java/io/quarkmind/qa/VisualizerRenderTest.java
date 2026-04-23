@@ -1881,11 +1881,11 @@ class VisualizerRenderTest {
             .build();
         http.send(req, java.net.http.HttpResponse.BodyHandlers.discarding());
 
-        // 1. All 10 enemies rendered
-        page.waitForFunction("() => window.__test.enemyCount() >= 10",
+        // 1. All 20 enemies rendered
+        page.waitForFunction("() => window.__test.enemyCount() >= 20",
             null, new Page.WaitForFunctionOptions().setTimeout(5_000));
         int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
-        assertThat(count).as("all 10 showcase enemy units must render").isEqualTo(10);
+        assertThat(count).as("all 20 showcase enemy units must render").isEqualTo(20);
 
         // 2. No unit sunk at or below terrain surface
         double terrainSurfaceY = ((Number) page.evaluate("() => TERRAIN_SURFACE_Y")).doubleValue();
