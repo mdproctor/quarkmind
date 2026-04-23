@@ -3,7 +3,7 @@
 const TILE = 0.7;
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
-const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING']);
+const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING', 'RAVEN']);
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -116,6 +116,7 @@ window.__test = {
     if (typeof drawSiegeTank  !== 'undefined') lookup.drawSiegeTank  = drawSiegeTank;
     if (typeof drawThor !== 'undefined') lookup.drawThor = drawThor;
     if (typeof drawViking !== 'undefined') lookup.drawViking = drawViking;
+    if (typeof drawRaven !== 'undefined') lookup.drawRaven = drawRaven;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1669,6 +1670,38 @@ function drawViking(ctx, S, dir, teamColor) {
   }
 }
 
+function drawRaven(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawRaven(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  ctx.strokeStyle = '#556677'; ctx.lineWidth = S * 0.03;
+  ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.36, S * 0.3, 0, 0, Math.PI * 2); ctx.stroke();
+
+  ctx.strokeStyle = hexToRgba(teamColor, 0.5);
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+  ctx.lineWidth = S * 0.025;
+  ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.32, S * 0.26, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  const bg = ctx.createRadialGradient(cx - S * 0.08, cy - S * 0.08, S * 0.03, cx, cy, S * 0.24);
+  bg.addColorStop(0, '#5a6a7a'); bg.addColorStop(0.6, '#3a4a5a'); bg.addColorStop(1, '#1a2a3a');
+  ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.24, S * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+
+  const offset = (dir === 0 || dir === 2) ? 0 : S * 0.04;
+  ctx.fillStyle = '#667788';
+  [-S * 0.16, S * 0.16].forEach(dx => {
+    ctx.beginPath(); ctx.ellipse(cx + dx + offset, cy + S * 0.04, S * 0.055, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  });
+
+  ctx.fillStyle = hexToRgba(teamColor, 0.9);
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.07, S * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1697,6 +1730,8 @@ function initSpriteMaterials() {
   UNIT_MATS['THOR_E']     = makeDirTextures(drawThor,     TEAM_COLOR_ENEMY);
   UNIT_MATS['VIKING_F']   = makeDirTextures(drawViking,   TEAM_COLOR_FRIENDLY);
   UNIT_MATS['VIKING_E']   = makeDirTextures(drawViking,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['RAVEN_F']    = makeDirTextures(drawRaven,    TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['RAVEN_E']    = makeDirTextures(drawRaven,    TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
