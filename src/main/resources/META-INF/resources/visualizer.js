@@ -3,7 +3,7 @@
 const TILE = 0.7;
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
-const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER']);
+const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER', 'OBSERVER']);
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -128,6 +128,7 @@ window.__test = {
     if (typeof drawImmortal !== 'undefined') lookup.drawImmortal = drawImmortal;
     if (typeof drawArchon   !== 'undefined') lookup.drawArchon   = drawArchon;
     if (typeof drawColossus !== 'undefined') lookup.drawColossus = drawColossus;
+    if (typeof drawObserver !== 'undefined') lookup.drawObserver = drawObserver;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2608,6 +2609,68 @@ function drawColossus(ctx, S, dir, teamColor) {
   }
 }
 
+// drawObserver — small Protoss cloaking drone, flattened disc silhouette
+// Very dark body (~#0a0a1a) with 4 sensor protrusions and 2 team-coloured scan emitters.
+// Dir 1 (side): edge-on thin ellipse. Smoke test samples (64,64) — disc centred there.
+function drawObserver(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+  const bodyColor    = '#0a0a1a';
+  const sensorColor  = '#2a2a3a';
+  const rx = S * 0.22;  // horizontal disc radius
+  const ry = dir === 1 || dir === 3 ? S * 0.04 : S * 0.12;  // vertical — thin when side-on
+
+  // Body disc
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Outline
+  ctx.strokeStyle = sensorColor;
+  ctx.lineWidth = S * 0.02;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  if (dir === 1 || dir === 3) {
+    // Side (edge-on): two emitter dots at left and right tips
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 10;
+    ctx.beginPath();
+    ctx.arc(cx - rx, cy, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + rx, cy, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  } else {
+    // Front/back: 4 rectangular sensor protrusions (top, right, bottom, left)
+    ctx.fillStyle = sensorColor;
+    const pLen = S * 0.08, pW = S * 0.025;
+    // top
+    ctx.fillRect(cx - pW / 2, cy - ry - pLen, pW, pLen);
+    // bottom
+    ctx.fillRect(cx - pW / 2, cy + ry,        pW, pLen);
+    // left
+    ctx.fillRect(cx - rx - pLen, cy - pW / 2, pLen, pW);
+    // right
+    ctx.fillRect(cx + rx,        cy - pW / 2, pLen, pW);
+
+    // Two scan emitters at left and right sides of disc
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 10;
+    ctx.beginPath();
+    ctx.arc(cx - rx, cy, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + rx, cy, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2660,6 +2723,8 @@ function initSpriteMaterials() {
   UNIT_MATS['ARCHON_E'] = makeDirTextures(drawArchon, TEAM_COLOR_ENEMY);
   UNIT_MATS['COLOSSUS_F'] = makeDirTextures(drawColossus, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['COLOSSUS_E'] = makeDirTextures(drawColossus, TEAM_COLOR_ENEMY);
+  UNIT_MATS['OBSERVER_F'] = makeDirTextures(drawObserver, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['OBSERVER_E'] = makeDirTextures(drawObserver, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
