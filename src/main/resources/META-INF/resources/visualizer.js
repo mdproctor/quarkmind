@@ -136,6 +136,7 @@ window.__test = {
     if (typeof drawVoidRay  !== 'undefined') lookup.drawVoidRay  = drawVoidRay;
     if (typeof drawCarrier  !== 'undefined') lookup.drawCarrier  = drawCarrier;
     if (typeof drawRavager !== 'undefined') lookup.drawRavager = drawRavager;
+    if (typeof drawInfestor !== 'undefined') lookup.drawInfestor = drawInfestor;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3054,6 +3055,126 @@ function drawRavager(ctx, S, dir, teamColor) {
   }
 }
 
+// drawInfestor — fungal Zerg caster, wide low body with tentacle protrusions.
+// Dark purple-green palette. Body ellipse at (S/2, S/2+10) covers smoke-test pixel (64,64).
+// Dir-3 mirrors dir-1.
+function drawInfestor(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawInfestor(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 10;
+  const bodyColor = '#1a0a1a';
+  const midColor  = '#2a1a10';
+  const tentacleColor = '#2a1a2a';
+
+  if (dir === 0 || dir === 2) {
+    // Top-down: wide squat body, tentacles radiating outward
+    const flip = dir === 2 ? 1 : -1;
+
+    // Tentacles — 5 wavy strokes from body perimeter
+    ctx.strokeStyle = tentacleColor; ctx.lineWidth = S * 0.03;
+    [
+      [-0.35, -0.10, -0.50, -0.22],
+      [-0.20, -0.22, -0.28, -0.38],
+      [ 0.00, -0.28,  0.00, -0.44],
+      [ 0.20, -0.22,  0.28, -0.38],
+      [ 0.35, -0.10,  0.50, -0.22]
+    ].forEach(([dx1, dy1, dx2, dy2]) => {
+      const signedDy1 = dy1 * flip, signedDy2 = dy2 * flip;
+      ctx.beginPath();
+      ctx.moveTo(cx + dx1 * S, cy + signedDy1 * S);
+      ctx.quadraticCurveTo(
+        cx + (dx1 + dx2) * 0.5 * S + S * 0.06, cy + (signedDy1 + signedDy2) * 0.5 * S,
+        cx + dx2 * S, cy + signedDy2 * S
+      );
+      ctx.stroke();
+    });
+
+    // Main body — wide filled ellipse
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.30, S * 0.20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mid carapace
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - S * 0.03, S * 0.22, S * 0.13, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head nub toward direction of travel
+    const headY = cy + flip * S * 0.18;
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, headY, S * 0.12, S * 0.09, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    if (dir === 0) {
+      ctx.fillStyle = '#cc44aa';
+      ctx.beginPath(); ctx.arc(cx - S * 0.07, headY - S * 0.03, S * 0.028, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + S * 0.07, headY - S * 0.03, S * 0.028, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Infested glow — team colour radial at body centre
+    ctx.fillStyle = hexToRgba(teamColor, 0.70);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.10, S * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else {
+    // Dir 1: side profile — hunched low body, tentacles from rear/underside
+    // Rear tentacles
+    ctx.strokeStyle = tentacleColor; ctx.lineWidth = S * 0.03;
+    [
+      [cx + S * 0.10, cy + S * 0.05,  cx + S * 0.30, cy - S * 0.10,  cx + S * 0.44, cy - S * 0.04],
+      [cx + S * 0.15, cy + S * 0.08,  cx + S * 0.36, cy + S * 0.12,  cx + S * 0.46, cy + S * 0.08],
+      [cx,            cy + S * 0.10,  cx + S * 0.16, cy + S * 0.28,  cx + S * 0.28, cy + S * 0.24],
+      [cx - S * 0.10, cy + S * 0.06,  cx - S * 0.20, cy + S * 0.24,  cx - S * 0.30, cy + S * 0.20],
+      [cx - S * 0.20, cy + S * 0.04,  cx - S * 0.36, cy + S * 0.18,  cx - S * 0.44, cy + S * 0.10]
+    ].forEach(([x1, y1, cpx, cpy, x2, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cpx, cpy, x2, y2);
+      ctx.stroke();
+    });
+
+    // Main body — wide low ellipse
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.30, S * 0.20, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mid carapace
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.02, cy - S * 0.04, S * 0.22, S * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head — front-left
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.22, cy - S * 0.06, S * 0.11, S * 0.09, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Eye
+    ctx.fillStyle = '#cc44aa';
+    ctx.beginPath();
+    ctx.arc(cx - S * 0.28, cy - S * 0.10, S * 0.026, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Infested glow — team colour at body centre
+    ctx.fillStyle = hexToRgba(teamColor, 0.70);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.10, S * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3116,6 +3237,8 @@ function initSpriteMaterials() {
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['RAVAGER_F']   = makeDirTextures(drawRavager,   TEAM_COLOR_FRIENDLY);
   UNIT_MATS['RAVAGER_E']   = makeDirTextures(drawRavager,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['INFESTOR_F']  = makeDirTextures(drawInfestor,  TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['INFESTOR_E']  = makeDirTextures(drawInfestor,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
