@@ -114,6 +114,7 @@ window.__test = {
     if (typeof drawCyclone   !== 'undefined') lookup.drawCyclone   = drawCyclone;
     if (typeof drawWidowMine  !== 'undefined') lookup.drawWidowMine  = drawWidowMine;
     if (typeof drawSiegeTank  !== 'undefined') lookup.drawSiegeTank  = drawSiegeTank;
+    if (typeof drawThor !== 'undefined') lookup.drawThor = drawThor;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1558,6 +1559,59 @@ function drawSiegeTank(ctx, S, dir, teamColor) {
   }
 }
 
+function drawThor(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawThor(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 2;
+
+  if (dir === 1) {
+    ctx.fillStyle = '#2a3040';
+    [[-0.12, 0.22], [0.08, 0.22]].forEach(([dx, dy]) => {
+      ctx.fillRect(cx + dx * S, cy + S * 0.04, S * 0.12, dy * S);
+    });
+    ctx.fillStyle = '#1a2030';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.28, S * 0.26, S * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+    const bg = ctx.createLinearGradient(cx, cy - S * 0.2, cx, cy + S * 0.04);
+    bg.addColorStop(0, '#4a5060'); bg.addColorStop(1, '#2a3040');
+    ctx.fillStyle = bg; ctx.fillRect(cx - S * 0.2, cy - S * 0.18, S * 0.4, S * 0.22);
+    ctx.fillStyle = '#3a4050';
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.24, S * 0.14, S * 0.12);
+    ctx.fillStyle = '#555'; ctx.fillRect(cx + S * 0.26, cy - S * 0.2, S * 0.08, S * 0.06);
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.04, cy - S * 0.07, S * 0.08, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.fillStyle = '#2a3040';
+    [-0.28, 0.28].forEach(dx => {
+      ctx.fillRect(cx + dx * S - S * 0.06, cy + S * 0.04, S * 0.12, S * 0.22);
+    });
+    ctx.fillStyle = '#1a2030';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.26, S * 0.36, S * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    const bg = ctx.createRadialGradient(cx - S * 0.06, cy - S * 0.06, S * 0.04, cx, cy, S * 0.32);
+    bg.addColorStop(0, '#505566'); bg.addColorStop(1, '#1e2434');
+    ctx.fillStyle = bg; ctx.fillRect(cx - S * 0.24, cy - S * 0.2, S * 0.48, S * 0.26);
+    ctx.fillStyle = '#3a4050';
+    [-0.28, 0.28].forEach(dx => { ctx.fillRect(cx + dx * S - S * 0.06, cy - S * 0.26, S * 0.14, S * 0.12); });
+    ctx.fillStyle = '#556';
+    if (dir === 0) {
+      [-0.28, 0.28].forEach(dx => {
+        ctx.beginPath(); ctx.ellipse(cx + dx * S, cy - S * 0.22, S * 0.05, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.fillStyle = '#445';
+      [-0.2, 0.2].forEach(dx => { ctx.fillRect(cx + dx * S - S * 0.02, cy - S * 0.12, S * 0.04, S * 0.2); });
+    } else {
+      [-0.28, 0.28].forEach(dx => { ctx.fillRect(cx + dx * S - S * 0.04, cy - S * 0.3, S * 0.08, S * 0.08); });
+    }
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.07, S * 0.1, S * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1582,6 +1636,8 @@ function initSpriteMaterials() {
   UNIT_MATS['WIDOW_MINE_E'] = makeDirTextures(drawWidowMine, TEAM_COLOR_ENEMY);
   UNIT_MATS['SIEGE_TANK_F'] = makeDirTextures(drawSiegeTank, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SIEGE_TANK_E'] = makeDirTextures(drawSiegeTank, TEAM_COLOR_ENEMY);
+  UNIT_MATS['THOR_F']     = makeDirTextures(drawThor,     TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['THOR_E']     = makeDirTextures(drawThor,     TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
