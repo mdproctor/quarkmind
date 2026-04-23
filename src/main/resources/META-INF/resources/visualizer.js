@@ -124,6 +124,7 @@ window.__test = {
     if (typeof drawAdept !== 'undefined') lookup.drawAdept = drawAdept;
     if (typeof drawDarkTemplar !== 'undefined') lookup.drawDarkTemplar = drawDarkTemplar;
     if (typeof drawHighTemplar !== 'undefined') lookup.drawHighTemplar = drawHighTemplar;
+    if (typeof drawDisruptor !== 'undefined') lookup.drawDisruptor = drawDisruptor;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2228,6 +2229,66 @@ function drawHighTemplar(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+function drawDisruptor(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawDisruptor(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 4;
+
+  // Subtle floating shadow beneath the sphere
+  ctx.fillStyle = hexToRgba('#000000', 0.25);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S * 0.30, S * 0.20, S * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Main sphere — dark base
+  const baseGrad = ctx.createRadialGradient(cx - S * 0.06, cy - S * 0.06, S * 0.02,
+                                            cx, cy, S * 0.28);
+  baseGrad.addColorStop(0, hexToRgba('#2a0a3a', 0.95));
+  baseGrad.addColorStop(0.5, hexToRgba('#120520', 0.98));
+  baseGrad.addColorStop(1, hexToRgba('#050010', 1.0));
+  ctx.fillStyle = baseGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Energy glow layer on sphere surface
+  const glowGrad = ctx.createRadialGradient(cx, cy, S * 0.04, cx, cy, S * 0.28);
+  glowGrad.addColorStop(0, hexToRgba(teamColor, 0.70));
+  glowGrad.addColorStop(0.45, hexToRgba(teamColor, 0.18));
+  glowGrad.addColorStop(1, hexToRgba('#000000', 0.0));
+  ctx.fillStyle = glowGrad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.28, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Energy arcs across sphere surface
+  ctx.strokeStyle = hexToRgba(teamColor, 0.80);
+  ctx.lineWidth = S * 0.022;
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 12;
+  const arcAngles = [0.1, 0.6, 1.3, 2.0, 2.7];
+  for (let i = 0; i < arcAngles.length; i++) {
+    const start = arcAngles[i];
+    const end   = start + Math.PI * 0.42;
+    const r     = S * 0.22 - i * S * 0.012;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, start, end);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // Bright central core
+  ctx.fillStyle = hexToRgba(teamColor, 0.95);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 20;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.07, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2272,6 +2333,8 @@ function initSpriteMaterials() {
   UNIT_MATS['DARK_TEMPLAR_E'] = makeDirTextures(drawDarkTemplar, TEAM_COLOR_ENEMY);
   UNIT_MATS['HIGH_TEMPLAR_F'] = makeDirTextures(drawHighTemplar, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['HIGH_TEMPLAR_E'] = makeDirTextures(drawHighTemplar, TEAM_COLOR_ENEMY);
+  UNIT_MATS['DISRUPTOR_F'] = makeDirTextures(drawDisruptor, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['DISRUPTOR_E'] = makeDirTextures(drawDisruptor, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
