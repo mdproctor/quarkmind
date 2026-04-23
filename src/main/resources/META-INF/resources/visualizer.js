@@ -119,6 +119,7 @@ window.__test = {
     if (typeof drawCyclone   !== 'undefined') lookup.drawCyclone   = drawCyclone;
     if (typeof drawWidowMine  !== 'undefined') lookup.drawWidowMine  = drawWidowMine;
     if (typeof drawSiegeTank  !== 'undefined') lookup.drawSiegeTank  = drawSiegeTank;
+    if (typeof drawSiegeTankSieged !== 'undefined') lookup.drawSiegeTankSieged = drawSiegeTankSieged;
     if (typeof drawThor !== 'undefined') lookup.drawThor = drawThor;
     if (typeof drawViking !== 'undefined') lookup.drawViking = drawViking;
     if (typeof drawRaven    !== 'undefined') lookup.drawRaven    = drawRaven;
@@ -1585,6 +1586,121 @@ function drawSiegeTank(ctx, S, dir, teamColor) {
     ctx.fillStyle = hexToRgba(teamColor, 0.65);
     ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
     ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.04, S * 0.05, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
+function drawSiegeTankSieged(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawSiegeTankSieged(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 1) {
+    // Side view: full barrel profile extending upper-left at steep angle
+    // Splayed tracks (stabiliser feet) — wider than mobile mode
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(cx - S * 0.42, cy + S * 0.12, S * 0.84, S * 0.14);
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(cx - S * 0.40, cy + S * 0.14, S * 0.80, S * 0.1);
+    // Track wheels
+    ctx.fillStyle = '#333';
+    for (let i = 0; i < 6; i++) {
+      ctx.beginPath(); ctx.ellipse(cx - S * 0.35 + i * S * 0.14, cy + S * 0.19, S * 0.03, S * 0.025, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Raised angular hull body
+    const bg = ctx.createLinearGradient(cx, cy - S * 0.16, cx, cy + S * 0.12);
+    bg.addColorStop(0, '#5a6a4a'); bg.addColorStop(1, '#3a4a32');
+    ctx.fillStyle = bg; ctx.fillRect(cx - S * 0.32, cy - S * 0.14, S * 0.64, S * 0.28);
+    // Hull top bevel
+    ctx.fillStyle = '#6a7a5a';
+    ctx.fillRect(cx - S * 0.30, cy - S * 0.16, S * 0.60, S * 0.05);
+    // Stabiliser struts (left side, lower hull to ground)
+    ctx.strokeStyle = '#2a3a22'; ctx.lineWidth = S * 0.018;
+    [[-0.30, -0.05], [-0.20, -0.02]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * S, cy + dy * S);
+      ctx.lineTo(cx + (dx - S * 0.02), cy + S * 0.12);
+      ctx.stroke();
+    });
+    // Long barrel at ~40° angle, extending upper-left — roughly S*0.55 long
+    ctx.save();
+    ctx.translate(cx - S * 0.04, cy - S * 0.08);
+    ctx.rotate(-Math.PI * 0.22); // ~40° up-left
+    ctx.fillStyle = '#2a3a22';
+    ctx.fillRect(-S * 0.04, -S * 0.035, S * 0.55, S * 0.07); // barrel shaft
+    ctx.fillStyle = '#1a2a12';
+    ctx.fillRect(S * 0.47, -S * 0.045, S * 0.08, S * 0.09); // muzzle brake
+    ctx.restore();
+    // Team-colour targeting sensor at muzzle tip
+    const muzzleX = cx - S * 0.04 + Math.cos(-Math.PI * 0.22) * S * 0.51;
+    const muzzleY = cy - S * 0.08 + Math.sin(-Math.PI * 0.22) * S * 0.51;
+    ctx.fillStyle = hexToRgba(teamColor, 0.9);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.ellipse(muzzleX, muzzleY, S * 0.04, S * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else if (dir === 2) {
+    // Back view: exhaust vents visible, barrel leans rearward
+    // Splayed tracks
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx - S * 0.38, cy + S * 0.12, S * 0.76, S * 0.14);
+    const bg = ctx.createLinearGradient(cx, cy - S * 0.16, cx, cy + S * 0.12);
+    bg.addColorStop(0, '#4a5a3a'); bg.addColorStop(1, '#2a3a22');
+    ctx.fillStyle = bg; ctx.fillRect(cx - S * 0.34, cy - S * 0.12, S * 0.68, S * 0.26);
+    // Hull top
+    ctx.fillStyle = '#5a6a4a';
+    ctx.fillRect(cx - S * 0.32, cy - S * 0.14, S * 0.64, S * 0.05);
+    // Exhaust vents (pairs)
+    ctx.fillStyle = '#1a1a1a';
+    [[-0.18, 0.18]].forEach(dx => {
+      ctx.fillRect(cx + dx * S - S * 0.04, cy - S * 0.10, S * 0.08, S * 0.16);
+    });
+    ctx.fillStyle = '#0a0a0a';
+    [-0.18, 0.18].forEach(dx => {
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(cx + dx * S - S * 0.03, cy - S * 0.09 + i * S * 0.04, S * 0.06, S * 0.02);
+      }
+    });
+    // Barrel foreshortened (pointing away) — ellipse at top-centre
+    ctx.fillStyle = '#1a2a12';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.20, S * 0.07, S * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2a3a22';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.20, S * 0.055, S * 0.038, 0, 0, Math.PI * 2); ctx.fill();
+    // Team-colour sensor
+    ctx.fillStyle = hexToRgba(teamColor, 0.9);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.20, S * 0.03, S * 0.025, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else {
+    // Dir 0 (front): barrel pointing up toward viewer — large foreshortened ellipse
+    // Splayed tracks
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(cx - S * 0.38, cy + S * 0.12, S * 0.76, S * 0.14);
+    const bg = ctx.createLinearGradient(cx, cy - S * 0.16, cx, cy + S * 0.12);
+    bg.addColorStop(0, '#5a6a4a'); bg.addColorStop(1, '#3a4a32');
+    ctx.fillStyle = bg; ctx.fillRect(cx - S * 0.34, cy - S * 0.12, S * 0.68, S * 0.26);
+    // Hull top bevel
+    ctx.fillStyle = '#6a7a5a';
+    ctx.fillRect(cx - S * 0.32, cy - S * 0.14, S * 0.64, S * 0.05);
+    // Stabiliser struts visible on both sides
+    ctx.strokeStyle = '#2a3a22'; ctx.lineWidth = S * 0.018;
+    [[-0.34, 0.34]].forEach(dx => {
+      ctx.beginPath(); ctx.moveTo(cx + dx * S, cy - S * 0.02); ctx.lineTo(cx + dx * S, cy + S * 0.12); ctx.stroke();
+    });
+    // Barrel as large foreshortened ellipse (viewing down the barrel from front)
+    ctx.fillStyle = '#1a2a12';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.18, S * 0.10, S * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    // Barrel rim ring
+    ctx.strokeStyle = '#2a3a22'; ctx.lineWidth = S * 0.02;
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.18, S * 0.10, S * 0.08, 0, 0, Math.PI * 2); ctx.stroke();
+    // Inner bore
+    ctx.fillStyle = '#0a0a0a';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.18, S * 0.055, S * 0.042, 0, 0, Math.PI * 2); ctx.fill();
+    // Team-colour targeting sensor at muzzle
+    ctx.fillStyle = hexToRgba(teamColor, 0.9);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.18, S * 0.03, S * 0.025, 0, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
   }
 }
@@ -4014,6 +4130,8 @@ function initSpriteMaterials() {
   UNIT_MATS['WIDOW_MINE_E'] = makeDirTextures(drawWidowMine, TEAM_COLOR_ENEMY);
   UNIT_MATS['SIEGE_TANK_F'] = makeDirTextures(drawSiegeTank, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SIEGE_TANK_E'] = makeDirTextures(drawSiegeTank, TEAM_COLOR_ENEMY);
+  UNIT_MATS['SIEGE_TANK_SIEGED_F'] = makeDirTextures(drawSiegeTankSieged, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['SIEGE_TANK_SIEGED_E'] = makeDirTextures(drawSiegeTankSieged, TEAM_COLOR_ENEMY);
   UNIT_MATS['THOR_F']     = makeDirTextures(drawThor,     TEAM_COLOR_FRIENDLY);
   UNIT_MATS['THOR_E']     = makeDirTextures(drawThor,     TEAM_COLOR_ENEMY);
   UNIT_MATS['VIKING_F']   = makeDirTextures(drawViking,   TEAM_COLOR_FRIENDLY);
