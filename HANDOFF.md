@@ -1,55 +1,61 @@
 # Handover — 2026-04-23
 
-**Head commit:** `b285200` — docs: add blog entry E16 — Zerg sprites and the showcase that lied
+**Head commit:** `62c8d50` — docs: E18 design spec — remaining Protoss + Zerg sprites
 
 ## What Changed This Session
 
-**E16 complete — Zerg sprites (closes #86, refs epic #83)**
+**E17 complete — all 10 Terran sprites (closes #87, refs epic #83)**
 
-- `drawZergling`, `drawRoach`, `drawHydralisk`, `drawMutalisk` — canvas 2D draw functions, all 4 dirs × 2 team colours, bio-sac teamColor decal (radial gradient + shadowBlur)
-- `FLYING_UNITS` now includes `'MUTALISK'`
-- 22 `UNIT_MATS` keys registered (was 14 after E15)
-- 12 new Playwright tests — smoke, spawn, elevation (mutaliskSpawnsHigherThanGroundUnit)
-- `ShowcaseResource` updated — Zerg row at tiles (10,11)–(14,13) area, all within Nexus sight range
+- 5 ground: Ghost, Cyclone, Widow Mine, Siege Tank (mobile), Thor
+- 5 air: Viking, Raven, Banshee, Liberator, Battlecruiser
+- FLYING_UNITS now: `['MEDIVAC','MUTALISK','VIKING','RAVEN','BANSHEE','LIBERATOR','BATTLECRUISER']`
+- 25 new Playwright tests (smoke + spawn for all 10; elevation for 5 air)
+- ShowcaseResource: 10 → 20 enemies (Terran ground column x=16 + air row y=8)
+- Showcase Playwright test updated: expects 20 enemies
+- Issue #87 closed
 
-**Showcase fixes (two recurring bugs killed)**
+**Key discovery: `smokeTestDrawFn` has a manual lookup table** (lines ~98–130 in `visualizer.js`). Every new draw function must be added there with `if (typeof drawX !== 'undefined') lookup.drawX = drawX;` — not documented elsewhere.
 
-- Root cause of fog/wrong-units bug: `ShowcaseResource` seeds `SimulatedGame` but in emulated mode `EmulatedEngine` broadcasts `EmulatedGame` — different CDI bean, no error. Showcase must always run in mock mode (`mvn quarkus:dev`, no profile flag). Documented in CLAUDE.md.
-- Sprite/3D model Y fixed: was `TILE * 0.65 = 0.455` (below terrain surface in emulated mode where `TERRAIN_SURFACE_Y = TILE = 0.7`). Now `TERRAIN_SURFACE_Y + TILE * 0.5` (ground) / `TERRAIN_SURFACE_Y + TILE * 1.1` (flying).
-- New Playwright test: `showcaseRendersAllUnitsAboveTerrainSurface` — must pass before showing any showcase. Asserts 10 enemies render, all Y > `TERRAIN_SURFACE_Y`, no bounds overflows.
+**E18 spec written and committed**
 
-**Terrain colour scheme changed**
+- `docs/superpowers/specs/2026-04-23-e18-protoss-zerg-sprites-design.md`
+- 11 Protoss + 9 Zerg = 20 units total
+- Protoss air (FLYING_UNITS): OBSERVER, VOID_RAY, CARRIER
+- Zerg air (FLYING_UNITS): BROOD_LORD, CORRUPTOR, VIPER
 
-- Sun: `0xaabbff` (blue-white) → `0xffffff` (neutral white) — blue-white sun killed warm tile colours
-- Ground tiles: `0x1a2233` → `0xb8956a` (sandy light brown)
-- Fog planes (emulated): `0x000000` → `0x888888` (light grey for out-of-vision)
-
-**3D unit models — idea logged in IDEAS.md** (after 2D sprites complete, low-poly Three.js compound geometry, perf gate)
+**E18 plan NOT written** — writing-plans hit the 32k token limit (20 units × full draw code in each step = too large).
 
 ## Immediate Next Step
 
-No active epic. Recommended: E17 — continue 2D sprites (11 Protoss remaining, 10 Terran, 9 Zerg; all on UNKNOWN fallback).
+**Write E18a plan (Protoss only) and E18b (Zerg), then execute via subagent-driven-development.**
 
-```bash
-gh issue list --state open
-```
+**Critical:** Do NOT embed full draw function code in plan steps. Plan steps should describe what to implement visually; the implementation subagent writes the actual canvas code. This keeps each plan under the token limit.
+
+Pattern to follow: `docs/superpowers/plans/2026-04-23-e17-terran-sprites.md` but with visual descriptions instead of pre-written draw code.
 
 ## Key Technical Notes
 
-*E15 and earlier notes unchanged — retrieve with:* `git show HEAD~1:HANDOFF.md`
+*E16 notes unchanged — retrieve with:* `git show HEAD~2:HANDOFF.md`
 
-**E16 additions:**
-- Showcase must run mock mode — `mvn quarkus:dev` (no profile). Seeding in emulated mode silently shows EmulatedGame state, not SimulatedGame.
-- `TERRAIN_SURFACE_Y` is the profile-aware vertical anchor — all unit Y must be relative to it, never absolute `TILE * n`
-- `smokeTestDrawFn` lookup uses `typeof` hoisting — draw functions must be `function` declarations, not arrow fns
-- `showcaseRendersAllUnitsAboveTerrainSurface` Playwright test is mandatory before showing any showcase result
+**E17/E18 additions:**
+- `smokeTestDrawFn` lookup table at lines ~98–130 — manual, must be updated per unit. Every draw function must be a `function` declaration (not arrow fn) and added to this table.
+- `visualizer.js` is now 2028 lines, 43 UNIT_MATS entries.
+- No showcase extension for E18 — positions within 8.5 tiles of Nexus at (8,8) are exhausted. Showcase stays at 20 enemies.
+
+**E18 visual design decisions (from spec):**
+- ARCHON: pure energy rings + glowing core — no solid body
+- LURKER: burrowed surface pose — spines erupting from ground mound
+- DISRUPTOR: floating sphere with energy buildup glow
+- COLOSSUS: very wide 4-legged walker, thermal lance arrays on top
+- QUEEN: ground unit despite wings (not in FLYING_UNITS)
+- VIPER: flying Zerg caster (in FLYING_UNITS)
 
 ## Open Issues
 
 | # | What | Status |
 |---|------|--------|
-| #83 | Epic E14: 3D Visualizer (E17/E18/… remain) | Open |
-| #74 | Unit genericisation / configurable YAML | Parked |
+| #83 | Epic E14: 3D Visualizer — E18 is next | Open |
+| #74 | Unit genericisation | Parked |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
 
@@ -57,9 +63,7 @@ gh issue list --state open
 
 | Context | Where |
 |---------|-------|
-| E16 design spec | `docs/superpowers/specs/2026-04-22-e16-zerg-sprites-design.md` |
-| E16 implementation plan | `docs/superpowers/plans/2026-04-22-e16-zerg-sprites.md` |
-| Blog entry | `docs/_posts/2026-04-23-mdp01-e16-zerg-sprites-showcase-lies.md` |
-| 3D models idea | `IDEAS.md` (entry 2026-04-23) |
-| E15 handover (prior) | `git show HEAD~1:HANDOFF.md` |
-| GitHub | mdproctor/quarkmind (#86 closed; epic #83 open) |
+| E18 spec | `docs/superpowers/specs/2026-04-23-e18-protoss-zerg-sprites-design.md` |
+| E17 plan (pattern) | `docs/superpowers/plans/2026-04-23-e17-terran-sprites.md` |
+| E16 handover (prior) | `git show HEAD~2:HANDOFF.md` |
+| GitHub | mdproctor/quarkmind (epic #83 open; #87 closed) |
