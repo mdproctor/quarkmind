@@ -2742,4 +2742,80 @@ class VisualizerRenderTest {
             .as("Corruptor Y (%.3f) must be higher than Marine Y (%.3f)".formatted(corruptorY, marineY))
             .isGreaterThan(marineY + 0.3);
     }
+
+    @Test
+    @Tag("browser")
+    void viperDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawViper', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawViper dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void viperEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.VIPER, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Viper enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void viperSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20));
+        engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+
+        orchestrator.startGame();
+        Page page2 = browser.newPage();
+        page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.VIPER, new Point2d(20, 20));
+        engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        @SuppressWarnings("unchecked")
+        double viperY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()"))
+            .stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+
+        assertThat(viperY)
+            .as("Viper Y (%.3f) must be higher than Marine Y (%.3f)".formatted(viperY, marineY))
+            .isGreaterThan(marineY + 0.3);
+    }
 }

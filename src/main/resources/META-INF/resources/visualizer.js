@@ -7,7 +7,7 @@ const FLYING_UNITS = new Set([
   'MEDIVAC', 'MUTALISK',
   'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER',
   'OBSERVER', 'VOID_RAY', 'CARRIER',
-  'CORRUPTOR'
+  'CORRUPTOR', 'VIPER'
 ]);
 const RECONNECT_MS = 2000;
 
@@ -143,6 +143,7 @@ window.__test = {
     if (typeof drawQueen !== 'undefined') lookup.drawQueen = drawQueen;
     if (typeof drawUltralisk !== 'undefined') lookup.drawUltralisk = drawUltralisk;
     if (typeof drawCorruptor !== 'undefined') lookup.drawCorruptor = drawCorruptor;
+    if (typeof drawViper !== 'undefined') lookup.drawViper = drawViper;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3684,6 +3685,152 @@ function drawCorruptor(ctx, S, dir, teamColor) {
   });
 }
 
+// drawViper — Zerg flying serpent caster unit.
+// Dark teal-purple elongated body with sinuous curves and abduct claw.
+// Dir-3 mirrors dir-1.
+function drawViper(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawViper(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  const cx = S / 2;
+  const cy = S / 2;
+  const bodyColor = '#0a1a18';
+  const scaleColor = '#061210';
+  const midColor  = '#0d2420';
+
+  ctx.lineCap  = 'round';
+  ctx.lineJoin = 'round';
+
+  if (dir === 0 || dir === 2) {
+    // Vertical orientation — head at top (dir 0) or bottom (dir 2)
+    const headY = (dir === 0) ? cy - S * 0.22 : cy + S * 0.22;
+    const tailY = (dir === 0) ? cy + S * 0.38 : cy - S * 0.38;
+    const midSign = (dir === 0) ? 1 : -1;
+
+    // Thick sinuous body path passing through (cx, cy)
+    // Control points create an S-curve that centres on (64,64)
+    ctx.beginPath();
+    ctx.moveTo(cx, headY);
+    // Bezier: sweeps through centre pixel (64,64) then tapers to tail tip
+    ctx.bezierCurveTo(
+      cx + S * 0.18 * midSign, cy - S * 0.10 * midSign,   // cp1
+      cx - S * 0.16 * midSign, cy + S * 0.06 * midSign,   // cp2
+      cx,                       tailY                       // tail tip
+    );
+    ctx.lineWidth = S * 0.14;
+    ctx.strokeStyle = bodyColor;
+    ctx.stroke();
+
+    // Thinner highlight stripe along body centre — also passes through (64,64)
+    ctx.beginPath();
+    ctx.moveTo(cx, headY + (dir === 0 ? S * 0.04 : -S * 0.04));
+    ctx.bezierCurveTo(
+      cx + S * 0.10 * midSign, cy - S * 0.06 * midSign,
+      cx - S * 0.08 * midSign, cy + S * 0.04 * midSign,
+      cx,                       tailY
+    );
+    ctx.lineWidth = S * 0.05;
+    ctx.strokeStyle = midColor;
+    ctx.stroke();
+
+    // Scale dots along body
+    const scaleDots = (dir === 0)
+      ? [[0.06, -0.10], [-0.07, 0.04], [0.05, 0.16]]
+      : [[-0.06, 0.10], [0.07, -0.04], [-0.05, -0.16]];
+    scaleDots.forEach(([dx, dy]) => {
+      ctx.fillStyle = scaleColor;
+      ctx.beginPath();
+      ctx.ellipse(cx + dx * S, cy + dy * S, S * 0.032, S * 0.022, dx * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Head ellipse — slightly wider rounded bulge at head end
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, headY + (dir === 0 ? S * 0.04 : -S * 0.04), S * 0.10, S * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Abduct claws flanking head — two curved hook strokes in team colour
+    const clawY = headY + (dir === 0 ? -S * 0.04 : S * 0.04);
+    ctx.lineWidth = S * 0.022;
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+    // Left claw
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.07, clawY);
+    ctx.quadraticCurveTo(cx - S * 0.12, clawY - S * 0.06 * midSign, cx - S * 0.08, clawY - S * 0.13 * midSign);
+    ctx.stroke();
+    // Right claw
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.07, clawY);
+    ctx.quadraticCurveTo(cx + S * 0.12, clawY - S * 0.06 * midSign, cx + S * 0.08, clawY - S * 0.13 * midSign);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+  } else {
+    // dir === 1 — side view: body sweeps left-to-right, crossing (64,64)
+    const headX = S * 0.10;
+    const tailX = S * 0.92;
+    const headY_side = cy;
+
+    // Thick sinuous body crossing canvas centre x=64
+    ctx.beginPath();
+    ctx.moveTo(headX, headY_side);
+    ctx.bezierCurveTo(
+      S * 0.30, cy - S * 0.22,   // cp1 — curves up before centre
+      S * 0.58, cy + S * 0.20,   // cp2 — curves down after centre
+      tailX,    cy               // tail tip at right
+    );
+    ctx.lineWidth = S * 0.13;
+    ctx.strokeStyle = bodyColor;
+    ctx.stroke();
+
+    // Thinner highlight stripe
+    ctx.beginPath();
+    ctx.moveTo(headX + S * 0.02, headY_side);
+    ctx.bezierCurveTo(
+      S * 0.30, cy - S * 0.13,
+      S * 0.58, cy + S * 0.12,
+      tailX - S * 0.04, cy
+    );
+    ctx.lineWidth = S * 0.05;
+    ctx.strokeStyle = midColor;
+    ctx.stroke();
+
+    // Scale dots along body
+    [[0.28, -0.12], [0.50, 0.08], [0.68, -0.04]].forEach(([dx, dy]) => {
+      ctx.fillStyle = scaleColor;
+      ctx.beginPath();
+      ctx.ellipse(dx * S, cy + dy * S, S * 0.030, S * 0.020, 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Head ellipse at left end
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(headX + S * 0.04, headY_side, S * 0.09, S * 0.075, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Abduct claws at head (left) — two hook strokes above/below head
+    ctx.lineWidth = S * 0.022;
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+    // Upper claw
+    ctx.beginPath();
+    ctx.moveTo(headX + S * 0.02, cy - S * 0.05);
+    ctx.quadraticCurveTo(headX - S * 0.04, cy - S * 0.12, headX + S * 0.01, cy - S * 0.18);
+    ctx.stroke();
+    // Lower claw
+    ctx.beginPath();
+    ctx.moveTo(headX + S * 0.02, cy + S * 0.05);
+    ctx.quadraticCurveTo(headX - S * 0.04, cy + S * 0.12, headX + S * 0.01, cy + S * 0.18);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3758,6 +3905,8 @@ function initSpriteMaterials() {
   UNIT_MATS['ULTRALISK_E'] = makeDirTextures(drawUltralisk, TEAM_COLOR_ENEMY);
   UNIT_MATS['CORRUPTOR_F'] = makeDirTextures(drawCorruptor, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['CORRUPTOR_E'] = makeDirTextures(drawCorruptor, TEAM_COLOR_ENEMY);
+  UNIT_MATS['VIPER_F'] = makeDirTextures(drawViper, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['VIPER_E'] = makeDirTextures(drawViper, TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
