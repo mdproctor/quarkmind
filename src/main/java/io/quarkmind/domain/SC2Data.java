@@ -29,6 +29,7 @@ public final class SC2Data {
 
     public static int buildTimeInTicks(BuildingType type) {
         return switch (type) {
+            // Protoss
             case PYLON             -> 18;
             case GATEWAY           -> 47;
             case CYBERNETICS_CORE  -> 37;
@@ -37,6 +38,47 @@ public final class SC2Data {
             case STARGATE          -> 44;
             case FORGE             -> 30;
             case TWILIGHT_COUNCIL  -> 37;
+            case PHOTON_CANNON     -> 25;
+            case SHIELD_BATTERY    -> 22;
+            case DARK_SHRINE       -> 71;
+            case TEMPLAR_ARCHIVES  -> 37;
+            case FLEET_BEACON      -> 37;
+            case ROBOTICS_BAY      -> 30;
+            // Terran
+            case COMMAND_CENTER    -> 60;
+            case ORBITAL_COMMAND   -> 25;
+            case PLANETARY_FORTRESS -> 30;
+            case SUPPLY_DEPOT      -> 18;
+            case BARRACKS          -> 40;
+            case ENGINEERING_BAY   -> 22;
+            case ARMORY            -> 40;
+            case MISSILE_TURRET    -> 16;
+            case BUNKER            -> 25;
+            case SENSOR_TOWER      -> 16;
+            case GHOST_ACADEMY     -> 25;
+            case FACTORY           -> 37;
+            case STARPORT          -> 25;
+            case FUSION_CORE       -> 40;
+            case REFINERY          -> 18;
+            // Zerg
+            case HATCHERY          -> 60;
+            case LAIR              -> 57;
+            case HIVE              -> 57;
+            case SPAWNING_POOL     -> 46;
+            case EVOLUTION_CHAMBER -> 25;
+            case ROACH_WARREN      -> 46;
+            case BANELING_NEST     -> 43;
+            case SPINE_CRAWLER     -> 36;
+            case SPORE_CRAWLER     -> 21;
+            case HYDRALISK_DEN     -> 29;
+            case LURKER_DEN        -> 57;
+            case INFESTATION_PIT   -> 46;
+            case SPIRE             -> 71;
+            case GREATER_SPIRE     -> 71;
+            case NYDUS_NETWORK     -> 21;
+            case NYDUS_CANAL       -> 11;
+            case ULTRALISK_CAVERN  -> 46;
+            case EXTRACTOR         -> 18;
             default                -> 40;
         };
     }
@@ -52,7 +94,12 @@ public final class SC2Data {
     }
 
     public static int supplyBonus(BuildingType type) {
-        return type == BuildingType.PYLON ? 8 : 0;
+        return switch (type) {
+            case PYLON         -> 8;
+            case SUPPLY_DEPOT  -> 8;
+            case HATCHERY, LAIR, HIVE -> 6;
+            default            -> 0;
+        };
     }
 
     public static int maxHealth(UnitType type) {
@@ -118,10 +165,58 @@ public final class SC2Data {
 
     public static int maxBuildingHealth(BuildingType type) {
         return switch (type) {
-            case NEXUS    -> 1500;
-            case PYLON    -> 200;
-            case GATEWAY  -> 500;
-            default       -> 500;
+            // Protoss
+            case NEXUS              -> 1500;
+            case PYLON              -> 200;
+            case GATEWAY            -> 500;
+            case CYBERNETICS_CORE   -> 500;
+            case ASSIMILATOR        -> 450;
+            case ROBOTICS_FACILITY  -> 500;
+            case STARGATE           -> 600;
+            case FORGE              -> 550;
+            case TWILIGHT_COUNCIL   -> 500;
+            case PHOTON_CANNON      -> 150;
+            case SHIELD_BATTERY     -> 200;
+            case DARK_SHRINE        -> 500;
+            case TEMPLAR_ARCHIVES   -> 500;
+            case FLEET_BEACON       -> 500;
+            case ROBOTICS_BAY       -> 500;
+            // Terran
+            case COMMAND_CENTER     -> 1500;
+            case ORBITAL_COMMAND    -> 1500;
+            case PLANETARY_FORTRESS -> 1500;
+            case SUPPLY_DEPOT       -> 400;
+            case BARRACKS           -> 1000;
+            case ENGINEERING_BAY    -> 850;
+            case ARMORY             -> 750;
+            case MISSILE_TURRET     -> 250;
+            case BUNKER             -> 400;
+            case SENSOR_TOWER       -> 200;
+            case GHOST_ACADEMY      -> 1250;
+            case FACTORY            -> 1250;
+            case STARPORT           -> 1000;
+            case FUSION_CORE        -> 750;
+            case REFINERY           -> 500;
+            // Zerg
+            case HATCHERY           -> 1500;
+            case LAIR               -> 2000;
+            case HIVE               -> 2500;
+            case SPAWNING_POOL      -> 750;
+            case EVOLUTION_CHAMBER  -> 750;
+            case ROACH_WARREN       -> 850;
+            case BANELING_NEST      -> 850;
+            case SPINE_CRAWLER      -> 300;
+            case SPORE_CRAWLER      -> 400;
+            case HYDRALISK_DEN      -> 850;
+            case LURKER_DEN         -> 850;
+            case INFESTATION_PIT    -> 850;
+            case SPIRE              -> 850;
+            case GREATER_SPIRE      -> 1000;
+            case NYDUS_NETWORK      -> 850;
+            case NYDUS_CANAL        -> 250;
+            case ULTRALISK_CAVERN   -> 850;
+            case EXTRACTOR          -> 500;
+            default                 -> 500;
         };
     }
 
@@ -138,16 +233,58 @@ public final class SC2Data {
 
     public static int mineralCost(BuildingType type) {
         return switch (type) {
-            case NEXUS             -> 400;
-            case PYLON             -> 100;
-            case GATEWAY           -> 150;
-            case CYBERNETICS_CORE  -> 150;
-            case ASSIMILATOR       -> 75;
-            case ROBOTICS_FACILITY -> 200;
-            case STARGATE          -> 150;
-            case FORGE             -> 150;
-            case TWILIGHT_COUNCIL  -> 150;
-            default                -> 100;
+            // Protoss
+            case NEXUS              -> 400;
+            case PYLON              -> 100;
+            case GATEWAY            -> 150;
+            case CYBERNETICS_CORE   -> 150;
+            case ASSIMILATOR        -> 75;
+            case ROBOTICS_FACILITY  -> 200;
+            case STARGATE           -> 150;
+            case FORGE              -> 150;
+            case TWILIGHT_COUNCIL   -> 150;
+            case PHOTON_CANNON      -> 150;
+            case SHIELD_BATTERY     -> 100;
+            case DARK_SHRINE        -> 150;
+            case TEMPLAR_ARCHIVES   -> 150;
+            case FLEET_BEACON       -> 300;
+            case ROBOTICS_BAY       -> 200;
+            // Terran
+            case COMMAND_CENTER     -> 400;
+            case ORBITAL_COMMAND    -> 150;
+            case PLANETARY_FORTRESS -> 150;
+            case SUPPLY_DEPOT       -> 100;
+            case BARRACKS           -> 150;
+            case ENGINEERING_BAY    -> 125;
+            case ARMORY             -> 150;
+            case MISSILE_TURRET     -> 100;
+            case BUNKER             -> 100;
+            case SENSOR_TOWER       -> 125;
+            case GHOST_ACADEMY      -> 150;
+            case FACTORY            -> 150;
+            case STARPORT           -> 150;
+            case FUSION_CORE        -> 150;
+            case REFINERY           -> 75;
+            // Zerg
+            case HATCHERY           -> 300;
+            case LAIR               -> 150;
+            case HIVE               -> 200;
+            case SPAWNING_POOL      -> 200;
+            case EVOLUTION_CHAMBER  -> 75;
+            case ROACH_WARREN       -> 150;
+            case BANELING_NEST      -> 100;
+            case SPINE_CRAWLER      -> 100;
+            case SPORE_CRAWLER      -> 75;
+            case HYDRALISK_DEN      -> 100;
+            case LURKER_DEN         -> 150;
+            case INFESTATION_PIT    -> 100;
+            case SPIRE              -> 200;
+            case GREATER_SPIRE      -> 100;
+            case NYDUS_NETWORK      -> 150;
+            case NYDUS_CANAL        -> 50;
+            case ULTRALISK_CAVERN   -> 150;
+            case EXTRACTOR          -> 25;
+            default                 -> 100;
         };
     }
 

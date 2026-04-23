@@ -1888,11 +1888,11 @@ class VisualizerRenderTest {
         int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
         assertThat(count).as("all 65 showcase enemy units must render").isEqualTo(65);
 
-        // 2. All 10 buildings rendered (1 Nexus from reset + 9 showcase spawned)
-        page.waitForFunction("() => window.__test.buildingCount() >= 10",
+        // 2. All 49 buildings rendered (1 Nexus from reset + 48 showcase spawned)
+        page.waitForFunction("() => window.__test.buildingCount() >= 49",
             null, new Page.WaitForFunctionOptions().setTimeout(5_000));
         int buildings = ((Number) page.evaluate("() => window.__test.buildingCount()")).intValue();
-        assertThat(buildings).as("10 showcase buildings must render").isEqualTo(10);
+        assertThat(buildings).as("49 showcase buildings must render").isEqualTo(49);
 
         // 3. No unit sunk at or below terrain surface
         double terrainSurfaceY = ((Number) page.evaluate("() => TERRAIN_SURFACE_Y")).doubleValue();
@@ -3779,6 +3779,288 @@ class VisualizerRenderTest {
         page.waitForFunction("() => window.__test.buildingCount() >= 2", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
         int buildings = ((Number) page.evaluate("() => window.__test.buildingCount()")).intValue();
         assertThat(buildings).as("nexus from reset + spawned Stargate must both render").isEqualTo(2);
+        page.close();
+    }
+
+    // ── New Protoss building smoke tests ─────────────────────────────────────
+
+    @Test @Tag("browser")
+    void photonCannonDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawPhotonCannon', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawPhotonCannon").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void shieldBatteryDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawShieldBattery', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawShieldBattery").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void darkShrineDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawDarkShrine', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawDarkShrine").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void templarArchivesDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawTemplarArchives', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawTemplarArchives").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void fleetBeaconDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawFleetBeacon', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawFleetBeacon").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void roboticsBayDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawRoboticsBay', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawRoboticsBay").isGreaterThan(0);
+        page.close();
+    }
+
+    // ── Terran building smoke tests ───────────────────────────────────────────
+
+    @Test @Tag("browser")
+    void commandCenterDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawCommandCenter', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawCommandCenter").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void orbitalCommandDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawOrbitalCommand', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawOrbitalCommand").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void planetaryFortressDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawPlanetaryFortress', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawPlanetaryFortress").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void supplyDepotDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawSupplyDepot', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawSupplyDepot").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void barracksDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawBarracks', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawBarracks").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void engineeringBayDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawEngineeringBay', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawEngineeringBay").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void armoryDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawArmory', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawArmory").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void missileTurretDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawMissileTurret', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawMissileTurret").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void bunkerDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawBunker', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawBunker").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void sensorTowerDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawSensorTower', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawSensorTower").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void ghostAcademyDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawGhostAcademy', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawGhostAcademy").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void factoryDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawFactory', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawFactory").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void starportDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawStarport', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawStarport").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void fusionCoreDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawFusionCore', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawFusionCore").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void refineryDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawRefinery', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawRefinery").isGreaterThan(0);
+        page.close();
+    }
+
+    // ── Zerg building smoke tests ─────────────────────────────────────────────
+
+    @Test @Tag("browser")
+    void hatcheryDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawHatchery', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawHatchery").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void lairDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawLair', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawLair").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void hiveDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawHive', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawHive").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void spawningPoolDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawSpawningPool', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawSpawningPool").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void evolutionChamberDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawEvolutionChamber', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawEvolutionChamber").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void roachWarrenDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawRoachWarren', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawRoachWarren").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void banelingNestDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawBanelingNest', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawBanelingNest").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void spineCrawlerDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawSpineCrawler', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawSpineCrawler").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void sporeCrawlerDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawSporeCrawler', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawSporeCrawler").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void hydraliskDenDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawHydraliskDen', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawHydraliskDen").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void lurkerDenDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawLurkerDen', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawLurkerDen").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void infestationPitDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawInfestationPit', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawInfestationPit").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void spireDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawSpire', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawSpire").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void greaterSpireDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawGreaterSpire', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawGreaterSpire").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void nydusNetworkDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawNydusNetwork', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawNydusNetwork").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void nydusCanalDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawNydusCanal', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawNydusCanal").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void ultraliskCavernDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawUltraliskCavern', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawUltraliskCavern").isGreaterThan(0);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void extractorDrawFunctionProducesNonTransparentOutput() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawExtractor', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawExtractor").isGreaterThan(0);
         page.close();
     }
 }

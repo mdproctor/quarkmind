@@ -111,16 +111,58 @@ public final class ActionTranslator {
 
     static Abilities mapBuildAbility(BuildingType type) {
         return switch (type) {
-            case NEXUS             -> Abilities.BUILD_NEXUS;
-            case PYLON             -> Abilities.BUILD_PYLON;
-            case GATEWAY           -> Abilities.BUILD_GATEWAY;
-            case CYBERNETICS_CORE  -> Abilities.BUILD_CYBERNETICS_CORE;
-            case ASSIMILATOR       -> Abilities.BUILD_ASSIMILATOR;
-            case ROBOTICS_FACILITY -> Abilities.BUILD_ROBOTICS_FACILITY;
-            case STARGATE          -> Abilities.BUILD_STARGATE;
-            case FORGE             -> Abilities.BUILD_FORGE;
-            case TWILIGHT_COUNCIL  -> Abilities.BUILD_TWILIGHT_COUNCIL;
-            case UNKNOWN           -> null;
+            // Protoss
+            case NEXUS              -> Abilities.BUILD_NEXUS;
+            case PYLON              -> Abilities.BUILD_PYLON;
+            case GATEWAY            -> Abilities.BUILD_GATEWAY;
+            case CYBERNETICS_CORE   -> Abilities.BUILD_CYBERNETICS_CORE;
+            case ASSIMILATOR        -> Abilities.BUILD_ASSIMILATOR;
+            case ROBOTICS_FACILITY  -> Abilities.BUILD_ROBOTICS_FACILITY;
+            case STARGATE           -> Abilities.BUILD_STARGATE;
+            case FORGE              -> Abilities.BUILD_FORGE;
+            case TWILIGHT_COUNCIL   -> Abilities.BUILD_TWILIGHT_COUNCIL;
+            case PHOTON_CANNON      -> Abilities.BUILD_PHOTON_CANNON;
+            case SHIELD_BATTERY     -> Abilities.BUILD_SHIELD_BATTERY;
+            case DARK_SHRINE        -> Abilities.BUILD_DARK_SHRINE;
+            case TEMPLAR_ARCHIVES   -> null;
+            case FLEET_BEACON       -> Abilities.BUILD_FLEET_BEACON;
+            case ROBOTICS_BAY       -> Abilities.BUILD_ROBOTICS_BAY;
+            // Terran
+            case COMMAND_CENTER     -> Abilities.BUILD_COMMAND_CENTER;
+            case ORBITAL_COMMAND    -> Abilities.MORPH_ORBITAL_COMMAND;
+            case PLANETARY_FORTRESS -> Abilities.MORPH_PLANETARY_FORTRESS;
+            case SUPPLY_DEPOT       -> Abilities.BUILD_SUPPLY_DEPOT;
+            case BARRACKS           -> Abilities.BUILD_BARRACKS;
+            case ENGINEERING_BAY    -> Abilities.BUILD_ENGINEERING_BAY;
+            case ARMORY             -> Abilities.BUILD_ARMORY;
+            case MISSILE_TURRET     -> Abilities.BUILD_MISSILE_TURRET;
+            case BUNKER             -> Abilities.BUILD_BUNKER;
+            case SENSOR_TOWER       -> Abilities.BUILD_SENSOR_TOWER;
+            case GHOST_ACADEMY      -> Abilities.BUILD_GHOST_ACADEMY;
+            case FACTORY            -> Abilities.BUILD_FACTORY;
+            case STARPORT           -> Abilities.BUILD_STARPORT;
+            case FUSION_CORE        -> Abilities.BUILD_FUSION_CORE;
+            case REFINERY           -> Abilities.BUILD_REFINERY;
+            // Zerg
+            case HATCHERY           -> Abilities.BUILD_HATCHERY;
+            case LAIR               -> Abilities.MORPH_LAIR;
+            case HIVE               -> Abilities.MORPH_HIVE;
+            case SPAWNING_POOL      -> Abilities.BUILD_SPAWNING_POOL;
+            case EVOLUTION_CHAMBER  -> Abilities.BUILD_EVOLUTION_CHAMBER;
+            case ROACH_WARREN       -> Abilities.BUILD_ROACH_WARREN;
+            case BANELING_NEST      -> Abilities.BUILD_BANELING_NEST;
+            case SPINE_CRAWLER      -> Abilities.BUILD_SPINE_CRAWLER;
+            case SPORE_CRAWLER      -> Abilities.BUILD_SPORE_CRAWLER;
+            case HYDRALISK_DEN      -> Abilities.BUILD_HYDRALISK_DEN;
+            case LURKER_DEN         -> null;
+            case INFESTATION_PIT    -> Abilities.BUILD_INFESTATION_PIT;
+            case SPIRE              -> Abilities.BUILD_SPIRE;
+            case GREATER_SPIRE      -> Abilities.MORPH_GREATER_SPIRE;
+            case NYDUS_NETWORK      -> Abilities.BUILD_NYDUS_NETWORK;
+            case NYDUS_CANAL        -> null;
+            case ULTRALISK_CAVERN   -> Abilities.BUILD_ULTRALISK_CAVERN;
+            case EXTRACTOR          -> Abilities.BUILD_EXTRACTOR;
+            default                 -> null;
         };
     }
 

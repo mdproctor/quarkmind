@@ -183,6 +183,45 @@ window.__test = {
     if (typeof drawForge             !== 'undefined') lookup.drawForge             = drawForge;
     if (typeof drawTwilightCouncil   !== 'undefined') lookup.drawTwilightCouncil   = drawTwilightCouncil;
     if (typeof drawUnknownBuilding   !== 'undefined') lookup.drawUnknownBuilding   = drawUnknownBuilding;
+    if (typeof drawPhotonCannon      !== 'undefined') lookup.drawPhotonCannon      = drawPhotonCannon;
+    if (typeof drawShieldBattery     !== 'undefined') lookup.drawShieldBattery     = drawShieldBattery;
+    if (typeof drawDarkShrine        !== 'undefined') lookup.drawDarkShrine        = drawDarkShrine;
+    if (typeof drawTemplarArchives   !== 'undefined') lookup.drawTemplarArchives   = drawTemplarArchives;
+    if (typeof drawFleetBeacon       !== 'undefined') lookup.drawFleetBeacon       = drawFleetBeacon;
+    if (typeof drawRoboticsBay       !== 'undefined') lookup.drawRoboticsBay       = drawRoboticsBay;
+    if (typeof drawCommandCenter     !== 'undefined') lookup.drawCommandCenter     = drawCommandCenter;
+    if (typeof drawOrbitalCommand    !== 'undefined') lookup.drawOrbitalCommand    = drawOrbitalCommand;
+    if (typeof drawPlanetaryFortress !== 'undefined') lookup.drawPlanetaryFortress = drawPlanetaryFortress;
+    if (typeof drawSupplyDepot       !== 'undefined') lookup.drawSupplyDepot       = drawSupplyDepot;
+    if (typeof drawBarracks          !== 'undefined') lookup.drawBarracks          = drawBarracks;
+    if (typeof drawEngineeringBay    !== 'undefined') lookup.drawEngineeringBay    = drawEngineeringBay;
+    if (typeof drawArmory            !== 'undefined') lookup.drawArmory            = drawArmory;
+    if (typeof drawMissileTurret     !== 'undefined') lookup.drawMissileTurret     = drawMissileTurret;
+    if (typeof drawBunker            !== 'undefined') lookup.drawBunker            = drawBunker;
+    if (typeof drawSensorTower       !== 'undefined') lookup.drawSensorTower       = drawSensorTower;
+    if (typeof drawGhostAcademy      !== 'undefined') lookup.drawGhostAcademy      = drawGhostAcademy;
+    if (typeof drawFactory           !== 'undefined') lookup.drawFactory           = drawFactory;
+    if (typeof drawStarport          !== 'undefined') lookup.drawStarport          = drawStarport;
+    if (typeof drawFusionCore        !== 'undefined') lookup.drawFusionCore        = drawFusionCore;
+    if (typeof drawRefinery          !== 'undefined') lookup.drawRefinery          = drawRefinery;
+    if (typeof drawHatchery          !== 'undefined') lookup.drawHatchery          = drawHatchery;
+    if (typeof drawLair              !== 'undefined') lookup.drawLair              = drawLair;
+    if (typeof drawHive              !== 'undefined') lookup.drawHive              = drawHive;
+    if (typeof drawSpawningPool      !== 'undefined') lookup.drawSpawningPool      = drawSpawningPool;
+    if (typeof drawEvolutionChamber  !== 'undefined') lookup.drawEvolutionChamber  = drawEvolutionChamber;
+    if (typeof drawRoachWarren       !== 'undefined') lookup.drawRoachWarren       = drawRoachWarren;
+    if (typeof drawBanelingNest      !== 'undefined') lookup.drawBanelingNest      = drawBanelingNest;
+    if (typeof drawSpineCrawler      !== 'undefined') lookup.drawSpineCrawler      = drawSpineCrawler;
+    if (typeof drawSporeCrawler      !== 'undefined') lookup.drawSporeCrawler      = drawSporeCrawler;
+    if (typeof drawHydraliskDen      !== 'undefined') lookup.drawHydraliskDen      = drawHydraliskDen;
+    if (typeof drawLurkerDen         !== 'undefined') lookup.drawLurkerDen         = drawLurkerDen;
+    if (typeof drawInfestationPit    !== 'undefined') lookup.drawInfestationPit    = drawInfestationPit;
+    if (typeof drawSpire             !== 'undefined') lookup.drawSpire             = drawSpire;
+    if (typeof drawGreaterSpire      !== 'undefined') lookup.drawGreaterSpire      = drawGreaterSpire;
+    if (typeof drawNydusNetwork      !== 'undefined') lookup.drawNydusNetwork      = drawNydusNetwork;
+    if (typeof drawNydusCanal        !== 'undefined') lookup.drawNydusCanal        = drawNydusCanal;
+    if (typeof drawUltraliskCavern   !== 'undefined') lookup.drawUltraliskCavern   = drawUltraliskCavern;
+    if (typeof drawExtractor         !== 'undefined') lookup.drawExtractor         = drawExtractor;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -6423,6 +6462,1722 @@ function drawTwilightCouncil(ctx, S, dir, teamColor) {
   ctx.stroke();
 }
 
+// ── New Protoss building draw functions ──────────────────────────────────────
+
+function drawPhotonCannon(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Base platform
+  ctx.fillStyle = '#1a2a40';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.28, S*0.28, S*0.1, 0, 0, Math.PI*2);
+  ctx.fill();
+  // Cannon barrel
+  ctx.fillStyle = '#2a4466';
+  ctx.fillRect(cx - S*0.06, S*0.12, S*0.12, S*0.52);
+  ctx.strokeStyle = '#4488bb';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(cx - S*0.06, S*0.12, S*0.12, S*0.52);
+  // Barrel tip
+  ctx.fillStyle = '#1a3355';
+  ctx.fillRect(cx - S*0.09, S*0.08, S*0.18, S*0.1);
+  // Energy crystal
+  const cg = ctx.createRadialGradient(cx, cy - S*0.05, 0, cx, cy - S*0.05, S*0.11);
+  cg.addColorStop(0, '#ffffff');
+  cg.addColorStop(0.4, '#88ccff');
+  cg.addColorStop(1, 'rgba(50,150,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.05, S*0.11, 0, Math.PI*2);
+  ctx.fillStyle = cg;
+  ctx.fill();
+  // Gold trim
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.022;
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.06, cy + S*0.1);
+  ctx.lineTo(cx + S*0.06, cy + S*0.1);
+  ctx.stroke();
+}
+
+function drawShieldBattery(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Rounded shield-shaped body
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.33, S*0.38, 0, 0, Math.PI*2);
+  const bg = ctx.createRadialGradient(cx, cy - S*0.06, 0, cx, cy, S*0.38);
+  bg.addColorStop(0, '#2a4888');
+  bg.addColorStop(0.6, '#1a2a55');
+  bg.addColorStop(1, '#0d1530');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#5577cc';
+  ctx.lineWidth = S*0.03;
+  ctx.stroke();
+  // Shield symbol
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - S*0.22);
+  ctx.lineTo(cx + S*0.18, cy - S*0.06);
+  ctx.lineTo(cx + S*0.18, cy + S*0.08);
+  ctx.lineTo(cx, cy + S*0.22);
+  ctx.lineTo(cx - S*0.18, cy + S*0.08);
+  ctx.lineTo(cx - S*0.18, cy - S*0.06);
+  ctx.closePath();
+  ctx.strokeStyle = '#88aaff';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Inner glow
+  const ig = ctx.createRadialGradient(cx, cy, 0, cx, cy, S*0.2);
+  ig.addColorStop(0, 'rgba(150,180,255,0.5)');
+  ig.addColorStop(1, 'rgba(50,80,200,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.2, 0, Math.PI*2);
+  ctx.fillStyle = ig;
+  ctx.fill();
+}
+
+function drawDarkShrine(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Dark angular base
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.32, S*0.82);
+  ctx.lineTo(cx + S*0.32, S*0.82);
+  ctx.lineTo(cx + S*0.22, S*0.55);
+  ctx.lineTo(cx - S*0.22, S*0.55);
+  ctx.closePath();
+  ctx.fillStyle = '#0d0518';
+  ctx.fill();
+  ctx.strokeStyle = '#6611aa';
+  ctx.lineWidth = S*0.022;
+  ctx.stroke();
+  // Central void spire
+  ctx.beginPath();
+  ctx.moveTo(cx, S*0.06);
+  ctx.lineTo(cx + S*0.14, S*0.55);
+  ctx.lineTo(cx - S*0.14, S*0.55);
+  ctx.closePath();
+  const sg = ctx.createLinearGradient(cx, S*0.06, cx, S*0.55);
+  sg.addColorStop(0, '#330055');
+  sg.addColorStop(0.5, '#220033');
+  sg.addColorStop(1, '#110022');
+  ctx.fillStyle = sg;
+  ctx.fill();
+  ctx.strokeStyle = '#9922cc';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Two flanking void crystals
+  [cx - S*0.2, cx + S*0.2].forEach(px => {
+    ctx.beginPath();
+    ctx.moveTo(px, S*0.18);
+    ctx.lineTo(px + S*0.07, S*0.48);
+    ctx.lineTo(px - S*0.07, S*0.48);
+    ctx.closePath();
+    ctx.fillStyle = '#1a0033';
+    ctx.fill();
+    ctx.strokeStyle = '#7700bb';
+    ctx.lineWidth = S*0.015;
+    ctx.stroke();
+  });
+  // Void glow at apex
+  const vg = ctx.createRadialGradient(cx, S*0.1, 0, cx, S*0.1, S*0.1);
+  vg.addColorStop(0, 'rgba(180,50,255,0.9)');
+  vg.addColorStop(0.5, 'rgba(100,0,200,0.4)');
+  vg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.1, S*0.1, 0, Math.PI*2);
+  ctx.fillStyle = vg;
+  ctx.fill();
+}
+
+function drawTemplarArchives(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Grand ornate base with steps
+  ctx.fillStyle = '#1a2a3e';
+  ctx.fillRect(S*0.08, S*0.72, S*0.84, S*0.14);
+  ctx.fillStyle = '#1e3450';
+  ctx.fillRect(S*0.14, S*0.62, S*0.72, S*0.12);
+  // Main hall
+  const bg = ctx.createLinearGradient(cx, S*0.12, cx, S*0.64);
+  bg.addColorStop(0, '#2a4870');
+  bg.addColorStop(1, '#163050');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.18, S*0.24, S*0.64, S*0.4);
+  // Arched roof
+  ctx.beginPath();
+  ctx.moveTo(S*0.18, S*0.24);
+  ctx.lineTo(cx, S*0.1);
+  ctx.lineTo(S*0.82, S*0.24);
+  ctx.closePath();
+  ctx.fillStyle = '#336699';
+  ctx.fill();
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.022;
+  ctx.stroke();
+  // Four pillars
+  [S*0.22, S*0.35, S*0.54, S*0.67].forEach(px => {
+    ctx.fillStyle = '#3a5a88';
+    ctx.fillRect(px, S*0.24, S*0.07, S*0.38);
+    ctx.strokeStyle = '#5588bb';
+    ctx.lineWidth = S*0.01;
+    ctx.strokeRect(px, S*0.24, S*0.07, S*0.38);
+  });
+  // Gold trim
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.02;
+  ctx.beginPath();
+  ctx.moveTo(S*0.18, S*0.24);
+  ctx.lineTo(S*0.82, S*0.24);
+  ctx.stroke();
+  // Central khaydarin crystal
+  const cg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S*0.08);
+  cg.addColorStop(0, '#ffffff');
+  cg.addColorStop(0.5, '#aaddff');
+  cg.addColorStop(1, 'rgba(100,200,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.08, 0, Math.PI*2);
+  ctx.fillStyle = cg;
+  ctx.fill();
+}
+
+function drawFleetBeacon(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Signal rings emanating outward
+  [S*0.46, S*0.38, S*0.28].forEach((r, i) => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(100,200,255,${0.15 + i*0.1})`;
+    ctx.lineWidth = S*0.018;
+    ctx.stroke();
+  });
+  // Beacon tower body
+  ctx.beginPath();
+  ctx.moveTo(cx, S*0.06);
+  ctx.lineTo(cx + S*0.08, S*0.45);
+  ctx.lineTo(cx + S*0.16, S*0.82);
+  ctx.lineTo(cx - S*0.16, S*0.82);
+  ctx.lineTo(cx - S*0.08, S*0.45);
+  ctx.closePath();
+  const bg = ctx.createLinearGradient(cx - S*0.16, 0, cx + S*0.16, 0);
+  bg.addColorStop(0, '#1a3a55');
+  bg.addColorStop(0.5, '#2a5588');
+  bg.addColorStop(1, '#1a3a55');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#4488bb';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Apex beacon light
+  const ag = ctx.createRadialGradient(cx, S*0.1, 0, cx, S*0.1, S*0.12);
+  ag.addColorStop(0, '#ffffff');
+  ag.addColorStop(0.3, '#88ddff');
+  ag.addColorStop(0.7, 'rgba(100,200,255,0.3)');
+  ag.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.1, S*0.12, 0, Math.PI*2);
+  ctx.fillStyle = ag;
+  ctx.fill();
+  // Gold trim bands
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.02;
+  [S*0.35, S*0.55, S*0.72].forEach(ry => {
+    ctx.beginPath();
+    ctx.moveTo(cx - S*0.08 - (ry - S*0.45)*0.18, ry);
+    ctx.lineTo(cx + S*0.08 + (ry - S*0.45)*0.18, ry);
+    ctx.stroke();
+  });
+}
+
+function drawRoboticsBay(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Compact tech cube body
+  const bg = ctx.createLinearGradient(S*0.1, S*0.18, S*0.1, S*0.82);
+  bg.addColorStop(0, '#1e3a55');
+  bg.addColorStop(1, '#0c1e2e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.1, S*0.18, S*0.8, S*0.62);
+  ctx.strokeStyle = '#2a5577';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.1, S*0.18, S*0.8, S*0.62);
+  // Tech dome on top
+  ctx.beginPath();
+  ctx.ellipse(cx, S*0.18, S*0.3, S*0.12, 0, Math.PI, 0);
+  ctx.fillStyle = '#264d6e';
+  ctx.fill();
+  ctx.strokeStyle = '#3a6a99';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Grid panels
+  ctx.strokeStyle = '#1a3a55';
+  ctx.lineWidth = S*0.012;
+  [S*0.3, S*0.5, S*0.7].forEach(px => {
+    ctx.beginPath();
+    ctx.moveTo(px, S*0.22);
+    ctx.lineTo(px, S*0.76);
+    ctx.stroke();
+  });
+  [S*0.34, S*0.5, S*0.66].forEach(ry => {
+    ctx.beginPath();
+    ctx.moveTo(S*0.14, ry);
+    ctx.lineTo(S*0.86, ry);
+    ctx.stroke();
+  });
+  // Central scanning display
+  const eg = ctx.createRadialGradient(cx, cy + S*0.05, 0, cx, cy + S*0.05, S*0.12);
+  eg.addColorStop(0, '#88eeff');
+  eg.addColorStop(0.5, 'rgba(100,200,220,0.4)');
+  eg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.05, S*0.12, 0, Math.PI*2);
+  ctx.fillStyle = eg;
+  ctx.fill();
+  // Gold corner accents
+  ctx.strokeStyle = '#dda020';
+  ctx.lineWidth = S*0.02;
+  [[S*0.1, S*0.18],[S*0.9, S*0.18],[S*0.1, S*0.8],[S*0.9, S*0.8]].forEach(([nx, ny]) => {
+    ctx.beginPath();
+    ctx.arc(nx, ny, S*0.05, 0, Math.PI*2);
+    ctx.stroke();
+  });
+}
+
+// ── Terran building draw functions ───────────────────────────────────────────
+
+function drawCommandCenter(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Large imposing base
+  const bg = ctx.createLinearGradient(cx, S*0.15, cx, S*0.85);
+  bg.addColorStop(0, '#4a4a4a');
+  bg.addColorStop(0.5, '#333333');
+  bg.addColorStop(1, '#1e1e1e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.08, S*0.28, S*0.84, S*0.55);
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = S*0.028;
+  ctx.strokeRect(S*0.08, S*0.28, S*0.84, S*0.55);
+  // Upper structure/bridge
+  ctx.fillStyle = '#444444';
+  ctx.fillRect(S*0.18, S*0.12, S*0.64, S*0.2);
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(S*0.18, S*0.12, S*0.64, S*0.2);
+  // Windows/sensors
+  [S*0.28, S*0.48, S*0.68].forEach(px => {
+    ctx.fillStyle = '#88ccff';
+    ctx.fillRect(px, S*0.16, S*0.08, S*0.1);
+  });
+  // Blue status light
+  const bl = ctx.createRadialGradient(cx, S*0.19, 0, cx, S*0.19, S*0.06);
+  bl.addColorStop(0, '#aaddff');
+  bl.addColorStop(1, 'rgba(100,180,255,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.19, S*0.06, 0, Math.PI*2);
+  ctx.fillStyle = bl;
+  ctx.fill();
+  // Bottom vents
+  [S*0.18, S*0.32, S*0.46, S*0.60, S*0.72].forEach(px => {
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(px, S*0.66, S*0.08, S*0.1);
+  });
+  // Red Terran accent
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.08, S*0.28, S*0.84, S*0.04);
+}
+
+function drawOrbitalCommand(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // CC body
+  const bg = ctx.createLinearGradient(cx, S*0.2, cx, S*0.85);
+  bg.addColorStop(0, '#4a4a55');
+  bg.addColorStop(1, '#252530');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.1, S*0.3, S*0.8, S*0.52);
+  ctx.strokeStyle = '#6666aa';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.1, S*0.3, S*0.8, S*0.52);
+  // Scanner dish on top
+  ctx.beginPath();
+  ctx.ellipse(cx + S*0.15, S*0.24, S*0.2, S*0.08, -0.3, 0, Math.PI*2);
+  ctx.fillStyle = '#3a3a55';
+  ctx.fill();
+  ctx.strokeStyle = '#6666cc';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Dish arm
+  ctx.strokeStyle = '#5555aa';
+  ctx.lineWidth = S*0.03;
+  ctx.beginPath();
+  ctx.moveTo(cx, S*0.3);
+  ctx.lineTo(cx + S*0.15, S*0.24);
+  ctx.stroke();
+  // Blue scanner glow
+  const sg = ctx.createRadialGradient(cx + S*0.15, S*0.24, 0, cx + S*0.15, S*0.24, S*0.15);
+  sg.addColorStop(0, 'rgba(100,150,255,0.6)');
+  sg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx + S*0.15, S*0.24, S*0.15, 0, Math.PI*2);
+  ctx.fillStyle = sg;
+  ctx.fill();
+  // Windows
+  [S*0.22, S*0.44, S*0.66].forEach(px => {
+    ctx.fillStyle = '#88aaff';
+    ctx.fillRect(px, S*0.38, S*0.1, S*0.1);
+  });
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.1, S*0.3, S*0.8, S*0.035);
+}
+
+function drawPlanetaryFortress(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Heavy armored base
+  const bg = ctx.createLinearGradient(cx, S*0.2, cx, S*0.9);
+  bg.addColorStop(0, '#3a3a3a');
+  bg.addColorStop(1, '#111111');
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.roundRect(S*0.06, S*0.25, S*0.88, S*0.6, S*0.05);
+  ctx.fill();
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = S*0.03;
+  ctx.stroke();
+  // Two heavy cannons
+  [cx - S*0.22, cx + S*0.22].forEach(gx => {
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(gx - S*0.06, S*0.12, S*0.12, S*0.3);
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = S*0.018;
+    ctx.strokeRect(gx - S*0.06, S*0.12, S*0.12, S*0.3);
+    // Muzzle
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(gx - S*0.08, S*0.1, S*0.16, S*0.06);
+  });
+  // Armored plate panels
+  [S*0.18, S*0.44, S*0.68].forEach(px => {
+    ctx.fillStyle = '#444444';
+    ctx.fillRect(px, S*0.36, S*0.12, S*0.4);
+    ctx.strokeStyle = '#666666';
+    ctx.lineWidth = S*0.01;
+    ctx.strokeRect(px, S*0.36, S*0.12, S*0.4);
+  });
+  // Red Terran stripe
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.06, S*0.25, S*0.88, S*0.04);
+  // Status light
+  const sl = ctx.createRadialGradient(cx, S*0.28, 0, cx, S*0.28, S*0.05);
+  sl.addColorStop(0, '#ffaa00');
+  sl.addColorStop(1, 'rgba(255,150,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.28, S*0.05, 0, Math.PI*2);
+  ctx.fillStyle = sl;
+  ctx.fill();
+}
+
+function drawSupplyDepot(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Bunker-door appearance (raised)
+  const bg = ctx.createLinearGradient(cx, S*0.25, cx, S*0.82);
+  bg.addColorStop(0, '#4a4a4a');
+  bg.addColorStop(1, '#2a2a2a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.12, S*0.3, S*0.76, S*0.5);
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.12, S*0.3, S*0.76, S*0.5);
+  // Two door panels
+  ctx.fillStyle = '#333333';
+  ctx.fillRect(S*0.15, S*0.33, S*0.33, S*0.44);
+  ctx.fillRect(S*0.52, S*0.33, S*0.33, S*0.44);
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = S*0.015;
+  ctx.strokeRect(S*0.15, S*0.33, S*0.33, S*0.44);
+  ctx.strokeRect(S*0.52, S*0.33, S*0.33, S*0.44);
+  // Horizontal ribs
+  [S*0.42, S*0.52, S*0.62].forEach(ry => {
+    ctx.strokeStyle = '#444444';
+    ctx.lineWidth = S*0.015;
+    ctx.beginPath();
+    ctx.moveTo(S*0.15, ry);
+    ctx.lineTo(S*0.85, ry);
+    ctx.stroke();
+  });
+  // Warning light
+  ctx.fillStyle = '#ffcc00';
+  ctx.beginPath();
+  ctx.arc(cx, S*0.27, S*0.03, 0, Math.PI*2);
+  ctx.fill();
+  // Top ridge
+  ctx.fillStyle = '#555555';
+  ctx.fillRect(S*0.12, S*0.24, S*0.76, S*0.08);
+}
+
+function drawBarracks(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Main building body
+  const bg = ctx.createLinearGradient(cx, S*0.14, cx, S*0.86);
+  bg.addColorStop(0, '#3a3a3a');
+  bg.addColorStop(1, '#1e1e1e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.08, S*0.2, S*0.84, S*0.64);
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.08, S*0.2, S*0.84, S*0.64);
+  // Roof structure
+  ctx.fillStyle = '#444444';
+  ctx.fillRect(S*0.08, S*0.14, S*0.84, S*0.1);
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = S*0.018;
+  ctx.strokeRect(S*0.08, S*0.14, S*0.84, S*0.1);
+  // Door opening
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(cx - S*0.12, S*0.52, S*0.24, S*0.32);
+  // Windows
+  [S*0.18, S*0.7].forEach(px => {
+    ctx.fillStyle = '#88aaff';
+    ctx.fillRect(px, S*0.3, S*0.12, S*0.16);
+    ctx.fillRect(px, S*0.52, S*0.12, S*0.16);
+  });
+  // Red Terran stripe
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.08, S*0.2, S*0.84, S*0.04);
+  // Marine logo hint
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = S*0.025;
+  ctx.beginPath();
+  ctx.arc(cx, S*0.38, S*0.08, 0, Math.PI*2);
+  ctx.stroke();
+}
+
+function drawEngineeringBay(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Technical L-shaped body
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fillRect(S*0.1, S*0.2, S*0.8, S*0.62);
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.1, S*0.2, S*0.8, S*0.62);
+  // Tech panel with circuit lines
+  ctx.strokeStyle = '#4488cc';
+  ctx.lineWidth = S*0.015;
+  [[S*0.16, S*0.3], [S*0.16, S*0.45], [S*0.16, S*0.6]].forEach(([x, y]) => {
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + S*0.48, y);
+    ctx.stroke();
+  });
+  [S*0.24, S*0.36, S*0.48].forEach(px => {
+    ctx.beginPath();
+    ctx.moveTo(px, S*0.28);
+    ctx.lineTo(px, S*0.65);
+    ctx.stroke();
+  });
+  // Upgrade nodes
+  [[S*0.24, S*0.3],[S*0.36, S*0.45],[S*0.48, S*0.6]].forEach(([nx,ny]) => {
+    ctx.beginPath();
+    ctx.arc(nx, ny, S*0.03, 0, Math.PI*2);
+    ctx.fillStyle = '#44aaff';
+    ctx.fill();
+  });
+  // Wrench/tool symbols (simplified)
+  ctx.fillStyle = '#888888';
+  ctx.fillRect(S*0.62, S*0.28, S*0.2, S*0.36);
+  ctx.strokeStyle = '#aaaaaa';
+  ctx.lineWidth = S*0.018;
+  ctx.strokeRect(S*0.62, S*0.28, S*0.2, S*0.36);
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.1, S*0.2, S*0.8, S*0.04);
+}
+
+function drawArmory(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Heavy armored building
+  const bg = ctx.createLinearGradient(cx, S*0.16, cx, S*0.84);
+  bg.addColorStop(0, '#3a3035');
+  bg.addColorStop(1, '#1e1820');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.1, S*0.2, S*0.8, S*0.62);
+  ctx.strokeStyle = '#776677';
+  ctx.lineWidth = S*0.028;
+  ctx.strokeRect(S*0.1, S*0.2, S*0.8, S*0.62);
+  // Weapon rack silhouette
+  [S*0.22, S*0.36, S*0.5, S*0.64, S*0.78].forEach(px => {
+    ctx.fillStyle = '#555555';
+    ctx.fillRect(px - S*0.04, S*0.3, S*0.04, S*0.4);
+    ctx.fillStyle = '#777777';
+    ctx.fillRect(px - S*0.06, S*0.3, S*0.06, S*0.06);
+  });
+  // Armored top section
+  ctx.fillStyle = '#555555';
+  ctx.fillRect(S*0.1, S*0.14, S*0.8, S*0.1);
+  ctx.strokeStyle = '#888888';
+  ctx.lineWidth = S*0.018;
+  ctx.strokeRect(S*0.1, S*0.14, S*0.8, S*0.1);
+  // Red stripe
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.1, S*0.2, S*0.8, S*0.04);
+  // Orange warning glow
+  const wg = ctx.createRadialGradient(cx, S*0.17, 0, cx, S*0.17, S*0.08);
+  wg.addColorStop(0, 'rgba(255,100,0,0.5)');
+  wg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.17, S*0.08, 0, Math.PI*2);
+  ctx.fillStyle = wg;
+  ctx.fill();
+}
+
+function drawMissileTurret(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Base platform
+  ctx.fillStyle = '#333333';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.3, S*0.3, S*0.1, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Rotation mount
+  ctx.fillStyle = '#444444';
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.1, S*0.14, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Four missile tubes
+  const tubes = [[-S*0.14, -S*0.2], [S*0.14, -S*0.2], [-S*0.06, -S*0.28], [S*0.06, -S*0.28]];
+  tubes.forEach(([ox, oy]) => {
+    ctx.fillStyle = '#555555';
+    ctx.fillRect(cx + ox - S*0.03, cy + oy + S*0.1, S*0.06, S*0.14);
+    ctx.strokeStyle = '#888888';
+    ctx.lineWidth = S*0.015;
+    ctx.strokeRect(cx + ox - S*0.03, cy + oy + S*0.1, S*0.06, S*0.14);
+  });
+  // Red indicator
+  ctx.fillStyle = '#ff3333';
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.1, S*0.03, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawBunker(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Fortified bunker body
+  const bg = ctx.createLinearGradient(cx, S*0.22, cx, S*0.84);
+  bg.addColorStop(0, '#5a5030');
+  bg.addColorStop(0.5, '#3a3020');
+  bg.addColorStop(1, '#222010');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.08, S*0.28, S*0.84, S*0.56);
+  ctx.strokeStyle = '#6a6040';
+  ctx.lineWidth = S*0.028;
+  ctx.stroke();
+  // Sloped top
+  ctx.beginPath();
+  ctx.moveTo(S*0.08, S*0.28);
+  ctx.lineTo(cx, S*0.16);
+  ctx.lineTo(S*0.92, S*0.28);
+  ctx.closePath();
+  ctx.fillStyle = '#4a4025';
+  ctx.fill();
+  ctx.strokeStyle = '#6a6040';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Gun slits
+  [S*0.18, S*0.44, S*0.66].forEach(px => {
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(px, S*0.38, S*0.14, S*0.06);
+  });
+  // Lower firing ports
+  [S*0.18, S*0.44, S*0.66].forEach(px => {
+    ctx.fillStyle = '#111111';
+    ctx.fillRect(px, S*0.6, S*0.14, S*0.06);
+  });
+  // Warning stripe
+  ctx.strokeStyle = '#ffaa00';
+  ctx.lineWidth = S*0.025;
+  ctx.beginPath();
+  ctx.moveTo(S*0.08, S*0.28);
+  ctx.lineTo(S*0.92, S*0.28);
+  ctx.stroke();
+}
+
+function drawSensorTower(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Thin tower mast
+  ctx.fillStyle = '#555555';
+  ctx.fillRect(cx - S*0.04, S*0.12, S*0.08, S*0.7);
+  ctx.strokeStyle = '#888888';
+  ctx.lineWidth = S*0.015;
+  ctx.strokeRect(cx - S*0.04, S*0.12, S*0.08, S*0.7);
+  // Base plate
+  ctx.fillStyle = '#444444';
+  ctx.fillRect(S*0.2, S*0.74, S*0.6, S*0.12);
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(S*0.2, S*0.74, S*0.6, S*0.12);
+  // Sensor dish
+  ctx.beginPath();
+  ctx.ellipse(cx, S*0.18, S*0.22, S*0.08, 0.3, 0, Math.PI*2);
+  ctx.fillStyle = '#3a3a3a';
+  ctx.fill();
+  ctx.strokeStyle = '#7777aa';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Radar sweep glow
+  const rg = ctx.createRadialGradient(cx, S*0.18, 0, cx, S*0.18, S*0.3);
+  rg.addColorStop(0, 'rgba(100,200,100,0.4)');
+  rg.addColorStop(0.5, 'rgba(50,150,50,0.15)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.18, S*0.3, 0, Math.PI*2);
+  ctx.fillStyle = rg;
+  ctx.fill();
+  // Blinking light
+  ctx.fillStyle = '#ff4444';
+  ctx.beginPath();
+  ctx.arc(cx, S*0.12, S*0.03, 0, Math.PI*2);
+  ctx.fill();
+}
+
+function drawGhostAcademy(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Sleek dark building
+  const bg = ctx.createLinearGradient(cx, S*0.1, cx, S*0.88);
+  bg.addColorStop(0, '#1a1a22');
+  bg.addColorStop(0.5, '#111118');
+  bg.addColorStop(1, '#080810');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.12, S*0.16, S*0.76, S*0.7);
+  ctx.strokeStyle = '#3333aa';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.12, S*0.16, S*0.76, S*0.7);
+  // Peaked roof
+  ctx.beginPath();
+  ctx.moveTo(S*0.12, S*0.16);
+  ctx.lineTo(cx, S*0.06);
+  ctx.lineTo(S*0.88, S*0.16);
+  ctx.closePath();
+  ctx.fillStyle = '#222230';
+  ctx.fill();
+  ctx.strokeStyle = '#4444cc';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Ghost logo — crosshair
+  ctx.strokeStyle = '#4444ff';
+  ctx.lineWidth = S*0.02;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.12, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.18, cy);
+  ctx.lineTo(cx + S*0.18, cy);
+  ctx.moveTo(cx, cy - S*0.18);
+  ctx.lineTo(cx, cy + S*0.18);
+  ctx.stroke();
+  // Blue window strips
+  [S*0.22, S*0.7].forEach(px => {
+    ctx.fillStyle = '#2244aa';
+    ctx.fillRect(px, S*0.28, S*0.1, S*0.4);
+  });
+  ctx.fillStyle = '#4444cc';
+  ctx.fillRect(S*0.12, S*0.16, S*0.76, S*0.03);
+}
+
+function drawFactory(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Wide industrial body
+  const bg = ctx.createLinearGradient(cx, S*0.18, cx, S*0.86);
+  bg.addColorStop(0, '#3a3a3a');
+  bg.addColorStop(1, '#1a1a1a');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.06, S*0.22, S*0.88, S*0.62);
+  ctx.strokeStyle = '#666666';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.06, S*0.22, S*0.88, S*0.62);
+  // Industrial chimney/smokestack
+  ctx.fillStyle = '#333333';
+  ctx.fillRect(S*0.7, S*0.08, S*0.16, S*0.18);
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(S*0.7, S*0.08, S*0.16, S*0.18);
+  // Factory door opening
+  ctx.fillStyle = '#111111';
+  ctx.fillRect(S*0.1, S*0.48, S*0.36, S*0.34);
+  ctx.strokeStyle = '#444444';
+  ctx.lineWidth = S*0.015;
+  ctx.strokeRect(S*0.1, S*0.48, S*0.36, S*0.34);
+  // Mechanical arm/crane
+  ctx.strokeStyle = '#777777';
+  ctx.lineWidth = S*0.03;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(S*0.55, S*0.28);
+  ctx.lineTo(S*0.78, S*0.42);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.arc(S*0.78, S*0.42, S*0.04, 0, Math.PI*2);
+  ctx.fillStyle = '#999999';
+  ctx.fill();
+  // Orange factory glow
+  const fg = ctx.createRadialGradient(S*0.78, S*0.1, 0, S*0.78, S*0.1, S*0.12);
+  fg.addColorStop(0, 'rgba(255,120,0,0.6)');
+  fg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(S*0.78, S*0.1, S*0.12, 0, Math.PI*2);
+  ctx.fillStyle = fg;
+  ctx.fill();
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.06, S*0.22, S*0.88, S*0.04);
+}
+
+function drawStarport(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Launch pad base
+  const bg = ctx.createLinearGradient(cx, S*0.3, cx, S*0.86);
+  bg.addColorStop(0, '#3a3a55');
+  bg.addColorStop(1, '#1a1a2e');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.08, S*0.36, S*0.84, S*0.5);
+  ctx.strokeStyle = '#5555aa';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.08, S*0.36, S*0.84, S*0.5);
+  // Control tower
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(S*0.62, S*0.14, S*0.26, S*0.26);
+  ctx.strokeStyle = '#6666cc';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(S*0.62, S*0.14, S*0.26, S*0.26);
+  // Launch rail in center
+  ctx.fillStyle = '#111122';
+  ctx.fillRect(cx - S*0.22, S*0.42, S*0.44, S*0.4);
+  // Runway lights
+  [S*0.42, S*0.52, S*0.62, S*0.72].forEach(ry => {
+    ctx.fillStyle = '#ffcc00';
+    ctx.beginPath();
+    ctx.arc(cx - S*0.18, ry, S*0.022, 0, Math.PI*2);
+    ctx.arc(cx + S*0.18, ry, S*0.022, 0, Math.PI*2);
+    ctx.fill();
+  });
+  // Tower windows
+  ctx.fillStyle = '#88aaff';
+  ctx.fillRect(S*0.65, S*0.17, S*0.18, S*0.12);
+  ctx.fillStyle = '#cc2222';
+  ctx.fillRect(S*0.08, S*0.36, S*0.84, S*0.04);
+}
+
+function drawFusionCore(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Hexagonal fusion reactor body
+  ctx.beginPath();
+  const r = S * 0.36;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    i === 0 ? ctx.moveTo(cx + r*Math.cos(a), cy + r*Math.sin(a))
+            : ctx.lineTo(cx + r*Math.cos(a), cy + r*Math.sin(a));
+  }
+  ctx.closePath();
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  bg.addColorStop(0, '#3a3a55');
+  bg.addColorStop(0.7, '#1a1a33');
+  bg.addColorStop(1, '#0a0a1a');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#4444aa';
+  ctx.lineWidth = S*0.028;
+  ctx.stroke();
+  // Fusion glow core
+  const fg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S*0.2);
+  fg.addColorStop(0, '#ffffff');
+  fg.addColorStop(0.25, '#ffcc44');
+  fg.addColorStop(0.6, 'rgba(255,100,0,0.5)');
+  fg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.2, 0, Math.PI*2);
+  ctx.fillStyle = fg;
+  ctx.fill();
+  // Energy rings
+  ctx.strokeStyle = 'rgba(255,150,50,0.3)';
+  ctx.lineWidth = S*0.02;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S*0.28, 0, Math.PI*2);
+  ctx.stroke();
+  // Support struts
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2;
+    ctx.strokeStyle = '#6666aa';
+    ctx.lineWidth = S*0.02;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a)*S*0.2, cy + Math.sin(a)*S*0.2);
+    ctx.lineTo(cx + Math.cos(a)*S*0.33, cy + Math.sin(a)*S*0.33);
+    ctx.stroke();
+  }
+}
+
+function drawRefinery(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Industrial processing unit
+  const bg = ctx.createLinearGradient(cx, S*0.22, cx, S*0.82);
+  bg.addColorStop(0, '#3a3530');
+  bg.addColorStop(1, '#1e1a15');
+  ctx.fillStyle = bg;
+  ctx.fillRect(S*0.12, S*0.28, S*0.76, S*0.52);
+  ctx.strokeStyle = '#665544';
+  ctx.lineWidth = S*0.025;
+  ctx.strokeRect(S*0.12, S*0.28, S*0.76, S*0.52);
+  // Main processing pipe (vertical)
+  ctx.fillStyle = '#444440';
+  ctx.fillRect(cx - S*0.1, S*0.1, S*0.2, S*0.22);
+  ctx.strokeStyle = '#666660';
+  ctx.lineWidth = S*0.02;
+  ctx.strokeRect(cx - S*0.1, S*0.1, S*0.2, S*0.22);
+  // Horizontal pipe connector
+  ctx.fillStyle = '#555550';
+  ctx.fillRect(S*0.18, S*0.24, S*0.64, S*0.08);
+  // Gas vespene green glow
+  const gv = ctx.createRadialGradient(cx, S*0.14, 0, cx, S*0.14, S*0.1);
+  gv.addColorStop(0, 'rgba(80,255,100,0.7)');
+  gv.addColorStop(0.4, 'rgba(40,180,60,0.3)');
+  gv.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.14, S*0.1, 0, Math.PI*2);
+  ctx.fillStyle = gv;
+  ctx.fill();
+  // Pipe outlets
+  [S*0.22, S*0.38, S*0.54, S*0.68].forEach(px => {
+    ctx.fillStyle = '#333330';
+    ctx.fillRect(px, S*0.48, S*0.1, S*0.2);
+    ctx.strokeStyle = '#555550';
+    ctx.lineWidth = S*0.012;
+    ctx.strokeRect(px, S*0.48, S*0.1, S*0.2);
+  });
+}
+
+// ── Zerg building draw functions ─────────────────────────────────────────────
+
+function drawHatchery(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Creep base
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.12, S*0.42, S*0.18, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(60,40,20,0.7)';
+  ctx.fill();
+  // Larva eggs on base
+  [[-S*0.28, S*0.18], [S*0.28, S*0.18], [S*0.0, S*0.25]].forEach(([ox, oy]) => {
+    ctx.beginPath();
+    ctx.ellipse(cx + ox, cy + oy, S*0.06, S*0.04, 0, 0, Math.PI*2);
+    ctx.fillStyle = '#6a4422';
+    ctx.fill();
+  });
+  // Main hatchery dome
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.38, S*0.28, 0, Math.PI, 0);
+  ctx.lineTo(cx + S*0.38, cy);
+  ctx.lineTo(cx - S*0.38, cy);
+  ctx.closePath();
+  const hg = ctx.createRadialGradient(cx, cy - S*0.06, 0, cx, cy, S*0.38);
+  hg.addColorStop(0, '#5a6a22');
+  hg.addColorStop(0.6, '#3a4a12');
+  hg.addColorStop(1, '#1a2208');
+  ctx.fillStyle = hg;
+  ctx.fill();
+  ctx.strokeStyle = '#6a8822';
+  ctx.lineWidth = S*0.025;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.38, S*0.28, 0, Math.PI, 0);
+  ctx.stroke();
+  // Organic spines
+  [-S*0.22, 0, S*0.22].forEach(ox => {
+    ctx.strokeStyle = '#4a6610';
+    ctx.lineWidth = S*0.022;
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, cy);
+    ctx.lineTo(cx + ox + ox*0.3, cy - S*0.18);
+    ctx.stroke();
+  });
+  // Queen pheromone glow
+  const pg = ctx.createRadialGradient(cx, cy - S*0.08, 0, cx, cy - S*0.08, S*0.14);
+  pg.addColorStop(0, 'rgba(180,255,50,0.5)');
+  pg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.08, S*0.14, 0, Math.PI*2);
+  ctx.fillStyle = pg;
+  ctx.fill();
+}
+
+function drawLair(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Evolved creep base
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.15, S*0.44, S*0.18, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(50,30,15,0.8)';
+  ctx.fill();
+  // Larger enclosed dome
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.4, S*0.32, 0, Math.PI, 0);
+  ctx.lineTo(cx + S*0.4, cy);
+  ctx.lineTo(cx - S*0.4, cy);
+  ctx.closePath();
+  const lg = ctx.createRadialGradient(cx, cy - S*0.1, 0, cx, cy, S*0.4);
+  lg.addColorStop(0, '#6a7a28');
+  lg.addColorStop(0.5, '#3a5015');
+  lg.addColorStop(1, '#1a2808');
+  ctx.fillStyle = lg;
+  ctx.fill();
+  ctx.strokeStyle = '#88aa22';
+  ctx.lineWidth = S*0.028;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S*0.4, S*0.32, 0, Math.PI, 0);
+  ctx.stroke();
+  // Additional spine growths
+  [-S*0.3, -S*0.15, 0, S*0.15, S*0.3].forEach(ox => {
+    const h = S*0.16 - Math.abs(ox)*0.3;
+    ctx.strokeStyle = '#558810';
+    ctx.lineWidth = S*0.02;
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, cy);
+    ctx.quadraticCurveTo(cx + ox + ox*0.2, cy - h*0.5, cx + ox, cy - h);
+    ctx.stroke();
+  });
+  // Lair yellow-green glow
+  const yg = ctx.createRadialGradient(cx, cy - S*0.1, 0, cx, cy - S*0.1, S*0.16);
+  yg.addColorStop(0, 'rgba(220,255,50,0.55)');
+  yg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.1, S*0.16, 0, Math.PI*2);
+  ctx.fillStyle = yg;
+  ctx.fill();
+}
+
+function drawHive(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Dark massive creep base
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.18, S*0.46, S*0.2, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(30,10,5,0.9)';
+  ctx.fill();
+  // Imposing hive dome (tallest/darkest)
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S*0.02, S*0.42, S*0.36, 0, Math.PI, 0);
+  ctx.lineTo(cx + S*0.42, cy - S*0.02);
+  ctx.lineTo(cx - S*0.42, cy - S*0.02);
+  ctx.closePath();
+  const hg = ctx.createRadialGradient(cx, cy - S*0.15, 0, cx, cy, S*0.42);
+  hg.addColorStop(0, '#7a3a22');
+  hg.addColorStop(0.5, '#442010');
+  hg.addColorStop(1, '#1a0a05');
+  ctx.fillStyle = hg;
+  ctx.fill();
+  ctx.strokeStyle = '#aa5522';
+  ctx.lineWidth = S*0.03;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S*0.02, S*0.42, S*0.36, 0, Math.PI, 0);
+  ctx.stroke();
+  // Many large spines
+  [-S*0.32, -S*0.18, 0, S*0.18, S*0.32].forEach((ox, i) => {
+    ctx.strokeStyle = '#882200';
+    ctx.lineWidth = S*0.025;
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, cy - S*0.02);
+    ctx.lineTo(cx + ox + ox*0.15, cy - S*0.2 - (i === 2 ? S*0.06 : 0));
+    ctx.stroke();
+  });
+  // Red-orange hive glow
+  const rg = ctx.createRadialGradient(cx, cy - S*0.12, 0, cx, cy - S*0.12, S*0.18);
+  rg.addColorStop(0, 'rgba(255,80,20,0.65)');
+  rg.addColorStop(0.5, 'rgba(180,40,0,0.3)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.12, S*0.18, 0, Math.PI*2);
+  ctx.fillStyle = rg;
+  ctx.fill();
+}
+
+function drawSpawningPool(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Pool edge/rim
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.05, S*0.4, S*0.3, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a3308';
+  ctx.fill();
+  ctx.strokeStyle = '#4a8810';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Pool liquid
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.08, S*0.34, S*0.24, 0, 0, Math.PI*2);
+  const pl = ctx.createRadialGradient(cx, cy + S*0.08, 0, cx, cy + S*0.08, S*0.34);
+  pl.addColorStop(0, '#55cc22');
+  pl.addColorStop(0.6, '#228810');
+  pl.addColorStop(1, '#0a3306');
+  ctx.fillStyle = pl;
+  ctx.fill();
+  // Organic pillar around edge
+  [-S*0.3, S*0.3].forEach(ox => {
+    ctx.fillStyle = '#2a5508';
+    ctx.fillRect(cx + ox - S*0.06, S*0.12, S*0.12, S*0.4);
+    ctx.strokeStyle = '#55aa14';
+    ctx.lineWidth = S*0.018;
+    ctx.strokeRect(cx + ox - S*0.06, S*0.12, S*0.12, S*0.4);
+  });
+  // Surface bubbles
+  [[cx - S*0.1, cy],[cx + S*0.12, cy + S*0.12],[cx, cy - S*0.06]].forEach(([bx, by]) => {
+    ctx.beginPath();
+    ctx.arc(bx, by, S*0.03, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(150,255,80,0.5)';
+    ctx.fill();
+  });
+}
+
+function drawEvolutionChamber(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Low organic building with tentacle growth
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.18, S*0.36, S*0.2, 0, 0, Math.PI*2);
+  const bg = ctx.createRadialGradient(cx, cy + S*0.18, 0, cx, cy + S*0.18, S*0.36);
+  bg.addColorStop(0, '#3a5515');
+  bg.addColorStop(1, '#1a2808');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#5a8820';
+  ctx.lineWidth = S*0.022;
+  ctx.stroke();
+  // DNA helix hint (two spiraling lines)
+  for (let s = 0; s < 2; s++) {
+    ctx.beginPath();
+    ctx.strokeStyle = s === 0 ? '#44cc22' : '#cc4422';
+    ctx.lineWidth = S*0.025;
+    for (let t = 0; t <= 1; t += 0.05) {
+      const a = t * Math.PI * 3 + s * Math.PI;
+      const x = cx + Math.cos(a) * S*0.12;
+      const y = cy - S*0.28 + t * S*0.52;
+      t === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  // Cross-links
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI * 3 / 4;
+    const y = cy - S*0.28 + (i / 4) * S*0.52;
+    ctx.strokeStyle = '#888844';
+    ctx.lineWidth = S*0.015;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * S*0.12, y);
+    ctx.lineTo(cx + Math.cos(a + Math.PI) * S*0.12, y);
+    ctx.stroke();
+  }
+}
+
+function drawRoachWarren(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Underground burrow entrance
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.15, S*0.38, S*0.24, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#2a1808';
+  ctx.fill();
+  ctx.strokeStyle = '#5a3515';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Tunnel opening
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.18, S*0.28, S*0.18, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#080808';
+  ctx.fill();
+  // Acid drips around opening
+  [[cx - S*0.18, cy + S*0.02], [cx, cy - S*0.04], [cx + S*0.18, cy + S*0.02]].forEach(([ax, ay]) => {
+    ctx.strokeStyle = '#88cc22';
+    ctx.lineWidth = S*0.018;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax, ay + S*0.14);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ax, ay + S*0.14, S*0.03, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(100,200,30,0.7)';
+    ctx.fill();
+  });
+  // Chitinous ridge
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S*0.05, S*0.32, S*0.14, 0, Math.PI, 0);
+  ctx.fillStyle = '#3a2210';
+  ctx.fill();
+  ctx.strokeStyle = '#6a4420';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+}
+
+function drawBanelingNest(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Acid-dripping nest
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.1, S*0.36, S*0.26, 0, 0, Math.PI*2);
+  const ng = ctx.createRadialGradient(cx, cy + S*0.1, 0, cx, cy + S*0.1, S*0.36);
+  ng.addColorStop(0, '#6a8810');
+  ng.addColorStop(0.6, '#3a5508');
+  ng.addColorStop(1, '#1a2804');
+  ctx.fillStyle = ng;
+  ctx.fill();
+  ctx.strokeStyle = '#88aa14';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Baneling eggs
+  [[-S*0.18, -S*0.04], [S*0.18, -S*0.04], [0, -S*0.12], [-S*0.1, S*0.08], [S*0.1, S*0.08]].forEach(([ox, oy]) => {
+    ctx.beginPath();
+    ctx.arc(cx + ox, cy + oy, S*0.08, 0, Math.PI*2);
+    const eg = ctx.createRadialGradient(cx + ox, cy + oy, 0, cx + ox, cy + oy, S*0.08);
+    eg.addColorStop(0, '#ccee22');
+    eg.addColorStop(0.6, '#88aa10');
+    eg.addColorStop(1, '#3a5508');
+    ctx.fillStyle = eg;
+    ctx.fill();
+    ctx.strokeStyle = '#aacc18';
+    ctx.lineWidth = S*0.012;
+    ctx.stroke();
+  });
+  // Acid pool under nest
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.26, S*0.3, S*0.1, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(120,200,0,0.4)';
+  ctx.fill();
+}
+
+function drawSpineCrawler(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Ground burrow base
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.3, S*0.26, S*0.1, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a1a08';
+  ctx.fill();
+  ctx.strokeStyle = '#3a3a15';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Worm body/stalk
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.08, cy + S*0.3);
+  ctx.quadraticCurveTo(cx - S*0.06, cy, cx, cy - S*0.28);
+  ctx.quadraticCurveTo(cx + S*0.06, cy, cx + S*0.08, cy + S*0.3);
+  ctx.closePath();
+  const wg = ctx.createLinearGradient(cx - S*0.08, 0, cx + S*0.08, 0);
+  wg.addColorStop(0, '#5a8820');
+  wg.addColorStop(0.5, '#88cc2a');
+  wg.addColorStop(1, '#5a8820');
+  ctx.fillStyle = wg;
+  ctx.fill();
+  ctx.strokeStyle = '#44aa14';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Fang tip
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - S*0.28);
+  ctx.lineTo(cx - S*0.08, cy - S*0.14);
+  ctx.lineTo(cx + S*0.08, cy - S*0.14);
+  ctx.closePath();
+  ctx.fillStyle = '#cc4422';
+  ctx.fill();
+  // Body segments
+  [cy - S*0.05, cy + S*0.1].forEach(ry => {
+    ctx.strokeStyle = '#335510';
+    ctx.lineWidth = S*0.015;
+    ctx.beginPath();
+    ctx.ellipse(cx, ry, S*0.07, S*0.025, 0, 0, Math.PI*2);
+    ctx.stroke();
+  });
+}
+
+function drawSporeCrawler(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Root anchor
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.32, S*0.22, S*0.09, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a1a0a';
+  ctx.fill();
+  ctx.strokeStyle = '#4a4a1a';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Plant-like stalk (passes through centre so smoke test alpha > 0)
+  ctx.strokeStyle = '#5a8820';
+  ctx.lineWidth = S*0.08;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + S*0.3);
+  ctx.quadraticCurveTo(cx + S*0.04, cy, cx, cy - S*0.18);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // Spore pod/flower at top
+  const r = S*0.12;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.ellipse(cx + Math.cos(a)*r, cy - S*0.22 + Math.sin(a)*r*0.5, S*0.06, S*0.04, a, 0, Math.PI*2);
+    ctx.fillStyle = '#8acc33';
+    ctx.fill();
+  }
+  // Center spore
+  ctx.beginPath();
+  ctx.arc(cx, cy - S*0.22, S*0.06, 0, Math.PI*2);
+  const sg = ctx.createRadialGradient(cx, cy - S*0.22, 0, cx, cy - S*0.22, S*0.06);
+  sg.addColorStop(0, '#eeff44');
+  sg.addColorStop(1, '#88cc22');
+  ctx.fillStyle = sg;
+  ctx.fill();
+}
+
+function drawHydraliskDen(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Cave entrance shape
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.1, S*0.36, Math.PI, 0);
+  ctx.lineTo(cx + S*0.36, cy + S*0.38);
+  ctx.lineTo(cx - S*0.36, cy + S*0.38);
+  ctx.closePath();
+  const bg = ctx.createRadialGradient(cx, cy + S*0.1, 0, cx, cy + S*0.1, S*0.36);
+  bg.addColorStop(0, '#4a5520');
+  bg.addColorStop(0.6, '#2a3515');
+  bg.addColorStop(1, '#1a2208');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#6a8828';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Dark cave interior
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.14, S*0.22, Math.PI, 0);
+  ctx.lineTo(cx + S*0.22, cy + S*0.38);
+  ctx.lineTo(cx - S*0.22, cy + S*0.38);
+  ctx.closePath();
+  ctx.fillStyle = '#080810';
+  ctx.fill();
+  // Needle spines around opening
+  [-S*0.28, -S*0.14, 0, S*0.14, S*0.28].forEach((ox, i) => {
+    const a = Math.PI * 1.1 + (i / 4) * Math.PI * 0.8;
+    ctx.strokeStyle = '#66aa22';
+    ctx.lineWidth = S*0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, cy + S*0.1 + S*0.36*Math.sin(a - Math.PI));
+    ctx.lineTo(cx + ox, cy + S*0.1 + S*0.36*Math.sin(a - Math.PI) - S*0.12);
+    ctx.stroke();
+  });
+  // Glowing eyes in darkness
+  ctx.fillStyle = '#ffcc00';
+  [[-S*0.1, cy + S*0.2], [S*0.1, cy + S*0.2]].forEach(([ex, ey]) => {
+    ctx.beginPath();
+    ctx.arc(ex, ey, S*0.03, 0, Math.PI*2);
+    ctx.fill();
+  });
+}
+
+function drawLurkerDen(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Deep burrow — darker than hydralisk den
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.08, S*0.38, Math.PI, 0);
+  ctx.lineTo(cx + S*0.38, cy + S*0.4);
+  ctx.lineTo(cx - S*0.38, cy + S*0.4);
+  ctx.closePath();
+  const bg = ctx.createRadialGradient(cx, cy + S*0.08, 0, cx, cy + S*0.08, S*0.38);
+  bg.addColorStop(0, '#3a2215');
+  bg.addColorStop(0.5, '#221510');
+  bg.addColorStop(1, '#0a0808');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#5a3320';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Abyss interior
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.12, S*0.24, Math.PI, 0);
+  ctx.lineTo(cx + S*0.24, cy + S*0.4);
+  ctx.lineTo(cx - S*0.24, cy + S*0.4);
+  ctx.closePath();
+  ctx.fillStyle = '#030305';
+  ctx.fill();
+  // Sharp bony spikes
+  [-S*0.3, -S*0.14, S*0.14, S*0.3].forEach(ox => {
+    ctx.fillStyle = '#885522';
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, cy + S*0.08);
+    ctx.lineTo(cx + ox - S*0.04, cy + S*0.08 - S*0.2);
+    ctx.lineTo(cx + ox + S*0.04, cy + S*0.08 - S*0.2);
+    ctx.closePath();
+    ctx.fill();
+  });
+  // Purple lurker glow
+  const lg = ctx.createRadialGradient(cx, cy + S*0.2, 0, cx, cy + S*0.2, S*0.18);
+  lg.addColorStop(0, 'rgba(150,50,200,0.5)');
+  lg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.2, S*0.18, 0, Math.PI*2);
+  ctx.fillStyle = lg;
+  ctx.fill();
+}
+
+function drawInfestationPit(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Pit opening
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.1, S*0.38, S*0.26, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a0a08';
+  ctx.fill();
+  ctx.strokeStyle = '#4a1a10';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Infestation fluid
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.14, S*0.3, S*0.2, 0, 0, Math.PI*2);
+  const ig = ctx.createRadialGradient(cx, cy + S*0.14, 0, cx, cy + S*0.14, S*0.3);
+  ig.addColorStop(0, '#884422');
+  ig.addColorStop(0.5, '#441808');
+  ig.addColorStop(1, '#1a0808');
+  ctx.fillStyle = ig;
+  ctx.fill();
+  // Tentacles rising
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2;
+    const r = S*0.22;
+    const tx = cx + Math.cos(a) * r;
+    const ty = cy + S*0.14 + Math.sin(a) * r * 0.5;
+    ctx.strokeStyle = '#662211';
+    ctx.lineWidth = S*0.02;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.quadraticCurveTo(tx + Math.cos(a)*S*0.06, ty - S*0.12, tx + Math.cos(a)*S*0.04, ty - S*0.22);
+    ctx.stroke();
+  }
+  // Sickly glow
+  const sg = ctx.createRadialGradient(cx, cy + S*0.1, 0, cx, cy + S*0.1, S*0.22);
+  sg.addColorStop(0, 'rgba(200,80,30,0.4)');
+  sg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.1, S*0.22, 0, Math.PI*2);
+  ctx.fillStyle = sg;
+  ctx.fill();
+}
+
+function drawSpire(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Creep base
+  ctx.beginPath();
+  ctx.ellipse(cx, S*0.82, S*0.24, S*0.1, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a1008';
+  ctx.fill();
+  // Main spire crystal
+  ctx.beginPath();
+  ctx.moveTo(cx, S*0.06);
+  ctx.lineTo(cx + S*0.14, S*0.42);
+  ctx.lineTo(cx + S*0.18, S*0.82);
+  ctx.lineTo(cx - S*0.18, S*0.82);
+  ctx.lineTo(cx - S*0.14, S*0.42);
+  ctx.closePath();
+  const sg = ctx.createLinearGradient(cx - S*0.18, 0, cx + S*0.18, 0);
+  sg.addColorStop(0, '#442255');
+  sg.addColorStop(0.5, '#773388');
+  sg.addColorStop(1, '#442255');
+  ctx.fillStyle = sg;
+  ctx.fill();
+  ctx.strokeStyle = '#aa44cc';
+  ctx.lineWidth = S*0.022;
+  ctx.stroke();
+  // Two flanking mini-spires
+  [cx - S*0.28, cx + S*0.2].forEach(sx => {
+    ctx.beginPath();
+    ctx.moveTo(sx + S*0.04, S*0.22);
+    ctx.lineTo(sx + S*0.1, S*0.55);
+    ctx.lineTo(sx + S*0.16, S*0.82);
+    ctx.lineTo(sx - S*0.02, S*0.82);
+    ctx.lineTo(sx, S*0.55);
+    ctx.closePath();
+    ctx.fillStyle = '#331a44';
+    ctx.fill();
+    ctx.strokeStyle = '#8833aa';
+    ctx.lineWidth = S*0.015;
+    ctx.stroke();
+  });
+  // Apex glow
+  const ag = ctx.createRadialGradient(cx, S*0.1, 0, cx, S*0.1, S*0.1);
+  ag.addColorStop(0, 'rgba(220,100,255,0.8)');
+  ag.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.1, S*0.1, 0, Math.PI*2);
+  ctx.fillStyle = ag;
+  ctx.fill();
+}
+
+function drawGreaterSpire(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Larger base
+  ctx.beginPath();
+  ctx.ellipse(cx, S*0.84, S*0.3, S*0.12, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a0a18';
+  ctx.fill();
+  // Taller main spire
+  ctx.beginPath();
+  ctx.moveTo(cx, S*0.04);
+  ctx.lineTo(cx + S*0.16, S*0.38);
+  ctx.lineTo(cx + S*0.22, S*0.84);
+  ctx.lineTo(cx - S*0.22, S*0.84);
+  ctx.lineTo(cx - S*0.16, S*0.38);
+  ctx.closePath();
+  const sg = ctx.createLinearGradient(cx - S*0.22, 0, cx + S*0.22, 0);
+  sg.addColorStop(0, '#5a1a66');
+  sg.addColorStop(0.5, '#9933bb');
+  sg.addColorStop(1, '#5a1a66');
+  ctx.fillStyle = sg;
+  ctx.fill();
+  ctx.strokeStyle = '#cc55ee';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Four flanking spires
+  [-S*0.32, -S*0.18, S*0.18, S*0.32].forEach((ox, i) => {
+    const h = i < 2 ? S*0.52 : S*0.46;
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, S*0.18);
+    ctx.lineTo(cx + ox + S*0.06, h);
+    ctx.lineTo(cx + ox + S*0.1, S*0.84);
+    ctx.lineTo(cx + ox - S*0.04, S*0.84);
+    ctx.lineTo(cx + ox, h);
+    ctx.closePath();
+    ctx.fillStyle = '#3a1150';
+    ctx.fill();
+    ctx.strokeStyle = '#aa33dd';
+    ctx.lineWidth = S*0.012;
+    ctx.stroke();
+  });
+  // Intense apex glow
+  const ag = ctx.createRadialGradient(cx, S*0.08, 0, cx, S*0.08, S*0.14);
+  ag.addColorStop(0, 'rgba(255,150,255,0.9)');
+  ag.addColorStop(0.4, 'rgba(180,50,255,0.5)');
+  ag.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.08, S*0.14, 0, Math.PI*2);
+  ctx.fillStyle = ag;
+  ctx.fill();
+}
+
+function drawNydusNetwork(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Organic network hub
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.08, S*0.36, S*0.28, 0, 0, Math.PI*2);
+  const bg = ctx.createRadialGradient(cx, cy + S*0.08, 0, cx, cy + S*0.08, S*0.36);
+  bg.addColorStop(0, '#552a18');
+  bg.addColorStop(0.6, '#331808');
+  bg.addColorStop(1, '#1a0a04');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#885522';
+  ctx.lineWidth = S*0.025;
+  ctx.stroke();
+  // Worm hole opening
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.1, S*0.2, S*0.14, 0, 0, Math.PI*2);
+  const hg = ctx.createRadialGradient(cx, cy + S*0.1, 0, cx, cy + S*0.1, S*0.2);
+  hg.addColorStop(0, '#440000');
+  hg.addColorStop(1, '#1a0808');
+  ctx.fillStyle = hg;
+  ctx.fill();
+  // Network tubes radiating out
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI*0.25;
+    ctx.strokeStyle = '#664422';
+    ctx.lineWidth = S*0.04;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a)*S*0.2, cy + S*0.08 + Math.sin(a)*S*0.14);
+    ctx.lineTo(cx + Math.cos(a)*S*0.38, cy + S*0.08 + Math.sin(a)*S*0.26);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  // Red-orange portal glow
+  const rg = ctx.createRadialGradient(cx, cy + S*0.1, 0, cx, cy + S*0.1, S*0.14);
+  rg.addColorStop(0, 'rgba(255,60,20,0.7)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.1, S*0.14, 0, Math.PI*2);
+  ctx.fillStyle = rg;
+  ctx.fill();
+}
+
+function drawNydusCanal(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Worm emerging from ground
+  // Ground crack
+  ctx.beginPath();
+  ctx.ellipse(cx, S*0.75, S*0.22, S*0.08, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#1a0a04';
+  ctx.fill();
+  ctx.strokeStyle = '#442211';
+  ctx.lineWidth = S*0.02;
+  ctx.stroke();
+  // Worm body
+  ctx.beginPath();
+  ctx.moveTo(cx - S*0.12, S*0.75);
+  ctx.quadraticCurveTo(cx - S*0.08, S*0.4, cx, S*0.12);
+  ctx.quadraticCurveTo(cx + S*0.08, S*0.4, cx + S*0.12, S*0.75);
+  ctx.closePath();
+  const wg = ctx.createLinearGradient(cx - S*0.12, 0, cx + S*0.12, 0);
+  wg.addColorStop(0, '#663322');
+  wg.addColorStop(0.5, '#995544');
+  wg.addColorStop(1, '#663322');
+  ctx.fillStyle = wg;
+  ctx.fill();
+  ctx.strokeStyle = '#886655';
+  ctx.lineWidth = S*0.018;
+  ctx.stroke();
+  // Worm segments
+  [S*0.32, S*0.48, S*0.62].forEach(ry => {
+    ctx.strokeStyle = '#442211';
+    ctx.lineWidth = S*0.015;
+    ctx.beginPath();
+    ctx.ellipse(cx, ry, S*0.1, S*0.025, 0, 0, Math.PI*2);
+    ctx.stroke();
+  });
+  // Maw at top
+  const mg = ctx.createRadialGradient(cx, S*0.16, 0, cx, S*0.16, S*0.12);
+  mg.addColorStop(0, '#ff3300');
+  mg.addColorStop(0.5, 'rgba(200,50,0,0.5)');
+  mg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, S*0.16, S*0.12, 0, Math.PI*2);
+  ctx.fillStyle = mg;
+  ctx.fill();
+  // Teeth
+  [-S*0.06, 0, S*0.06].forEach(ox => {
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, S*0.1);
+    ctx.lineTo(cx + ox - S*0.03, S*0.18);
+    ctx.lineTo(cx + ox + S*0.03, S*0.18);
+    ctx.fill();
+  });
+}
+
+function drawUltraliskCavern(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Massive cave entrance
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.12, S*0.4, Math.PI, 0);
+  ctx.lineTo(cx + S*0.4, cy + S*0.44);
+  ctx.lineTo(cx - S*0.4, cy + S*0.44);
+  ctx.closePath();
+  const bg = ctx.createRadialGradient(cx, cy + S*0.12, 0, cx, cy + S*0.12, S*0.4);
+  bg.addColorStop(0, '#5a3315');
+  bg.addColorStop(0.6, '#331808');
+  bg.addColorStop(1, '#1a0a04');
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = '#7a4820';
+  ctx.lineWidth = S*0.03;
+  ctx.stroke();
+  // Deep dark interior
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.18, S*0.26, Math.PI, 0);
+  ctx.lineTo(cx + S*0.26, cy + S*0.44);
+  ctx.lineTo(cx - S*0.26, cy + S*0.44);
+  ctx.closePath();
+  ctx.fillStyle = '#040204';
+  ctx.fill();
+  // Giant kaiser blades silhouette
+  [[-S*0.3, S*0.08], [S*0.3, S*0.08]].forEach(([bx, by]) => {
+    ctx.fillStyle = '#663300';
+    ctx.beginPath();
+    ctx.moveTo(cx + bx, cy + by);
+    ctx.lineTo(cx + bx + (bx > 0 ? S*0.14 : -S*0.14), cy + by - S*0.26);
+    ctx.lineTo(cx + bx + (bx > 0 ? -S*0.06 : S*0.06), cy + by + S*0.1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#995522';
+    ctx.lineWidth = S*0.018;
+    ctx.stroke();
+  });
+  // Amber eyes glow
+  const eg = ctx.createRadialGradient(cx, cy + S*0.28, 0, cx, cy + S*0.28, S*0.1);
+  eg.addColorStop(0, 'rgba(255,150,0,0.7)');
+  eg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.beginPath();
+  ctx.arc(cx, cy + S*0.28, S*0.1, 0, Math.PI*2);
+  ctx.fillStyle = eg;
+  ctx.fill();
+}
+
+function drawExtractor(ctx, S, dir, teamColor) {
+  ctx.clearRect(0, 0, S, S);
+  const cx = S/2, cy = S/2;
+  // Organic gas collector — chitin dome
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.06, S*0.36, S*0.26, 0, Math.PI, 0);
+  ctx.lineTo(cx + S*0.36, cy + S*0.06);
+  ctx.lineTo(cx - S*0.36, cy + S*0.06);
+  ctx.closePath();
+  const dg = ctx.createRadialGradient(cx, cy - S*0.08, 0, cx, cy, S*0.36);
+  dg.addColorStop(0, '#335528');
+  dg.addColorStop(0.6, '#1a3315');
+  dg.addColorStop(1, '#0a1808');
+  ctx.fillStyle = dg;
+  ctx.fill();
+  ctx.strokeStyle = '#448833';
+  ctx.lineWidth = S*0.025;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.06, S*0.36, S*0.26, 0, Math.PI, 0);
+  ctx.stroke();
+  // Chitin ribs
+  [-S*0.2, 0, S*0.2].forEach(ox => {
+    ctx.strokeStyle = '#2a6620';
+    ctx.lineWidth = S*0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx + ox, cy + S*0.06);
+    ctx.lineTo(cx + ox + ox*0.2, cy - S*0.14);
+    ctx.stroke();
+  });
+  // Gas vent pipes on top
+  [-S*0.14, 0, S*0.14].forEach(ox => {
+    ctx.fillStyle = '#1a3310';
+    ctx.fillRect(cx + ox - S*0.025, cy - S*0.36, S*0.05, S*0.1);
+    ctx.beginPath();
+    ctx.arc(cx + ox, cy - S*0.32, S*0.035, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(100,220,130,0.6)';
+    ctx.fill();
+  });
+  // Base creep
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S*0.2, S*0.3, S*0.1, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(30,50,15,0.6)';
+  ctx.fill();
+}
+
 function drawUnknownBuilding(ctx, S, dir, teamColor) {
   ctx.clearRect(0, 0, S, S);
   const cx = S/2, cy = S/2;
@@ -6595,6 +8350,48 @@ function initSpriteMaterials() {
   BUILDING_MATS['FORGE']              = makeBuildingTexture(drawForge);
   BUILDING_MATS['TWILIGHT_COUNCIL']   = makeBuildingTexture(drawTwilightCouncil);
   BUILDING_MATS['UNKNOWN']            = makeBuildingTexture(drawUnknownBuilding);
+  // New Protoss
+  BUILDING_MATS['PHOTON_CANNON']      = makeBuildingTexture(drawPhotonCannon);
+  BUILDING_MATS['SHIELD_BATTERY']     = makeBuildingTexture(drawShieldBattery);
+  BUILDING_MATS['DARK_SHRINE']        = makeBuildingTexture(drawDarkShrine);
+  BUILDING_MATS['TEMPLAR_ARCHIVES']   = makeBuildingTexture(drawTemplarArchives);
+  BUILDING_MATS['FLEET_BEACON']       = makeBuildingTexture(drawFleetBeacon);
+  BUILDING_MATS['ROBOTICS_BAY']       = makeBuildingTexture(drawRoboticsBay);
+  // Terran
+  BUILDING_MATS['COMMAND_CENTER']     = makeBuildingTexture(drawCommandCenter);
+  BUILDING_MATS['ORBITAL_COMMAND']    = makeBuildingTexture(drawOrbitalCommand);
+  BUILDING_MATS['PLANETARY_FORTRESS'] = makeBuildingTexture(drawPlanetaryFortress);
+  BUILDING_MATS['SUPPLY_DEPOT']       = makeBuildingTexture(drawSupplyDepot);
+  BUILDING_MATS['BARRACKS']           = makeBuildingTexture(drawBarracks);
+  BUILDING_MATS['ENGINEERING_BAY']    = makeBuildingTexture(drawEngineeringBay);
+  BUILDING_MATS['ARMORY']             = makeBuildingTexture(drawArmory);
+  BUILDING_MATS['MISSILE_TURRET']     = makeBuildingTexture(drawMissileTurret);
+  BUILDING_MATS['BUNKER']             = makeBuildingTexture(drawBunker);
+  BUILDING_MATS['SENSOR_TOWER']       = makeBuildingTexture(drawSensorTower);
+  BUILDING_MATS['GHOST_ACADEMY']      = makeBuildingTexture(drawGhostAcademy);
+  BUILDING_MATS['FACTORY']            = makeBuildingTexture(drawFactory);
+  BUILDING_MATS['STARPORT']           = makeBuildingTexture(drawStarport);
+  BUILDING_MATS['FUSION_CORE']        = makeBuildingTexture(drawFusionCore);
+  BUILDING_MATS['REFINERY']           = makeBuildingTexture(drawRefinery);
+  // Zerg
+  BUILDING_MATS['HATCHERY']           = makeBuildingTexture(drawHatchery);
+  BUILDING_MATS['LAIR']               = makeBuildingTexture(drawLair);
+  BUILDING_MATS['HIVE']               = makeBuildingTexture(drawHive);
+  BUILDING_MATS['SPAWNING_POOL']      = makeBuildingTexture(drawSpawningPool);
+  BUILDING_MATS['EVOLUTION_CHAMBER']  = makeBuildingTexture(drawEvolutionChamber);
+  BUILDING_MATS['ROACH_WARREN']       = makeBuildingTexture(drawRoachWarren);
+  BUILDING_MATS['BANELING_NEST']      = makeBuildingTexture(drawBanelingNest);
+  BUILDING_MATS['SPINE_CRAWLER']      = makeBuildingTexture(drawSpineCrawler);
+  BUILDING_MATS['SPORE_CRAWLER']      = makeBuildingTexture(drawSporeCrawler);
+  BUILDING_MATS['HYDRALISK_DEN']      = makeBuildingTexture(drawHydraliskDen);
+  BUILDING_MATS['LURKER_DEN']         = makeBuildingTexture(drawLurkerDen);
+  BUILDING_MATS['INFESTATION_PIT']    = makeBuildingTexture(drawInfestationPit);
+  BUILDING_MATS['SPIRE']              = makeBuildingTexture(drawSpire);
+  BUILDING_MATS['GREATER_SPIRE']      = makeBuildingTexture(drawGreaterSpire);
+  BUILDING_MATS['NYDUS_NETWORK']      = makeBuildingTexture(drawNydusNetwork);
+  BUILDING_MATS['NYDUS_CANAL']        = makeBuildingTexture(drawNydusCanal);
+  BUILDING_MATS['ULTRALISK_CAVERN']   = makeBuildingTexture(drawUltraliskCavern);
+  BUILDING_MATS['EXTRACTOR']          = makeBuildingTexture(drawExtractor);
 }
 
 function updateSpriteDirs() {

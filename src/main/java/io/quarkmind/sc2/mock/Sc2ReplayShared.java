@@ -10,10 +10,25 @@ final class Sc2ReplayShared {
     static final int LOOPS_PER_TICK = 22;
 
     static final Set<String> BUILDING_NAMES = Set.of(
-        "Nexus", "Pylon", "Gateway", "CyberneticsCore", "Assimilator",
+        // Protoss
+        "Nexus", "Pylon", "Gateway", "WarpGate", "CyberneticsCore", "Assimilator",
         "RoboticsFacility", "Stargate", "Forge", "TwilightCouncil",
         "PhotonCannon", "ShieldBattery", "RoboticsBay", "FleetBeacon",
-        "TemplarArchives", "DarkShrine", "WarpGate"
+        "TemplarArchives", "DarkShrine",
+        // Terran
+        "CommandCenter", "OrbitalCommand", "PlanetaryFortress",
+        "SupplyDepot", "SupplyDepotLowered", "Barracks", "BarracksTechLab", "BarracksReactor",
+        "EngineeringBay", "Armory", "MissileTurret", "Bunker", "SensorTower",
+        "GhostAcademy", "Factory", "FactoryTechLab", "FactoryReactor",
+        "Starport", "StarportTechLab", "StarportReactor", "FusionCore", "Refinery",
+        // Terran flying variants
+        "OrbitalCommandFlying", "BarracksFlying", "FactoryFlying", "StarportFlying",
+        // Zerg
+        "Hatchery", "Lair", "Hive", "SpawningPool", "EvolutionChamber",
+        "RoachWarren", "BanelingNest", "SpineCrawler", "SpineCrawlerUprooted",
+        "SporeCrawler", "SporeCrawlerUprooted", "HydraliskDen", "LurkerDen",
+        "InfestationPit", "Spire", "GreaterSpire", "NydusNetwork", "NydusCanal",
+        "UltraliskCavern", "Extractor"
     );
 
     static UnitType toUnitType(String name) {
@@ -95,16 +110,65 @@ final class Sc2ReplayShared {
 
     static BuildingType toBuildingType(String name) {
         return switch (name) {
-            case "Nexus"               -> BuildingType.NEXUS;
-            case "Pylon"               -> BuildingType.PYLON;
-            case "Gateway", "WarpGate" -> BuildingType.GATEWAY;
-            case "CyberneticsCore"     -> BuildingType.CYBERNETICS_CORE;
-            case "Assimilator"         -> BuildingType.ASSIMILATOR;
-            case "RoboticsFacility"    -> BuildingType.ROBOTICS_FACILITY;
-            case "Stargate"            -> BuildingType.STARGATE;
-            case "Forge"               -> BuildingType.FORGE;
-            case "TwilightCouncil"     -> BuildingType.TWILIGHT_COUNCIL;
-            default                    -> BuildingType.UNKNOWN;
+            // Protoss
+            case "Nexus"                          -> BuildingType.NEXUS;
+            case "Pylon"                          -> BuildingType.PYLON;
+            case "Gateway", "WarpGate"            -> BuildingType.GATEWAY;
+            case "CyberneticsCore"                -> BuildingType.CYBERNETICS_CORE;
+            case "Assimilator"                    -> BuildingType.ASSIMILATOR;
+            case "RoboticsFacility"               -> BuildingType.ROBOTICS_FACILITY;
+            case "Stargate"                       -> BuildingType.STARGATE;
+            case "Forge"                          -> BuildingType.FORGE;
+            case "TwilightCouncil"                -> BuildingType.TWILIGHT_COUNCIL;
+            case "PhotonCannon"                   -> BuildingType.PHOTON_CANNON;
+            case "ShieldBattery"                  -> BuildingType.SHIELD_BATTERY;
+            case "DarkShrine"                     -> BuildingType.DARK_SHRINE;
+            case "TemplarArchives"                -> BuildingType.TEMPLAR_ARCHIVES;
+            case "FleetBeacon"                    -> BuildingType.FLEET_BEACON;
+            case "RoboticsBay"                    -> BuildingType.ROBOTICS_BAY;
+            // Terran
+            case "CommandCenter"                  -> BuildingType.COMMAND_CENTER;
+            case "OrbitalCommand",
+                 "OrbitalCommandFlying"           -> BuildingType.ORBITAL_COMMAND;
+            case "PlanetaryFortress"              -> BuildingType.PLANETARY_FORTRESS;
+            case "SupplyDepot",
+                 "SupplyDepotLowered"             -> BuildingType.SUPPLY_DEPOT;
+            case "Barracks", "BarracksTechLab",
+                 "BarracksReactor", "BarracksFlying" -> BuildingType.BARRACKS;
+            case "EngineeringBay"                 -> BuildingType.ENGINEERING_BAY;
+            case "Armory"                         -> BuildingType.ARMORY;
+            case "MissileTurret"                  -> BuildingType.MISSILE_TURRET;
+            case "Bunker"                         -> BuildingType.BUNKER;
+            case "SensorTower"                    -> BuildingType.SENSOR_TOWER;
+            case "GhostAcademy"                   -> BuildingType.GHOST_ACADEMY;
+            case "Factory", "FactoryTechLab",
+                 "FactoryReactor", "FactoryFlying" -> BuildingType.FACTORY;
+            case "Starport", "StarportTechLab",
+                 "StarportReactor", "StarportFlying" -> BuildingType.STARPORT;
+            case "FusionCore"                     -> BuildingType.FUSION_CORE;
+            case "Refinery"                       -> BuildingType.REFINERY;
+            // Zerg
+            case "Hatchery"                       -> BuildingType.HATCHERY;
+            case "Lair"                           -> BuildingType.LAIR;
+            case "Hive"                           -> BuildingType.HIVE;
+            case "SpawningPool"                   -> BuildingType.SPAWNING_POOL;
+            case "EvolutionChamber"               -> BuildingType.EVOLUTION_CHAMBER;
+            case "RoachWarren"                    -> BuildingType.ROACH_WARREN;
+            case "BanelingNest"                   -> BuildingType.BANELING_NEST;
+            case "SpineCrawler",
+                 "SpineCrawlerUprooted"           -> BuildingType.SPINE_CRAWLER;
+            case "SporeCrawler",
+                 "SporeCrawlerUprooted"           -> BuildingType.SPORE_CRAWLER;
+            case "HydraliskDen"                   -> BuildingType.HYDRALISK_DEN;
+            case "LurkerDen"                      -> BuildingType.LURKER_DEN;
+            case "InfestationPit"                 -> BuildingType.INFESTATION_PIT;
+            case "Spire"                          -> BuildingType.SPIRE;
+            case "GreaterSpire"                   -> BuildingType.GREATER_SPIRE;
+            case "NydusNetwork"                   -> BuildingType.NYDUS_NETWORK;
+            case "NydusCanal"                     -> BuildingType.NYDUS_CANAL;
+            case "UltraliskCavern"                -> BuildingType.ULTRALISK_CAVERN;
+            case "Extractor"                      -> BuildingType.EXTRACTOR;
+            default                               -> BuildingType.UNKNOWN;
         };
     }
 

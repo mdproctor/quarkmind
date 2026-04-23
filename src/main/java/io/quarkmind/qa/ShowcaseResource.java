@@ -127,9 +127,17 @@ public class ShowcaseResource {
         simulatedGame.spawnEnemyUnit(UnitType.BROOD_LORD,       new Point2d(2,  20));
         simulatedGame.spawnEnemyUnit(UnitType.LOCUST,           new Point2d(4,  20));
 
-        // z=22: All 9 Protoss building types — two extra probe observers provide fog coverage
+        // Building rows use z=22..34 (units occupy z=2..20).
+        // Probes at (6,22),(14,22) cover the z=22 Protoss row.
+        // Probes at (5,27),(13,27),(5,33),(13,33) cover z=24..34 rows.
         simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(6,  22));
         simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(14, 22));
+        simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(5,  27));
+        simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(13, 27));
+        simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(5,  33));
+        simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(13, 33));
+
+        // z=22: Original 9 Protoss buildings
         simulatedGame.spawnBuildingForTesting(BuildingType.NEXUS,             new Point2d(2,  22));
         simulatedGame.spawnBuildingForTesting(BuildingType.PYLON,             new Point2d(4,  22));
         simulatedGame.spawnBuildingForTesting(BuildingType.GATEWAY,           new Point2d(6,  22));
@@ -140,12 +148,61 @@ public class ShowcaseResource {
         simulatedGame.spawnBuildingForTesting(BuildingType.FORGE,             new Point2d(16, 22));
         simulatedGame.spawnBuildingForTesting(BuildingType.TWILIGHT_COUNCIL,  new Point2d(18, 22));
 
+        // z=24: New Protoss buildings (6)
+        simulatedGame.spawnBuildingForTesting(BuildingType.PHOTON_CANNON,     new Point2d(2,  24));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SHIELD_BATTERY,    new Point2d(4,  24));
+        simulatedGame.spawnBuildingForTesting(BuildingType.DARK_SHRINE,       new Point2d(6,  24));
+        simulatedGame.spawnBuildingForTesting(BuildingType.TEMPLAR_ARCHIVES,  new Point2d(8,  24));
+        simulatedGame.spawnBuildingForTesting(BuildingType.FLEET_BEACON,      new Point2d(10, 24));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ROBOTICS_BAY,      new Point2d(12, 24));
+
+        // z=26: Terran row 1 (8 buildings)
+        simulatedGame.spawnBuildingForTesting(BuildingType.COMMAND_CENTER,    new Point2d(2,  26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ORBITAL_COMMAND,   new Point2d(4,  26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.PLANETARY_FORTRESS,new Point2d(6,  26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SUPPLY_DEPOT,      new Point2d(8,  26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.BARRACKS,          new Point2d(10, 26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ENGINEERING_BAY,   new Point2d(12, 26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ARMORY,            new Point2d(14, 26));
+        simulatedGame.spawnBuildingForTesting(BuildingType.MISSILE_TURRET,    new Point2d(16, 26));
+
+        // z=28: Terran row 2 (7 buildings)
+        simulatedGame.spawnBuildingForTesting(BuildingType.BUNKER,            new Point2d(2,  28));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SENSOR_TOWER,      new Point2d(4,  28));
+        simulatedGame.spawnBuildingForTesting(BuildingType.GHOST_ACADEMY,     new Point2d(6,  28));
+        simulatedGame.spawnBuildingForTesting(BuildingType.FACTORY,           new Point2d(8,  28));
+        simulatedGame.spawnBuildingForTesting(BuildingType.STARPORT,          new Point2d(10, 28));
+        simulatedGame.spawnBuildingForTesting(BuildingType.FUSION_CORE,       new Point2d(12, 28));
+        simulatedGame.spawnBuildingForTesting(BuildingType.REFINERY,          new Point2d(14, 28));
+
+        // z=32: Zerg row 1 (9 buildings)
+        simulatedGame.spawnBuildingForTesting(BuildingType.HATCHERY,          new Point2d(2,  32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.LAIR,              new Point2d(4,  32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.HIVE,              new Point2d(6,  32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SPAWNING_POOL,     new Point2d(8,  32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.EVOLUTION_CHAMBER, new Point2d(10, 32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ROACH_WARREN,      new Point2d(12, 32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.BANELING_NEST,     new Point2d(14, 32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SPINE_CRAWLER,     new Point2d(16, 32));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SPORE_CRAWLER,     new Point2d(18, 32));
+
+        // z=34: Zerg row 2 (9 buildings)
+        simulatedGame.spawnBuildingForTesting(BuildingType.HYDRALISK_DEN,     new Point2d(2,  34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.LURKER_DEN,        new Point2d(4,  34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.INFESTATION_PIT,   new Point2d(6,  34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.SPIRE,             new Point2d(8,  34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.GREATER_SPIRE,     new Point2d(10, 34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.NYDUS_NETWORK,     new Point2d(12, 34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.NYDUS_CANAL,       new Point2d(14, 34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.ULTRALISK_CAVERN,  new Point2d(16, 34));
+        simulatedGame.spawnBuildingForTesting(BuildingType.EXTRACTOR,         new Point2d(18, 34));
+
         engine.observe();
 
         return Response.ok(Map.of(
             "status",    "showcase seeded",
             "enemies",   "65 units: Terran(22) + Protoss(22) + Zerg(21)",
-            "buildings", "10 buildings: 1 Nexus (reset) + 9 Protoss showcase"
+            "buildings", "49 buildings: 1 Nexus (reset) + 9 Protoss + 6 new Protoss + 15 Terran + 18 Zerg"
         )).build();
     }
 }
