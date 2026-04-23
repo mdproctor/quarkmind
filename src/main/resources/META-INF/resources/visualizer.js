@@ -122,6 +122,7 @@ window.__test = {
     if (typeof drawBattlecruiser !== 'undefined') lookup.drawBattlecruiser = drawBattlecruiser;
     if (typeof drawSentry !== 'undefined') lookup.drawSentry = drawSentry;
     if (typeof drawAdept !== 'undefined') lookup.drawAdept = drawAdept;
+    if (typeof drawDarkTemplar !== 'undefined') lookup.drawDarkTemplar = drawDarkTemplar;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2030,6 +2031,122 @@ function drawAdept(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+function drawDarkTemplar(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawDarkTemplar(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  // Lower body — dark sinister ellipse, near-black with slight transparency
+  const legGrad = ctx.createRadialGradient(cx, cy + S * 0.12, S * 0.02, cx, cy + S * 0.12, S * 0.22);
+  legGrad.addColorStop(0, hexToRgba('#1a0a2a', 0.95));
+  legGrad.addColorStop(1, hexToRgba('#0a0010', 0.85));
+  ctx.fillStyle = legGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S * 0.14, S * 0.14, S * 0.13, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Upper torso — narrow, upright, very dark
+  const torsoGrad = ctx.createRadialGradient(cx - S * 0.03, cy - S * 0.06, S * 0.02, cx, cy, S * 0.17);
+  torsoGrad.addColorStop(0, hexToRgba('#160820', 0.92));
+  torsoGrad.addColorStop(1, hexToRgba('#0a0a1a', 0.85));
+  ctx.fillStyle = torsoGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.02, S * 0.12, S * 0.19, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Subtle body outline in dark purple
+  ctx.strokeStyle = '#1a0a2a';
+  ctx.lineWidth = S * 0.015;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.02, S * 0.12, S * 0.19, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Head — small dark ellipse
+  ctx.fillStyle = hexToRgba('#0e0618', 0.95);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.22, S * 0.085, S * 0.08, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes — two bright dots in team colour with glow
+  ctx.fillStyle = hexToRgba(teamColor, 0.95);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 12;
+  const eyeY = cy - S * 0.235;
+  const eyeR = S * 0.022;
+  if (dir === 2) {
+    // Back — no eyes visible, draw faint carapace line instead
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.25);
+    ctx.lineWidth = S * 0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.28);
+    ctx.lineTo(cx, cy + S * 0.2);
+    ctx.stroke();
+  } else {
+    // Front and side eyes
+    ctx.beginPath();
+    ctx.arc(cx - S * 0.03, eyeY, eyeR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + S * 0.03, eyeY, eyeR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+
+  // Warp blade — dark crescent or angled slash in team colour
+  ctx.fillStyle = hexToRgba(teamColor, 0.88);
+  ctx.strokeStyle = hexToRgba(teamColor, 0.95);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 14;
+
+  if (dir === 1) {
+    // Side view: full curved warp blade extending from right shoulder
+    ctx.save();
+    ctx.translate(cx + S * 0.1, cy - S * 0.08);
+    ctx.beginPath();
+    // Crescent arc blade
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(
+      S * 0.12, -S * 0.18,   // control point 1: upper curve
+      S * 0.35, -S * 0.1,    // control point 2: tip approach
+      S * 0.38, S * 0.04     // blade tip
+    );
+    ctx.bezierCurveTo(
+      S * 0.28, -S * 0.04,   // return curve outer edge
+      S * 0.1,  -S * 0.06,   // return mid
+      0, S * 0.04            // back to base
+    );
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = S * 0.012;
+    // Bright edge along blade
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(S * 0.12, -S * 0.18, S * 0.35, -S * 0.1, S * 0.38, S * 0.04);
+    ctx.stroke();
+    ctx.restore();
+  } else if (dir === 0) {
+    // Front view: shorter angled slash at right shoulder
+    const bx = cx + S * 0.14, by = cy - S * 0.1;
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(-Math.PI / 4);
+    ctx.beginPath();
+    ctx.moveTo(0, -S * 0.04);
+    ctx.lineTo(S * 0.14, -S * 0.02);
+    ctx.lineTo(S * 0.18, S * 0.01);
+    ctx.lineTo(S * 0.12, S * 0.04);
+    ctx.lineTo(-S * 0.02, S * 0.02);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+  // dir === 2 — back: carapace line drawn in eyes section above, no blade
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2070,6 +2187,8 @@ function initSpriteMaterials() {
   UNIT_MATS['SENTRY_E'] = makeDirTextures(drawSentry, TEAM_COLOR_ENEMY);
   UNIT_MATS['ADEPT_F'] = makeDirTextures(drawAdept, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ADEPT_E'] = makeDirTextures(drawAdept, TEAM_COLOR_ENEMY);
+  UNIT_MATS['DARK_TEMPLAR_F'] = makeDirTextures(drawDarkTemplar, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['DARK_TEMPLAR_E'] = makeDirTextures(drawDarkTemplar, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);

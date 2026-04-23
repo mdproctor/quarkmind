@@ -1994,4 +1994,41 @@ class VisualizerRenderTest {
         assertThat(count).as("one Adept enemy must render").isEqualTo(1);
         page.close();
     }
+
+    @Test
+    @Tag("browser")
+    void darkTemplarDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate(
+                "() => window.__test.smokeTestDrawFn('drawDarkTemplar', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawDarkTemplar dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void darkTemplarEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyUnit(UnitType.DARK_TEMPLAR, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyCount()")).intValue();
+        assertThat(count).as("one Dark Templar enemy must render").isEqualTo(1);
+        page.close();
+    }
 }
