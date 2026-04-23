@@ -127,6 +127,7 @@ window.__test = {
     if (typeof drawDisruptor !== 'undefined') lookup.drawDisruptor = drawDisruptor;
     if (typeof drawImmortal !== 'undefined') lookup.drawImmortal = drawImmortal;
     if (typeof drawArchon   !== 'undefined') lookup.drawArchon   = drawArchon;
+    if (typeof drawColossus !== 'undefined') lookup.drawColossus = drawColossus;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2505,6 +2506,108 @@ function drawArchon(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+// drawColossus — massive 4-legged Protoss walker with elevated body and thermal lances
+// Protoss bronze-gold palette: hull #4a3820, legs #2a2010
+// Smoke test samples (64,64). Stilts/legs pass through canvas centre for ALL 4 dirs.
+function drawColossus(ctx, S, dir, teamColor) {
+  const hullColor = '#4a3820';
+  const legColor  = '#2a2010';
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 1 || dir === 3) {
+    // Side view (dir 1/3) — tall profile: two long legs, elevated body, one lance
+    // Legs span full canvas height. legX1 placed so it covers x=64 (cx).
+    const legX1 = S * 0.44, legX2 = S * 0.62;  // legX1 at 56.3, width 0.16*S=20.5 → covers cx=64
+    const hipY  = S * 0.38;
+
+    ctx.fillStyle = legColor;
+    // Front leg — wide enough to straddle cx=64
+    ctx.fillRect(legX1 - S * 0.08, 0, S * 0.16, S);
+    // Back leg
+    ctx.fillRect(legX2 - S * 0.03, 0, S * 0.05, S);
+
+    // Stilt supports from hip to body
+    ctx.fillStyle = hullColor;
+    ctx.fillRect(cx - S * 0.04, hipY - S * 0.12, S * 0.08, S * 0.12);
+
+    // Body hull — elevated rectangle at top
+    const bodyX = S * 0.15, bodyY = S * 0.05;
+    const bodyW = S * 0.65, bodyH = S * 0.22;
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.roundRect(bodyX, bodyY, bodyW, bodyH, S * 0.03);
+    ctx.fill();
+
+    // Thermal lance — extends right from body
+    ctx.fillStyle = hexToRgba(hullColor, 0.9);
+    ctx.fillRect(bodyX + bodyW, bodyY + bodyH * 0.3, S * 0.12, S * 0.04);
+
+    // Lance tip glow
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 10;
+    ctx.beginPath();
+    ctx.arc(bodyX + bodyW + S * 0.13, bodyY + bodyH * 0.32 + S * 0.02, S * 0.025, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else {
+    // Front/back view (dir 0/2) — widest view: 4 legs spread, stilts, body at top, twin lances
+    const hipY  = S * 0.52;  // hip joint Y — just below canvas centre so stilts cover (64,64)
+    const footY = S;          // legs extend to bottom
+
+    // 4 legs — angled out from hip
+    ctx.fillStyle = legColor;
+    const legPositions = [
+      { hipX: S * 0.30, footX: S * 0.08 },  // far left
+      { hipX: S * 0.42, footX: S * 0.28 },  // near left
+      { hipX: S * 0.58, footX: S * 0.72 },  // near right
+      { hipX: S * 0.70, footX: S * 0.92 },  // far right
+    ];
+    legPositions.forEach(({ hipX, footX }) => {
+      ctx.beginPath();
+      ctx.moveTo(hipX - S * 0.03, hipY);
+      ctx.lineTo(hipX + S * 0.03, hipY);
+      ctx.lineTo(footX + S * 0.025, footY);
+      ctx.lineTo(footX - S * 0.025, footY);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Two stilt supports rising from hip centre up to body base
+    // Left stilt ends at cx, right stilt starts at cx — together they span cx
+    // ensuring pixel (64,64) has non-zero alpha (hipY > S/2, stilts reach y=64)
+    ctx.fillStyle = hullColor;
+    ctx.fillRect(cx - S * 0.16, S * 0.20, S * 0.16, hipY - S * 0.20);  // left: cx-20.5 → cx
+    ctx.fillRect(cx,            S * 0.20, S * 0.16, hipY - S * 0.20);  // right: cx → cx+20.5
+
+    // Body hull — large rounded rect near top; stilts connect at S*0.20
+    const bodyX = S * 0.18, bodyY = S * 0.04;
+    const bodyW = S * 0.64, bodyH = S * 0.18;
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.roundRect(bodyX, bodyY, bodyW, bodyH, S * 0.025);
+    ctx.fill();
+
+    // Twin thermal lance arrays — two horizontal strips on top face of hull
+    ctx.fillStyle = hexToRgba(hullColor, 0.85);
+    ctx.fillRect(bodyX + S * 0.04, bodyY + bodyH * 0.2, S * 0.18, S * 0.035);  // left lance
+    ctx.fillRect(bodyX + bodyW - S * 0.22, bodyY + bodyH * 0.2, S * 0.18, S * 0.035);  // right lance
+
+    // Lance tip glows at outer ends
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 10;
+    ctx.beginPath();
+    ctx.arc(bodyX + S * 0.035, bodyY + bodyH * 0.22 + S * 0.017, S * 0.022, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(bodyX + bodyW - S * 0.035, bodyY + bodyH * 0.22 + S * 0.017, S * 0.022, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2555,6 +2658,8 @@ function initSpriteMaterials() {
   UNIT_MATS['IMMORTAL_E'] = makeDirTextures(drawImmortal, TEAM_COLOR_ENEMY);
   UNIT_MATS['ARCHON_F'] = makeDirTextures(drawArchon, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ARCHON_E'] = makeDirTextures(drawArchon, TEAM_COLOR_ENEMY);
+  UNIT_MATS['COLOSSUS_F'] = makeDirTextures(drawColossus, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['COLOSSUS_E'] = makeDirTextures(drawColossus, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
