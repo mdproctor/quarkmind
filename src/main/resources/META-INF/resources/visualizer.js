@@ -137,6 +137,7 @@ window.__test = {
     if (typeof drawCarrier  !== 'undefined') lookup.drawCarrier  = drawCarrier;
     if (typeof drawRavager !== 'undefined') lookup.drawRavager = drawRavager;
     if (typeof drawInfestor !== 'undefined') lookup.drawInfestor = drawInfestor;
+    if (typeof drawLurker   !== 'undefined') lookup.drawLurker   = drawLurker;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3175,6 +3176,62 @@ function drawInfestor(ctx, S, dir, teamColor) {
   }
 }
 
+// drawLurker — always burrowed; same surface mound view from all directions.
+// Ground mound centred at (S/2, S/2+8). Mound top edge reaches y≈54, so
+// smoke-test pixel (64,64) is inside the ellipse. Dir-3 mirrors dir-1.
+function drawLurker(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawLurker(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 8;
+  const moundColor  = '#3a2a10';
+  const ridgeColor  = '#5a3f18';
+  const spineColor  = '#1a1a10';
+
+  // Ground mound — wide filled ellipse, horizontal radius 0.30×S, vertical 0.14×S
+  // Top of ellipse: cy - 0.14×128 = 72 - 17.9 ≈ 54 — pixel (64,64) is inside.
+  ctx.fillStyle = moundColor;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, S * 0.30, S * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ridge line across mound top
+  ctx.strokeStyle = ridgeColor;
+  ctx.lineWidth = S * 0.015;
+  ctx.beginPath();
+  ctx.moveTo(cx - S * 0.28, cy - S * 0.04);
+  ctx.bezierCurveTo(cx - S * 0.10, cy - S * 0.10, cx + S * 0.10, cy - S * 0.10, cx + S * 0.28, cy - S * 0.04);
+  ctx.stroke();
+
+  // 5 spines erupting from the mound — thin triangles with team-colour tips
+  const spines = [
+    { bx: cx - S * 0.22, by: cy - S * 0.06, tx: cx - S * 0.28, ty: cy - S * 0.28 },
+    { bx: cx - S * 0.10, by: cy - S * 0.10, tx: cx - S * 0.12, ty: cy - S * 0.36 },
+    { bx: cx,            by: cy - S * 0.13, tx: cx,             ty: cy - S * 0.40 },
+    { bx: cx + S * 0.10, by: cy - S * 0.10, tx: cx + S * 0.12, ty: cy - S * 0.36 },
+    { bx: cx + S * 0.22, by: cy - S * 0.06, tx: cx + S * 0.28, ty: cy - S * 0.28 },
+  ];
+  const halfW = S * 0.025;
+  spines.forEach(({ bx, by, tx, ty }) => {
+    ctx.fillStyle = spineColor;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);                  // apex
+    ctx.lineTo(bx - halfW, by);         // base-left
+    ctx.lineTo(bx + halfW, by);         // base-right
+    ctx.closePath();
+    ctx.fill();
+
+    // Team-colour glow at spine tip
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(tx, ty, S * 0.022, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3239,6 +3296,8 @@ function initSpriteMaterials() {
   UNIT_MATS['RAVAGER_E']   = makeDirTextures(drawRavager,   TEAM_COLOR_ENEMY);
   UNIT_MATS['INFESTOR_F']  = makeDirTextures(drawInfestor,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['INFESTOR_E']  = makeDirTextures(drawInfestor,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['LURKER_F']    = makeDirTextures(drawLurker,    TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['LURKER_E']    = makeDirTextures(drawLurker,    TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
