@@ -6,7 +6,8 @@ const TEAM_COLOR_ENEMY    = '#ff4422';
 const FLYING_UNITS = new Set([
   'MEDIVAC', 'MUTALISK',
   'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER',
-  'OBSERVER', 'VOID_RAY', 'CARRIER'
+  'OBSERVER', 'VOID_RAY', 'CARRIER',
+  'CORRUPTOR'
 ]);
 const RECONNECT_MS = 2000;
 
@@ -141,6 +142,7 @@ window.__test = {
     if (typeof drawSwarmHost !== 'undefined') lookup.drawSwarmHost = drawSwarmHost;
     if (typeof drawQueen !== 'undefined') lookup.drawQueen = drawQueen;
     if (typeof drawUltralisk !== 'undefined') lookup.drawUltralisk = drawUltralisk;
+    if (typeof drawCorruptor !== 'undefined') lookup.drawCorruptor = drawCorruptor;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3618,6 +3620,70 @@ function drawUltralisk(ctx, S, dir, teamColor) {
   }
 }
 
+// drawCorruptor — Zerg flying spore-ball corruption unit.
+// Dark purple-grey lumpy body with bioluminescent spore patches and tentacle clusters.
+// Dir-3 mirrors dir-1.
+function drawCorruptor(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawCorruptor(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2;
+  const cy = S / 2;
+  const bodyColor  = '#1a0a1a';
+  const bumpColor  = '#120812';
+  const darkColor  = '#0d060d';
+
+  // Main body — large filled circle centred at (cx, cy), covers pixel (64,64)
+  ctx.fillStyle = bodyColor;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.26, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Surface bumps — lumpy organic blobs around the body edge
+  const bumps = (dir === 0 || dir === 2)
+    ? [[0, -0.22], [0.18, -0.13], [0.22, 0.08], [-0.18, 0.10], [-0.08, 0.22], [0.06, -0.08]]
+    : [[0, -0.22], [0.16, -0.14], [0.22, 0.06], [0.10, 0.20], [-0.08, 0.22], [-0.14, 0.04]];
+  bumps.forEach(([bx, by]) => {
+    ctx.fillStyle = bumpColor;
+    ctx.beginPath();
+    ctx.ellipse(cx + bx * S, cy + by * S, S * 0.085, S * 0.072, bx * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Tentacle clusters — short wavy strokes hanging below the body
+  ctx.lineWidth = S * 0.025;
+  ctx.lineCap = 'round';
+  const tentacleOffsets = (dir === 1)
+    ? [[0.08, 0.20], [0.18, 0.16], [0.24, 0.08]]
+    : [[-0.14, 0.20], [0, 0.22], [0.14, 0.20], [0.22, 0.10]];
+  tentacleOffsets.forEach(([tx, ty]) => {
+    ctx.strokeStyle = darkColor;
+    ctx.beginPath();
+    ctx.moveTo(cx + tx * S, cy + ty * S);
+    ctx.quadraticCurveTo(
+      cx + tx * S + (Math.random() - 0.5) * S * 0.08,
+      cy + ty * S + S * 0.08,
+      cx + tx * S + (Math.random() - 0.5) * S * 0.06,
+      cy + ty * S + S * 0.14
+    );
+    ctx.stroke();
+  });
+
+  // Bioluminescent spore glow patches — team colour spots on body surface
+  const glows = (dir === 0 || dir === 2)
+    ? [[0.10, -0.10], [-0.12, 0.04], [0.02, 0.14]]
+    : [[0.12, -0.08], [0.08, 0.12], [0.18, 0.02]];
+  glows.forEach(([gx, gy]) => {
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(cx + gx * S, cy + gy * S, S * 0.048, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3690,6 +3756,8 @@ function initSpriteMaterials() {
   UNIT_MATS['QUEEN_E'] = makeDirTextures(drawQueen, TEAM_COLOR_ENEMY);
   UNIT_MATS['ULTRALISK_F'] = makeDirTextures(drawUltralisk, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ULTRALISK_E'] = makeDirTextures(drawUltralisk, TEAM_COLOR_ENEMY);
+  UNIT_MATS['CORRUPTOR_F'] = makeDirTextures(drawCorruptor, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['CORRUPTOR_E'] = makeDirTextures(drawCorruptor, TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
