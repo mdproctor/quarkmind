@@ -112,6 +112,7 @@ window.__test = {
     if (typeof drawMutalisk  !== 'undefined') lookup.drawMutalisk  = drawMutalisk;
     if (typeof drawGhost     !== 'undefined') lookup.drawGhost     = drawGhost;
     if (typeof drawCyclone   !== 'undefined') lookup.drawCyclone   = drawCyclone;
+    if (typeof drawWidowMine !== 'undefined') lookup.drawWidowMine = drawWidowMine;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1463,6 +1464,45 @@ function drawCyclone(ctx, S, dir, teamColor) {
   }
 }
 
+function drawWidowMine(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawWidowMine(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 4;
+
+  ctx.strokeStyle = '#445566'; ctx.lineWidth = S * 0.035;
+  if (dir === 1) {
+    [[-0.55 * Math.PI, 0.28], [0.15 * Math.PI, 0.28]].forEach(([a, r]) => {
+      ctx.beginPath(); ctx.moveTo(cx, cy + S * 0.04);
+      ctx.lineTo(cx + Math.cos(a) * S * r, cy + S * 0.16 + Math.sin(a) * S * 0.06); ctx.stroke();
+    });
+  } else {
+    [[-0.28, 0.2], [0, 0.24], [0.28, 0.2]].forEach(([dx, dy]) => {
+      ctx.beginPath(); ctx.moveTo(cx, cy + S * 0.04);
+      ctx.lineTo(cx + dx * S, cy + dy * S); ctx.stroke();
+    });
+  }
+
+  const bg = ctx.createRadialGradient(cx - S * 0.06, cy - S * 0.06, S * 0.02, cx, cy, S * 0.2);
+  bg.addColorStop(0, '#556677'); bg.addColorStop(0.6, '#334455'); bg.addColorStop(1, '#1a2a33');
+  ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.19, S * 0.17, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = '#3a4a55';
+  ctx.beginPath();
+  ctx.moveTo(cx - S * 0.03, cy - S * 0.12); ctx.lineTo(cx + S * 0.03, cy - S * 0.12);
+  ctx.lineTo(cx + S * 0.015, cy - S * 0.36); ctx.lineTo(cx - S * 0.015, cy - S * 0.36);
+  ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = teamColor;
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.34, S * 0.04, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.strokeStyle = '#667788'; ctx.lineWidth = S * 0.02;
+  ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.19, S * 0.17, 0, 0, Math.PI * 2); ctx.stroke();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1481,8 +1521,10 @@ function initSpriteMaterials() {
   UNIT_MATS['MEDIVAC_E']   = makeDirTextures(drawMedivac,   TEAM_COLOR_ENEMY);
   UNIT_MATS['GHOST_F']    = makeDirTextures(drawGhost,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['GHOST_E']    = makeDirTextures(drawGhost,    TEAM_COLOR_ENEMY);
-  UNIT_MATS['CYCLONE_F']  = makeDirTextures(drawCyclone,  TEAM_COLOR_FRIENDLY);
-  UNIT_MATS['CYCLONE_E']  = makeDirTextures(drawCyclone,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['CYCLONE_F']    = makeDirTextures(drawCyclone,    TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['CYCLONE_E']    = makeDirTextures(drawCyclone,    TEAM_COLOR_ENEMY);
+  UNIT_MATS['WIDOW_MINE_F'] = makeDirTextures(drawWidowMine, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['WIDOW_MINE_E'] = makeDirTextures(drawWidowMine, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
