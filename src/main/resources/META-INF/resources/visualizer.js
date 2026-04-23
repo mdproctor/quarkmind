@@ -139,6 +139,7 @@ window.__test = {
     if (typeof drawInfestor !== 'undefined') lookup.drawInfestor = drawInfestor;
     if (typeof drawLurker   !== 'undefined') lookup.drawLurker   = drawLurker;
     if (typeof drawSwarmHost !== 'undefined') lookup.drawSwarmHost = drawSwarmHost;
+    if (typeof drawQueen !== 'undefined') lookup.drawQueen = drawQueen;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3356,6 +3357,126 @@ function drawSwarmHost(ctx, S, dir, teamColor) {
   }
 }
 
+// drawQueen — tall Zerg queen, always on ground (never flies).
+// Upper body centred at (S/2, S/2-8); leg section ellipse centred at (S/2, S/2+12),
+// vertical radius 14 — covers canvas centre (64,64).
+// Dir-3 mirrors dir-1.
+function drawQueen(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawQueen(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2;
+  const bodyColor  = '#1a0a2a';
+  const darkColor  = '#120618';
+  const wingColor  = '#150820';
+
+  if (dir === 0 || dir === 2) {
+    // Top-down / bottom-up view
+
+    // Leg section — wide lower ellipse covering canvas centre
+    ctx.fillStyle = darkColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, S / 2 + 14, S * 0.20, S * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wing appendages — swept-back triangles on each side
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.08, S / 2 - 12);
+    ctx.lineTo(cx - S * 0.36, S / 2 - 2);
+    ctx.lineTo(cx - S * 0.28, S / 2 + 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.08, S / 2 - 12);
+    ctx.lineTo(cx + S * 0.36, S / 2 - 2);
+    ctx.lineTo(cx + S * 0.28, S / 2 + 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Upper body / head — narrow elongated ellipse
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, S / 2 - 8, S * 0.13, S * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tentacle arms — two wavy bezier strokes curling outward downward
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = S * 0.025;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.10, S / 2 + 4);
+    ctx.bezierCurveTo(cx - S * 0.22, S / 2 + 16, cx - S * 0.28, S / 2 + 22, cx - S * 0.20, S / 2 + 32);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.10, S / 2 + 4);
+    ctx.bezierCurveTo(cx + S * 0.22, S / 2 + 16, cx + S * 0.28, S / 2 + 22, cx + S * 0.20, S / 2 + 32);
+    ctx.stroke();
+
+    // Bio-sacs on body flanks — team colour glow
+    [cx - S * 0.12, cx + S * 0.12].forEach(bx => {
+      ctx.fillStyle = darkColor;
+      ctx.beginPath();
+      ctx.ellipse(bx, S / 2 - 4, S * 0.055, S * 0.075, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = hexToRgba(teamColor, 0.85);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(bx, S / 2 - 4, S * 0.028, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+  } else {
+    // dir === 1: side profile — narrow, tall figure
+
+    // Leg section — lower ellipse covering canvas centre
+    ctx.fillStyle = darkColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, S / 2 + 12, S * 0.16, S * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wing — single swept-back triangle trailing behind
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.06, S / 2 - 14);
+    ctx.lineTo(cx - S * 0.32, S / 2 - 2);
+    ctx.lineTo(cx - S * 0.22, S / 2 + 8);
+    ctx.closePath();
+    ctx.fill();
+
+    // Upper body — narrow elongated ellipse
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, S / 2 - 8, S * 0.10, S * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tentacle arms trailing downward behind body
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = S * 0.022;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.06, S / 2 + 6);
+    ctx.bezierCurveTo(cx - S * 0.18, S / 2 + 18, cx - S * 0.22, S / 2 + 24, cx - S * 0.14, S / 2 + 32);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.06, S / 2 + 6);
+    ctx.bezierCurveTo(cx + S * 0.14, S / 2 + 18, cx + S * 0.06, S / 2 + 24, cx + S * 0.08, S / 2 + 32);
+    ctx.stroke();
+
+    // Bio-sac — one visible on near flank
+    ctx.fillStyle = darkColor;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.10, S / 2 - 6, S * 0.045, S * 0.065, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(cx + S * 0.10, S / 2 - 6, S * 0.022, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3424,6 +3545,8 @@ function initSpriteMaterials() {
   UNIT_MATS['LURKER_E']    = makeDirTextures(drawLurker,    TEAM_COLOR_ENEMY);
   UNIT_MATS['SWARM_HOST_F'] = makeDirTextures(drawSwarmHost, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SWARM_HOST_E'] = makeDirTextures(drawSwarmHost, TEAM_COLOR_ENEMY);
+  UNIT_MATS['QUEEN_F'] = makeDirTextures(drawQueen, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['QUEEN_E'] = makeDirTextures(drawQueen, TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
