@@ -121,6 +121,7 @@ window.__test = {
     if (typeof drawLiberator !== 'undefined') lookup.drawLiberator = drawLiberator;
     if (typeof drawBattlecruiser !== 'undefined') lookup.drawBattlecruiser = drawBattlecruiser;
     if (typeof drawSentry !== 'undefined') lookup.drawSentry = drawSentry;
+    if (typeof drawAdept !== 'undefined') lookup.drawAdept = drawAdept;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1948,6 +1949,87 @@ function drawSentry(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+function drawAdept(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawAdept(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  // Lower body / leg mass — slightly wider ellipse below torso
+  const legGrad = ctx.createRadialGradient(cx, cy + S * 0.12, S * 0.02, cx, cy + S * 0.12, S * 0.22);
+  legGrad.addColorStop(0, '#5a5030');
+  legGrad.addColorStop(1, '#2a2010');
+  ctx.fillStyle = legGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S * 0.14, S * 0.18, S * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Upper torso — upright ellipse centred at canvas centre
+  const torsoGrad = ctx.createRadialGradient(cx - S * 0.04, cy - S * 0.06, S * 0.03, cx, cy, S * 0.2);
+  torsoGrad.addColorStop(0, '#6a6040');
+  torsoGrad.addColorStop(1, '#3a3020');
+  ctx.fillStyle = torsoGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.04, S * 0.15, S * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Helm — rounded top with a slight forward tilt
+  ctx.fillStyle = '#4a4028';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.22, S * 0.1, S * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye-strip visor across helm
+  ctx.fillStyle = hexToRgba(teamColor, 0.9);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.09, cy - S * 0.25, S * 0.18, S * 0.035, S * 0.01);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Psi-lance blade
+  ctx.fillStyle = hexToRgba(teamColor, 0.85);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 10;
+
+  if (dir === 1) {
+    // Side view: long diagonal blade extending upper-right from shoulder
+    ctx.save();
+    ctx.translate(cx + S * 0.12, cy - S * 0.05);
+    ctx.rotate(-Math.PI / 5);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(S * 0.28, -S * 0.04);
+    ctx.lineTo(S * 0.38, -S * 0.01);  // tip
+    ctx.lineTo(S * 0.28, S * 0.04);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  } else if (dir === 0) {
+    // Front view: blade tip-on — small pointed diamond at right shoulder
+    const bx = cx + S * 0.16, by = cy - S * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(bx, by - S * 0.045);
+    ctx.lineTo(bx + S * 0.05, by);
+    ctx.lineTo(bx, by + S * 0.045);
+    ctx.lineTo(bx - S * 0.025, by);
+    ctx.closePath();
+    ctx.fill();
+  } else if (dir === 2) {
+    // Back view: no blade — draw carapace ridge down the back
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.4);
+    ctx.lineWidth = S * 0.02;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.26);
+    ctx.lineTo(cx, cy + S * 0.2);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1986,6 +2068,8 @@ function initSpriteMaterials() {
   UNIT_MATS['BATTLECRUISER_E'] = makeDirTextures(drawBattlecruiser, TEAM_COLOR_ENEMY);
   UNIT_MATS['SENTRY_F'] = makeDirTextures(drawSentry, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SENTRY_E'] = makeDirTextures(drawSentry, TEAM_COLOR_ENEMY);
+  UNIT_MATS['ADEPT_F'] = makeDirTextures(drawAdept, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ADEPT_E'] = makeDirTextures(drawAdept, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
