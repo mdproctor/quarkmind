@@ -125,6 +125,7 @@ window.__test = {
     if (typeof drawDarkTemplar !== 'undefined') lookup.drawDarkTemplar = drawDarkTemplar;
     if (typeof drawHighTemplar !== 'undefined') lookup.drawHighTemplar = drawHighTemplar;
     if (typeof drawDisruptor !== 'undefined') lookup.drawDisruptor = drawDisruptor;
+    if (typeof drawImmortal !== 'undefined') lookup.drawImmortal = drawImmortal;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2289,6 +2290,173 @@ function drawDisruptor(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+// Immortal — heavy Protoss walker: wide armoured body, two chunky legs, assault cannon arm
+function drawImmortal(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawImmortal(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  const cx = S / 2, cy = S / 2;
+
+  // --- Ground shadow ---
+  ctx.fillStyle = hexToRgba('#000000', 0.22);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S * 0.28, S * 0.30, S * 0.06, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // --- Legs (drawn first, behind body) ---
+  // Dir 0 (front) / dir 2 (back): two legs spread wide below body
+  // Dir 1 (side): two legs visible as thick rectangles in profile
+  ctx.fillStyle = hexToRgba('#1e2430', 1.0);
+  if (dir === 0 || dir === 2) {
+    // Left leg — angled outward
+    ctx.save();
+    ctx.translate(cx - S * 0.18, cy + S * 0.12);
+    ctx.rotate(-0.18);
+    ctx.fillRect(-S * 0.09, 0, S * 0.09, S * 0.20);
+    ctx.restore();
+    // Right leg — angled outward
+    ctx.save();
+    ctx.translate(cx + S * 0.18, cy + S * 0.12);
+    ctx.rotate(0.18);
+    ctx.fillRect(0, 0, S * 0.09, S * 0.20);
+    ctx.restore();
+  } else {
+    // Side view: front leg (visible) and partial rear leg
+    ctx.fillRect(cx - S * 0.06, cy + S * 0.10, S * 0.10, S * 0.21);
+    ctx.fillStyle = hexToRgba('#161c28', 1.0);
+    ctx.fillRect(cx + S * 0.06, cy + S * 0.13, S * 0.09, S * 0.18);
+  }
+
+  // --- Shield plates (shoulders / sides) — broad armour panels ---
+  const shieldColor = hexToRgba('#3a4558', 1.0);
+  const shieldHighlight = hexToRgba('#4a5870', 1.0);
+  if (dir === 0 || dir === 2) {
+    // Two large elliptical shoulder plates on each side
+    ctx.fillStyle = shieldColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.23, cy - S * 0.02, S * 0.14, S * 0.11, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shieldHighlight;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.24, cy - S * 0.04, S * 0.09, S * 0.07, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = shieldColor;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.23, cy - S * 0.02, S * 0.14, S * 0.11, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shieldHighlight;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.24, cy - S * 0.04, S * 0.09, S * 0.07, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Side view: one large shield plate visible
+    ctx.fillStyle = shieldColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.05, cy - S * 0.03, S * 0.16, S * 0.11, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shieldHighlight;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.07, cy - S * 0.05, S * 0.10, S * 0.07, -0.15, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // --- Main body torso (raised above legs, covers centre) ---
+  const bodyGrad = ctx.createLinearGradient(cx - S * 0.20, cy - S * 0.18, cx + S * 0.20, cy + S * 0.10);
+  bodyGrad.addColorStop(0, hexToRgba('#3e4f66', 1.0));
+  bodyGrad.addColorStop(0.4, hexToRgba('#2a3040', 1.0));
+  bodyGrad.addColorStop(1, hexToRgba('#1a2030', 1.0));
+  ctx.fillStyle = bodyGrad;
+  const bx = cx - S * 0.18, by = cy - S * 0.18;
+  const bw = S * 0.36, bh = S * 0.30;
+  const br = S * 0.06;
+  ctx.beginPath();
+  ctx.moveTo(bx + br, by);
+  ctx.lineTo(bx + bw - br, by);
+  ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + br);
+  ctx.lineTo(bx + bw, by + bh - br);
+  ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - br, by + bh);
+  ctx.lineTo(bx + br, by + bh);
+  ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - br);
+  ctx.lineTo(bx, by + br);
+  ctx.quadraticCurveTo(bx, by, bx + br, by);
+  ctx.closePath();
+  ctx.fill();
+
+  // Body armour panel edge highlight
+  ctx.strokeStyle = hexToRgba('#5a6e8a', 0.7);
+  ctx.lineWidth = S * 0.018;
+  ctx.stroke();
+
+  // --- Assault cannon arm ---
+  if (dir === 0) {
+    // Front view: cannon tip-on as small circle at right side
+    ctx.fillStyle = hexToRgba('#1a2030', 1.0);
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.24, cy + S * 0.02, S * 0.06, S * 0.04, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba('#3a4a60', 0.9);
+    ctx.lineWidth = S * 0.015;
+    ctx.stroke();
+    // Energy cell at muzzle
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.24, cy + S * 0.02, S * 0.03, S * 0.02, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  } else if (dir === 1) {
+    // Right side view: full cannon extending to right
+    // Cannon mount
+    ctx.fillStyle = hexToRgba('#1a2030', 1.0);
+    ctx.fillRect(cx + S * 0.14, cy - S * 0.05, S * 0.36, S * 0.08);
+    // Cannon barrel
+    ctx.fillStyle = hexToRgba('#222e40', 1.0);
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.04, S * 0.30, S * 0.05);
+    // Flared muzzle end
+    ctx.fillStyle = hexToRgba('#1a2030', 1.0);
+    ctx.fillRect(cx + S * 0.44, cy - S * 0.055, S * 0.04, S * 0.085);
+    // Energy cell at muzzle tip
+    ctx.fillStyle = hexToRgba(teamColor, 0.90);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.46, cy - S * 0.015, S * 0.025, S * 0.025, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  } else {
+    // Back view: cannon visible on left side (mirrored from front)
+    ctx.fillStyle = hexToRgba('#1a2030', 1.0);
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.24, cy + S * 0.02, S * 0.06, S * 0.04, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba('#3a4a60', 0.9);
+    ctx.lineWidth = S * 0.015;
+    ctx.stroke();
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.24, cy + S * 0.02, S * 0.03, S * 0.02, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  // --- Cockpit visor / sensor strip on body ---
+  ctx.fillStyle = hexToRgba(teamColor, 0.50);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 8;
+  if (dir === 0 || dir === 2) {
+    ctx.fillRect(cx - S * 0.10, cy - S * 0.14, S * 0.20, S * 0.04);
+  } else {
+    ctx.fillRect(cx - S * 0.10, cy - S * 0.14, S * 0.14, S * 0.04);
+  }
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2335,6 +2503,8 @@ function initSpriteMaterials() {
   UNIT_MATS['HIGH_TEMPLAR_E'] = makeDirTextures(drawHighTemplar, TEAM_COLOR_ENEMY);
   UNIT_MATS['DISRUPTOR_F'] = makeDirTextures(drawDisruptor, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['DISRUPTOR_E'] = makeDirTextures(drawDisruptor, TEAM_COLOR_ENEMY);
+  UNIT_MATS['IMMORTAL_F'] = makeDirTextures(drawImmortal, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['IMMORTAL_E'] = makeDirTextures(drawImmortal, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
