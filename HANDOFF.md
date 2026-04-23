@@ -1,60 +1,55 @@
-# Handover — 2026-04-23
+# Handover — 2026-04-23 (end of session)
 
-**Head commit:** `62c8d50` — docs: E18 design spec — remaining Protoss + Zerg sprites
+**Head commit:** `ee7a2b0` — docs: E19a/b/c plans
 
 ## What Changed This Session
 
-**E17 complete — all 10 Terran sprites (closes #87, refs epic #83)**
+### Siege Tank Sieged sprite (#83)
+- `drawSiegeTankSieged` — distinct deployed artillery silhouette (wide splayed tracks, steep-angle barrel, stabiliser struts)
+- `UnitType.SIEGE_TANK_SIEGED` added to domain model
+- `SiegeTankSieged` mapped in `Sc2ReplayShared` (was previously collapsed to `SIEGE_TANK`)
 
-- 5 ground: Ghost, Cyclone, Widow Mine, Siege Tank (mobile), Thor
-- 5 air: Viking, Raven, Banshee, Liberator, Battlecruiser
-- FLYING_UNITS now: `['MEDIVAC','MUTALISK','VIKING','RAVEN','BANSHEE','LIBERATOR','BATTLECRUISER']`
-- 25 new Playwright tests (smoke + spawn for all 10; elevation for 5 air)
-- ShowcaseResource: 10 → 20 enemies (Terran ground column x=16 + air row y=8)
-- Showcase Playwright test updated: expects 20 enemies
-- Issue #87 closed
+### E18 Sprite coverage complete (at session start)
+- E18a (11 Protoss) + E18b (9 Zerg) were already done
+- Showcase rewritten: 40 units in 6×7 grid within Nexus sight range (all visible in browser)
+- Showcase validation: 40 enemies, all above terrain surface, all within map bounds
 
-**Key discovery: `smokeTestDrawFn` has a manual lookup table** (lines ~98–130 in `visualizer.js`). Every new draw function must be added there with `if (typeof drawX !== 'undefined') lookup.drawX = drawX;` — not documented elsewhere.
+### E19: 24 new multiplayer unit types — full coverage
+Added all previously-missing multiplayer units to `UnitType` enum, `Sc2ReplayShared` mapping, and `ActionTranslator`. Then implemented sprites for all 24:
 
-**E18 spec written and committed**
+**E19a — Terran (issue #90, closed):**
+SCV, Reaper, Hellion, Hellbat, MULE, Viking Assault, Liberator AG
 
-- `docs/superpowers/specs/2026-04-23-e18-protoss-zerg-sprites-design.md`
-- 11 Protoss + 9 Zerg = 20 units total
-- Protoss air (FLYING_UNITS): OBSERVER, VOID_RAY, CARRIER
-- Zerg air (FLYING_UNITS): BROOD_LORD, CORRUPTOR, VIPER
+**E19b — Protoss (issue #91, closed):**
+Phoenix, Oracle, Tempest, Mothership, Warp Prism, Warp Prism Phasing, Interceptor, Adept Phase Shift
 
-**E18 plan NOT written** — writing-plans hit the 32k token limit (20 units × full draw code in each step = too large).
+**E19c — Zerg + spawned (issue #92, closed):**
+Drone, Overlord, Overseer, Baneling, Locust, Broodling, Infested Terran, Changeling, Auto Turret
 
-## Immediate Next Step
+**Plus Liberator AG added to FLYING_UNITS; Overlord, Overseer, Locust added to FLYING_UNITS.**
 
-**Write E18a plan (Protoss only) and E18b (Zerg), then execute via subagent-driven-development.**
+**Total test count after session: 169 Playwright tests, 0 failures. 506 unit tests, 0 failures.**
 
-**Critical:** Do NOT embed full draw function code in plan steps. Plan steps should describe what to implement visually; the implementation subagent writes the actual canvas code. This keeps each plan under the token limit.
+## Immediate Next Steps
 
-Pattern to follow: `docs/superpowers/plans/2026-04-23-e17-terran-sprites.md` but with visual descriptions instead of pre-written draw code.
+1. **Showcase needs updating** — still shows the original 40 units (pre-E19). The 24+ new units are not in the showcase yet. Update `ShowcaseResource.java` to include them — will need a grid rethink since 64 units won't fit in the current 6×7 sight-range grid. Options: use multiple Nexus sight ranges by seeding friendly observers at map corners, or accept a scrollable showcase outside the fog constraint.
+
+2. **Epic #83 still open** — remaining deferred scope: building sprites, walk-cycle animations, combat indicators, replay controls. Sprite work is now functionally complete (all multiplayer units covered).
+
+3. **Viking Assault is ground** — `VIKING_ASSAULT` is NOT in `FLYING_UNITS`. Viking Fighter (air) is `VIKING`, Viking ground form is `VIKING_ASSAULT`. Both have sprites but only `VIKING` is in the air set.
 
 ## Key Technical Notes
 
-*E16 notes unchanged — retrieve with:* `git show HEAD~2:HANDOFF.md`
-
-**E17/E18 additions:**
-- `smokeTestDrawFn` lookup table at lines ~98–130 — manual, must be updated per unit. Every draw function must be a `function` declaration (not arrow fn) and added to this table.
-- `visualizer.js` is now 2028 lines, 43 UNIT_MATS entries.
-- No showcase extension for E18 — positions within 8.5 tiles of Nexus at (8,8) are exhausted. Showcase stays at 20 enemies.
-
-**E18 visual design decisions (from spec):**
-- ARCHON: pure energy rings + glowing core — no solid body
-- LURKER: burrowed surface pose — spines erupting from ground mound
-- DISRUPTOR: floating sphere with energy buildup glow
-- COLOSSUS: very wide 4-legged walker, thermal lance arrays on top
-- QUEEN: ground unit despite wings (not in FLYING_UNITS)
-- VIPER: flying Zerg caster (in FLYING_UNITS)
+- `smokeTestDrawFn` lookup table: now at lines ~98–200+ in `visualizer.js` (grown significantly). Every draw function needs an entry there.
+- `visualizer.js` is now ~6000+ lines with 70+ UNIT_MATS entries.
+- `FLYING_UNITS` set: 16 entries — MEDIVAC, MUTALISK, VIKING, RAVEN, BANSHEE, LIBERATOR, BATTLECRUISER, OBSERVER, VOID_RAY, CARRIER, BROOD_LORD, CORRUPTOR, VIPER, LIBERATOR_AG, OVERLORD, OVERSEER, LOCUST, PHOENIX, ORACLE, TEMPEST, MOTHERSHIP, WARP_PRISM, WARP_PRISM_PHASING, INTERCEPTOR.
+- Showcase runs in mock mode only (`mvn quarkus:dev` no flags). Seed with `curl -X POST http://localhost:8080/sc2/showcase`.
 
 ## Open Issues
 
 | # | What | Status |
 |---|------|--------|
-| #83 | Epic E14: 3D Visualizer — E18 is next | Open |
+| #83 | Epic E14: 3D Visualizer | Open — sprite work done, deferred scope remains |
 | #74 | Unit genericisation | Parked |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
@@ -63,7 +58,8 @@ Pattern to follow: `docs/superpowers/plans/2026-04-23-e17-terran-sprites.md` but
 
 | Context | Where |
 |---------|-------|
-| E18 spec | `docs/superpowers/specs/2026-04-23-e18-protoss-zerg-sprites-design.md` |
-| E17 plan (pattern) | `docs/superpowers/plans/2026-04-23-e17-terran-sprites.md` |
-| E16 handover (prior) | `git show HEAD~2:HANDOFF.md` |
-| GitHub | mdproctor/quarkmind (epic #83 open; #87 closed) |
+| E19a plan | `docs/superpowers/plans/2026-04-23-e19a-terran-new-sprites.md` |
+| E19b plan | `docs/superpowers/plans/2026-04-23-e19b-protoss-new-sprites.md` |
+| E19c plan | `docs/superpowers/plans/2026-04-23-e19c-zerg-spawned-sprites.md` |
+| E18 handover (prior) | `git show HEAD~50:HANDOFF.md` (approx) |
+| GitHub | mdproctor/quarkmind (epic #83 open; #88–92 closed) |
