@@ -126,6 +126,7 @@ window.__test = {
     if (typeof drawHighTemplar !== 'undefined') lookup.drawHighTemplar = drawHighTemplar;
     if (typeof drawDisruptor !== 'undefined') lookup.drawDisruptor = drawDisruptor;
     if (typeof drawImmortal !== 'undefined') lookup.drawImmortal = drawImmortal;
+    if (typeof drawArchon   !== 'undefined') lookup.drawArchon   = drawArchon;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2457,6 +2458,53 @@ function drawImmortal(ctx, S, dir, teamColor) {
   ctx.shadowBlur = 0;
 }
 
+// Archon — pure psionic energy being: no solid body, all team colour glow
+function drawArchon(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  // Offset the two ring centres slightly based on direction
+  const offsetX = (dir === 1) ? S * 0.06 : S * 0.04;
+  const offsetY = (dir === 1) ? 0         : S * 0.02;
+  const cx1 = cx - offsetX / 2, cy1 = cy - offsetY / 2;
+  const cx2 = cx + offsetX / 2, cy2 = cy + offsetY / 2;
+
+  // Outer ring strokes — both in team colour with heavy glow
+  ctx.strokeStyle = hexToRgba(teamColor, 0.85);
+  ctx.lineWidth   = S * 0.055;
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur  = 18;
+
+  ctx.beginPath();
+  ctx.arc(cx1, cy1, S * 0.26, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx2, cy2, S * 0.20, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Arc discharges — short partial arcs just beyond the outer ring
+  ctx.strokeStyle = hexToRgba(teamColor, 0.70);
+  ctx.lineWidth   = S * 0.020;
+  ctx.shadowBlur  = 12;
+  const dischargeAngles = [0.0, 1.1, 2.1, 3.2, 4.3, 5.3];
+  for (let i = 0; i < dischargeAngles.length; i++) {
+    const start = dischargeAngles[i];
+    ctx.beginPath();
+    ctx.arc(cx, cy, S * 0.32, start, start + 0.5);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // Central glowing core — solid fill so pixel (64,64) has non-zero alpha
+  ctx.fillStyle   = hexToRgba(teamColor, 1.0);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur  = 22;
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2505,6 +2553,8 @@ function initSpriteMaterials() {
   UNIT_MATS['DISRUPTOR_E'] = makeDirTextures(drawDisruptor, TEAM_COLOR_ENEMY);
   UNIT_MATS['IMMORTAL_F'] = makeDirTextures(drawImmortal, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['IMMORTAL_E'] = makeDirTextures(drawImmortal, TEAM_COLOR_ENEMY);
+  UNIT_MATS['ARCHON_F'] = makeDirTextures(drawArchon, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ARCHON_E'] = makeDirTextures(drawArchon, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
