@@ -3,7 +3,11 @@
 const TILE = 0.7;
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
-const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER', 'OBSERVER']);
+const FLYING_UNITS = new Set([
+  'MEDIVAC', 'MUTALISK',
+  'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER',
+  'OBSERVER', 'VOID_RAY'
+]);
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -129,6 +133,7 @@ window.__test = {
     if (typeof drawArchon   !== 'undefined') lookup.drawArchon   = drawArchon;
     if (typeof drawColossus !== 'undefined') lookup.drawColossus = drawColossus;
     if (typeof drawObserver !== 'undefined') lookup.drawObserver = drawObserver;
+    if (typeof drawVoidRay  !== 'undefined') lookup.drawVoidRay  = drawVoidRay;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2671,6 +2676,128 @@ function drawObserver(ctx, S, dir, teamColor) {
   }
 }
 
+// drawVoidRay — large Protoss angular warship, dark blue-grey palette (~#1a2840).
+// Diamond/arrowhead silhouette with swept-back wings. Prismatic beam emitter at bow.
+// Dir-3 mirrors dir-1. Hull must cover canvas centre (64,64) for smoke test.
+function drawVoidRay(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.scale(-1, 1); ctx.translate(-S, 0); drawVoidRay(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor   = '#1a2840';
+  const panelColor  = '#253550';
+  const edgeColor   = '#3a5070';
+
+  if (dir === 0) {
+    // Front — arrowhead pointing upward, wide swept wings left and right
+    // Main diamond hull covering the centre
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx,             cy - S * 0.40);   // bow tip (top)
+    ctx.lineTo(cx + S * 0.45, cy + S * 0.15);   // right wing tip
+    ctx.lineTo(cx + S * 0.18, cy + S * 0.35);   // right wing inner trailing
+    ctx.lineTo(cx,             cy + S * 0.20);   // centre rear
+    ctx.lineTo(cx - S * 0.18, cy + S * 0.35);   // left wing inner trailing
+    ctx.lineTo(cx - S * 0.45, cy + S * 0.15);   // left wing tip
+    ctx.closePath();
+    ctx.fill();
+
+    // Hull panel lines along wing surfaces
+    ctx.strokeStyle = edgeColor;
+    ctx.lineWidth = S * 0.018;
+    // right wing panel
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.08, cy - S * 0.10);
+    ctx.lineTo(cx + S * 0.38, cy + S * 0.12);
+    ctx.stroke();
+    // left wing panel
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.08, cy - S * 0.10);
+    ctx.lineTo(cx - S * 0.38, cy + S * 0.12);
+    ctx.stroke();
+
+    // Prismatic beam emitter at the bow tip — team colour glow
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 16;
+    ctx.beginPath();
+    ctx.arc(cx, cy - S * 0.38, S * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else if (dir === 2) {
+    // Back — similar diamond but reversed; engine glow ports at rear (bottom)
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx,             cy + S * 0.40);   // rear bottom
+    ctx.lineTo(cx + S * 0.45, cy - S * 0.15);   // right wing tip
+    ctx.lineTo(cx + S * 0.18, cy - S * 0.35);   // right wing inner
+    ctx.lineTo(cx,             cy - S * 0.20);   // bow (now at top, smaller)
+    ctx.lineTo(cx - S * 0.18, cy - S * 0.35);   // left wing inner
+    ctx.lineTo(cx - S * 0.45, cy - S * 0.15);   // left wing tip
+    ctx.closePath();
+    ctx.fill();
+
+    // Panel lines
+    ctx.strokeStyle = edgeColor;
+    ctx.lineWidth = S * 0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.08, cy + S * 0.10);
+    ctx.lineTo(cx + S * 0.38, cy - S * 0.12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.08, cy + S * 0.10);
+    ctx.lineTo(cx - S * 0.38, cy - S * 0.12);
+    ctx.stroke();
+
+    // Engine glow ports at rear
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 14;
+    ctx.beginPath();
+    ctx.arc(cx - S * 0.10, cy + S * 0.36, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + S * 0.10, cy + S * 0.36, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+  } else {
+    // Dir 1 — side profile: elongated blade, bow at left, engine at right
+    // Large elongated hull covering the centre
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.46, cy);             // bow tip (left)
+    ctx.lineTo(cx - S * 0.20, cy - S * 0.22); // upper front
+    ctx.lineTo(cx + S * 0.20, cy - S * 0.18); // upper mid
+    ctx.lineTo(cx + S * 0.46, cy - S * 0.05); // upper rear
+    ctx.lineTo(cx + S * 0.46, cy + S * 0.10); // lower rear
+    ctx.lineTo(cx + S * 0.10, cy + S * 0.22); // lower engine nacelle
+    ctx.lineTo(cx - S * 0.20, cy + S * 0.18); // lower mid
+    ctx.lineTo(cx - S * 0.40, cy + S * 0.08); // lower bow
+    ctx.closePath();
+    ctx.fill();
+
+    // Panel line along the hull spine
+    ctx.strokeStyle = edgeColor;
+    ctx.lineWidth = S * 0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.35, cy - S * 0.06);
+    ctx.lineTo(cx + S * 0.35, cy - S * 0.04);
+    ctx.stroke();
+
+    // Bow tip glow (left) and engine glow (right)
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor;
+    ctx.shadowBlur  = 14;
+    ctx.beginPath();
+    ctx.arc(cx - S * 0.44, cy, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + S * 0.43, cy + S * 0.02, S * 0.04, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2725,6 +2852,8 @@ function initSpriteMaterials() {
   UNIT_MATS['COLOSSUS_E'] = makeDirTextures(drawColossus, TEAM_COLOR_ENEMY);
   UNIT_MATS['OBSERVER_F'] = makeDirTextures(drawObserver, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['OBSERVER_E'] = makeDirTextures(drawObserver, TEAM_COLOR_ENEMY);
+  UNIT_MATS['VOID_RAY_F'] = makeDirTextures(drawVoidRay, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['VOID_RAY_E'] = makeDirTextures(drawVoidRay, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
