@@ -140,6 +140,7 @@ window.__test = {
     if (typeof drawLurker   !== 'undefined') lookup.drawLurker   = drawLurker;
     if (typeof drawSwarmHost !== 'undefined') lookup.drawSwarmHost = drawSwarmHost;
     if (typeof drawQueen !== 'undefined') lookup.drawQueen = drawQueen;
+    if (typeof drawUltralisk !== 'undefined') lookup.drawUltralisk = drawUltralisk;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3477,6 +3478,146 @@ function drawQueen(ctx, S, dir, teamColor) {
   }
 }
 
+// drawUltralisk — massive Zerg tank unit with kaiser blade scythes.
+// Huge carapace body spans most of the canvas, centred at (S/2, S/2).
+// Two large curved scythe blades rise from each shoulder.
+// Bio-sac clusters on flanks glow with team colour.
+// Dir-3 mirrors dir-1.
+function drawUltralisk(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawUltralisk(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2;
+  const cy = S / 2;
+  const bodyColor  = '#1a1008';
+  const boneColor  = '#3a3020';
+  const darkColor  = '#0e0b04';
+
+  if (dir === 0 || dir === 2) {
+    // Top-down view — wide oval carapace fills most of the canvas
+
+    // Main carapace body — large rounded rect nearly filling canvas
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.40, S * 0.30, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Carapace ridge plates — dark segmented lines across the body
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = S * 0.025;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx - S * 0.32, cy + i * S * 0.09);
+      ctx.lineTo(cx + S * 0.32, cy + i * S * 0.09);
+      ctx.stroke();
+    }
+
+    // Kaiser blade scythes — large arcs rising above each shoulder
+    [[-1, -Math.PI * 0.85, -Math.PI * 0.15], [1, Math.PI + Math.PI * 0.15, Math.PI + Math.PI * 0.85]].forEach(([side, startA, endA]) => {
+      const bx = cx + side * S * 0.28;
+      const by = cy - S * 0.10;
+      // Blade fill — bone-grey crescent
+      ctx.fillStyle = boneColor;
+      ctx.beginPath();
+      ctx.arc(bx, by, S * 0.28, startA, endA, side < 0);
+      ctx.arc(bx, by, S * 0.18, endA, startA, side > 0);
+      ctx.closePath();
+      ctx.fill();
+      // Inner blade edge — team colour glow
+      ctx.strokeStyle = hexToRgba(teamColor, 0.80);
+      ctx.lineWidth = S * 0.03;
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(bx, by, S * 0.20, startA, endA, side < 0);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+
+    // Bio-sac clusters on body flanks — two groups per side
+    [[-S * 0.28, -S * 0.06], [-S * 0.28, S * 0.06],
+     [ S * 0.28, -S * 0.06], [ S * 0.28,  S * 0.06]].forEach(([dx, dy]) => {
+      ctx.fillStyle = darkColor;
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy + dy, S * 0.055, S * 0.045, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = hexToRgba(teamColor, 0.80);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, S * 0.024, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // Heavy legs — 4 short thick rects below body
+    ctx.fillStyle = darkColor;
+    [[-S * 0.26, S * 0.22], [-S * 0.10, S * 0.28], [S * 0.10, S * 0.28], [S * 0.26, S * 0.22]].forEach(([lx, ly]) => {
+      ctx.beginPath();
+      ctx.roundRect(cx + lx - S * 0.04, cy + ly, S * 0.08, S * 0.10, S * 0.02);
+      ctx.fill();
+    });
+
+  } else {
+    // dir === 1: side profile — forward lean, massive bulk
+
+    // Main carapace body — large ellipse, slightly forward-leaning
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.04, cy + S * 0.04, S * 0.36, S * 0.24, -0.18, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Carapace ridge plates — two horizontal lines
+    ctx.strokeStyle = darkColor;
+    ctx.lineWidth = S * 0.022;
+    [-S * 0.07, S * 0.04].forEach(dy => {
+      ctx.beginPath();
+      ctx.moveTo(cx - S * 0.28, cy + dy);
+      ctx.lineTo(cx + S * 0.28, cy + dy);
+      ctx.stroke();
+    });
+
+    // Single dominant kaiser blade — rises dramatically above the body
+    const bx = cx - S * 0.08;
+    const by = cy - S * 0.08;
+    ctx.fillStyle = boneColor;
+    ctx.beginPath();
+    ctx.arc(bx, by, S * 0.30, -Math.PI * 0.90, -Math.PI * 0.10, false);
+    ctx.arc(bx, by, S * 0.18, -Math.PI * 0.10, -Math.PI * 0.90, true);
+    ctx.closePath();
+    ctx.fill();
+    // Inner blade glow
+    ctx.strokeStyle = hexToRgba(teamColor, 0.80);
+    ctx.lineWidth = S * 0.03;
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(bx, by, S * 0.21, -Math.PI * 0.88, -Math.PI * 0.12, false);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Bio-sac clusters — two on near flank
+    [[S * 0.16, -S * 0.06], [S * 0.20, S * 0.06]].forEach(([dx, dy]) => {
+      ctx.fillStyle = darkColor;
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy + dy, S * 0.055, S * 0.045, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = hexToRgba(teamColor, 0.80);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(cx + dx, cy + dy, S * 0.024, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // Two heavy legs visible on the side
+    ctx.fillStyle = darkColor;
+    [[-S * 0.14, S * 0.22], [S * 0.10, S * 0.24]].forEach(([lx, ly]) => {
+      ctx.beginPath();
+      ctx.roundRect(cx + lx - S * 0.04, cy + ly, S * 0.09, S * 0.09, S * 0.02);
+      ctx.fill();
+    });
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3547,6 +3688,8 @@ function initSpriteMaterials() {
   UNIT_MATS['SWARM_HOST_E'] = makeDirTextures(drawSwarmHost, TEAM_COLOR_ENEMY);
   UNIT_MATS['QUEEN_F'] = makeDirTextures(drawQueen, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['QUEEN_E'] = makeDirTextures(drawQueen, TEAM_COLOR_ENEMY);
+  UNIT_MATS['ULTRALISK_F'] = makeDirTextures(drawUltralisk, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ULTRALISK_E'] = makeDirTextures(drawUltralisk, TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
