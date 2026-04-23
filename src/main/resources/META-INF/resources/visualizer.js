@@ -110,6 +110,7 @@ window.__test = {
     if (typeof drawRoach     !== 'undefined') lookup.drawRoach     = drawRoach;
     if (typeof drawHydralisk !== 'undefined') lookup.drawHydralisk = drawHydralisk;
     if (typeof drawMutalisk  !== 'undefined') lookup.drawMutalisk  = drawMutalisk;
+    if (typeof drawGhost     !== 'undefined') lookup.drawGhost     = drawGhost;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1366,6 +1367,58 @@ function drawMutalisk(ctx, S, dir, teamColor) {
   ctx.restore();
 }
 
+function drawGhost(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawGhost(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + 2;
+
+  if (dir === 2) {
+    ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.2, S * 0.23, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.16, S * 0.14, S * 0.15, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#444';
+    ctx.fillRect(cx + S * 0.06, cy - S * 0.28, S * 0.04, S * 0.22);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.08, cy + S * 0.25, S * 0.08, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.08, cy + S * 0.25, S * 0.08, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  if (dir === 1) {
+    const bg = ctx.createRadialGradient(cx - S * 0.04, cy, S * 0.02, cx, cy, S * 0.22);
+    bg.addColorStop(0, '#4a4a4a'); bg.addColorStop(1, '#1a1a1a');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.18, S * 0.23, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.16, S * 0.14, S * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.07, cy - S * 0.18, S * 0.055, S * 0.022, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#555'; ctx.fillRect(cx + S * 0.08, cy - S * 0.04, S * 0.3, S * 0.05);
+    ctx.fillStyle = '#333'; ctx.fillRect(cx + S * 0.28, cy - S * 0.02, S * 0.1, S * 0.03);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.25, S * 0.1, S * 0.042, 0, 0, Math.PI * 2); ctx.fill();
+    return;
+  }
+  // FRONT
+  const bg = ctx.createRadialGradient(cx - S * 0.05, cy - S * 0.04, S * 0.03, cx, cy, S * 0.25);
+  bg.addColorStop(0, '#4a4a4a'); bg.addColorStop(0.5, '#2a2a2a'); bg.addColorStop(1, '#111');
+  ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.02, S * 0.2, S * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+  const hg = ctx.createRadialGradient(cx - S * 0.04, cy - S * 0.22, S * 0.02, cx, cy - S * 0.15, S * 0.16);
+  hg.addColorStop(0, '#555'); hg.addColorStop(1, '#1a1a1a');
+  ctx.fillStyle = hg; ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.15, S * 0.14, S * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = hexToRgba(teamColor, 0.9);
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.18, S * 0.08, S * 0.028, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#444'; ctx.fillRect(cx + S * 0.16, cy - S * 0.02, S * 0.25, S * 0.05);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.ellipse(cx - S * 0.09, cy + S * 0.25, S * 0.08, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + S * 0.09, cy + S * 0.25, S * 0.08, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1382,6 +1435,8 @@ function initSpriteMaterials() {
   UNIT_MATS['MARAUDER_E']  = makeDirTextures(drawMarauder,  TEAM_COLOR_ENEMY);
   UNIT_MATS['MEDIVAC_F']   = makeDirTextures(drawMedivac,   TEAM_COLOR_FRIENDLY);
   UNIT_MATS['MEDIVAC_E']   = makeDirTextures(drawMedivac,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['GHOST_F']    = makeDirTextures(drawGhost,    TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['GHOST_E']    = makeDirTextures(drawGhost,    TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
