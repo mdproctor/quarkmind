@@ -2964,4 +2964,154 @@ class VisualizerRenderTest {
         assertThat(count).as("one SCV enemy must render").isEqualTo(1);
         page.close();
     }
+
+    @Test
+    @Tag("browser")
+    void reaperDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawReaper', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawReaper dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void reaperEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.REAPER, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Reaper enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void hellionDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawHellion', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawHellion dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void hellionEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.HELLION, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Hellion enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void hellbatDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawHellbat', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawHellbat dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void hellbatEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.HELLBAT, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Hellbat enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void muleDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawMULE', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawMULE dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void muleEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MULE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one MULE enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void vikingAssaultDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawVikingAssault', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawVikingAssault dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void vikingAssaultEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.VIKING_ASSAULT, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Viking Assault enemy must render").isEqualTo(1);
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void liberatorAGDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawLiberatorAG', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawLiberatorAG dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+
+    @Test
+    @Tag("browser")
+    void liberatorAGEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.LIBERATOR_AG, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Liberator AG enemy must render").isEqualTo(1);
+        page.close();
+    }
 }

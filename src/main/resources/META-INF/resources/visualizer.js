@@ -5,7 +5,7 @@ const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
 const FLYING_UNITS = new Set([
   'MEDIVAC', 'MUTALISK',
-  'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER',
+  'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'LIBERATOR_AG', 'BATTLECRUISER',
   'OBSERVER', 'VOID_RAY', 'CARRIER',
   'BROOD_LORD', 'CORRUPTOR', 'VIPER'
 ]);
@@ -147,6 +147,12 @@ window.__test = {
     if (typeof drawViper !== 'undefined') lookup.drawViper = drawViper;
     if (typeof drawBroodLord !== 'undefined') lookup.drawBroodLord = drawBroodLord;
     if (typeof drawSCV !== 'undefined') lookup.drawSCV = drawSCV;
+    if (typeof drawReaper !== 'undefined') lookup.drawReaper = drawReaper;
+    if (typeof drawHellion !== 'undefined') lookup.drawHellion = drawHellion;
+    if (typeof drawHellbat !== 'undefined') lookup.drawHellbat = drawHellbat;
+    if (typeof drawMULE !== 'undefined') lookup.drawMULE = drawMULE;
+    if (typeof drawVikingAssault !== 'undefined') lookup.drawVikingAssault = drawVikingAssault;
+    if (typeof drawLiberatorAG !== 'undefined') lookup.drawLiberatorAG = drawLiberatorAG;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -4284,6 +4290,380 @@ function drawSCV(ctx, S, dir, teamColor) {
   ctx.beginPath(); ctx.ellipse(cx + S * 0.09, cy + S * 0.31, S * 0.09, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
 }
 
+function drawReaper(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawReaper(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  // Body (dark grey, covers centre at 64,64)
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.14, cy - S * 0.18, S * 0.28, S * 0.32, S * 0.04);
+  ctx.fill();
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = S * 0.015; ctx.stroke();
+
+  // Legs
+  ctx.fillStyle = '#333';
+  ctx.fillRect(cx - S * 0.12, cy + S * 0.14, S * 0.09, S * 0.18);
+  ctx.fillRect(cx + S * 0.03, cy + S * 0.14, S * 0.09, S * 0.18);
+
+  if (dir === 0 || dir === 2) {
+    // Helmet dome
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath(); ctx.arc(cx, cy - S * 0.2, S * 0.13, 0, Math.PI * 2); ctx.fill();
+    // Dark visor (no team colour)
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.2, S * 0.09, S * 0.055, 0, 0, Math.PI * 2); ctx.fill();
+    // Jet pack pods (two on sides of back)
+    ctx.fillStyle = '#222';
+    ctx.fillRect(cx - S * 0.22, cy - S * 0.14, S * 0.07, S * 0.18);
+    ctx.fillRect(cx + S * 0.15, cy - S * 0.14, S * 0.07, S * 0.18);
+    // Thruster glow (team colour, dir 0 = front so nozzles at top of pods)
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.185, cy - S * 0.16, S * 0.035, S * 0.025, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.185, cy - S * 0.16, S * 0.035, S * 0.025, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Dual pistols as small dark circles at sides
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.arc(cx - S * 0.17, cy + S * 0.05, S * 0.035, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.17, cy + S * 0.05, S * 0.035, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // dir === 1 side view
+    // Helmet dome
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath(); ctx.arc(cx - S * 0.02, cy - S * 0.2, S * 0.13, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111';
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.05, cy - S * 0.2, S * 0.07, S * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+    // Jet pack: two nozzle pods extending rearward-upward
+    ctx.fillStyle = '#222';
+    ctx.fillRect(cx - S * 0.28, cy - S * 0.16, S * 0.14, S * 0.09);
+    ctx.fillRect(cx - S * 0.28, cy - S * 0.06, S * 0.14, S * 0.09);
+    // Thruster glow at nozzle exits
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.beginPath(); ctx.arc(cx - S * 0.28, cy - S * 0.115, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx - S * 0.28, cy - S * 0.015, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Dual pistol barrels extending forward
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(cx + S * 0.13, cy - S * 0.04, S * 0.12, S * 0.035);
+    ctx.fillRect(cx + S * 0.13, cy + S * 0.01, S * 0.12, S * 0.035);
+  }
+}
+
+function drawHellion(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawHellion(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  if (dir === 1) {
+    // Side: very long low chassis
+    // Chassis body (covers cx,cy)
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.42, cy - S * 0.1, S * 0.84, S * 0.22, S * 0.035);
+    ctx.fill();
+    ctx.strokeStyle = '#282828'; ctx.lineWidth = S * 0.012; ctx.stroke();
+    // Wheels (4 circles below chassis)
+    ctx.fillStyle = '#222';
+    const wy = cy + S * 0.13;
+    for (const wx of [cx - S * 0.3, cx - S * 0.1, cx + S * 0.1, cx + S * 0.28]) {
+      ctx.beginPath(); ctx.arc(wx, wy, S * 0.075, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#444'; ctx.lineWidth = S * 0.01; ctx.stroke();
+    }
+    // Cockpit (driver) at rear left
+    ctx.fillStyle = '#444';
+    ctx.beginPath(); ctx.roundRect(cx - S * 0.38, cy - S * 0.18, S * 0.18, S * 0.12, S * 0.02); ctx.fill();
+    // Flamethrower barrel extending right
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(cx + S * 0.34, cy - S * 0.05, S * 0.16, S * 0.08);
+    // Muzzle/flame glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.fillStyle = hexToRgba(teamColor, 0.9);
+    ctx.beginPath(); ctx.arc(cx + S * 0.47, cy - S * 0.01, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // dir 0/2: front/back — wide shallow profile
+    // Chassis
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.38, cy - S * 0.1, S * 0.76, S * 0.2, S * 0.03);
+    ctx.fill();
+    ctx.strokeStyle = '#282828'; ctx.lineWidth = S * 0.012; ctx.stroke();
+    // Wheels as ellipses at four corners
+    ctx.fillStyle = '#222';
+    for (const [wx, wy] of [[cx - S * 0.34, cy + S * 0.1], [cx + S * 0.34, cy + S * 0.1],
+                             [cx - S * 0.34, cy - S * 0.1], [cx + S * 0.34, cy - S * 0.1]]) {
+      ctx.beginPath(); ctx.ellipse(wx, wy, S * 0.055, S * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    // Barrel tip-on as circular muzzle at centre
+    ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath(); ctx.arc(cx, cy - S * 0.02, S * 0.06, 0, Math.PI * 2); ctx.fill();
+    // Flame glow at muzzle
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.fillStyle = hexToRgba(teamColor, 0.85);
+    ctx.beginPath(); ctx.arc(cx, cy - S * 0.02, S * 0.035, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawHellbat(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawHellbat(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  // Wide squat torso covering centre
+  ctx.fillStyle = '#3a3a3a';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.22, cy - S * 0.18, S * 0.44, S * 0.32, S * 0.04);
+  ctx.fill();
+  ctx.strokeStyle = '#282828'; ctx.lineWidth = S * 0.015; ctx.stroke();
+
+  // Armoured chest plate (darker panel)
+  ctx.fillStyle = '#2a2a2a';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.14, cy - S * 0.12, S * 0.28, S * 0.2, S * 0.025);
+  ctx.fill();
+
+  // Legs: two thick rects below torso, splayed
+  ctx.fillStyle = '#333';
+  ctx.fillRect(cx - S * 0.2, cy + S * 0.14, S * 0.12, S * 0.18);
+  ctx.fillRect(cx + S * 0.08, cy + S * 0.14, S * 0.12, S * 0.18);
+
+  // Head/helmet
+  ctx.fillStyle = '#444';
+  ctx.beginPath(); ctx.arc(cx, cy - S * 0.22, S * 0.12, 0, Math.PI * 2); ctx.fill();
+
+  if (dir === 0 || dir === 2) {
+    // Flamethrower arms: left and right extending outward
+    ctx.fillStyle = '#2f2f2f';
+    // Left arm
+    ctx.fillRect(cx - S * 0.36, cy - S * 0.08, S * 0.16, S * 0.1);
+    // Right arm
+    ctx.fillRect(cx + S * 0.2, cy - S * 0.08, S * 0.16, S * 0.1);
+    // Nozzle glow left and right
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.fillStyle = hexToRgba(teamColor, 0.88);
+    ctx.beginPath(); ctx.arc(cx - S * 0.38, cy - S * 0.03, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.38, cy - S * 0.03, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // dir === 1 side: one arm+barrel extending forward
+    ctx.fillStyle = '#2f2f2f';
+    ctx.fillRect(cx + S * 0.2, cy - S * 0.06, S * 0.18, S * 0.1);
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    ctx.fillStyle = hexToRgba(teamColor, 0.88);
+    ctx.beginPath(); ctx.arc(cx + S * 0.38, cy - S * 0.01, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMULE(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawMULE(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  // Large square torso covering centre
+  ctx.fillStyle = '#3a3a4a';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.24, cy - S * 0.2, S * 0.48, S * 0.38, S * 0.04);
+  ctx.fill();
+  ctx.strokeStyle = '#272733'; ctx.lineWidth = S * 0.015; ctx.stroke();
+
+  // Chest panel detail
+  ctx.fillStyle = '#2f2f3f';
+  ctx.beginPath(); ctx.roundRect(cx - S * 0.14, cy - S * 0.1, S * 0.28, S * 0.18, S * 0.025); ctx.fill();
+
+  // Four corner legs
+  ctx.fillStyle = '#303040';
+  const legPairs = [
+    [cx - S * 0.3, cy + S * 0.18], [cx + S * 0.16, cy + S * 0.18],
+    [cx - S * 0.3, cy - S * 0.04], [cx + S * 0.16, cy - S * 0.04]
+  ];
+  for (const [lx, ly] of legPairs) {
+    ctx.fillRect(lx, ly, S * 0.14, S * 0.14);
+  }
+
+  if (dir === 1) {
+    // Mining arm: extends upward-right with drill tip
+    ctx.fillStyle = '#3a3a4a';
+    ctx.fillRect(cx + S * 0.1, cy - S * 0.38, S * 0.1, S * 0.2);
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.38, S * 0.14, S * 0.1);
+    // Drill tip (darker cone)
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(cx + S * 0.3, cy - S * 0.38, S * 0.05, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // dir 0/2: L-shape arm on top
+    ctx.fillStyle = '#3a3a4a';
+    ctx.fillRect(cx - S * 0.06, cy - S * 0.38, S * 0.12, S * 0.2);
+    ctx.fillRect(cx + S * 0.06, cy - S * 0.34, S * 0.14, S * 0.1);
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(cx + S * 0.19, cy - S * 0.29, S * 0.05, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Sensor dome on top with team colour glow
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.8);
+  ctx.beginPath(); ctx.arc(cx, cy - S * 0.22, S * 0.065, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#3a3a4a';
+  ctx.beginPath(); ctx.arc(cx, cy - S * 0.22, S * 0.05, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawVikingAssault(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawVikingAssault(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  // Body torso (Terran blue-grey, covers centre)
+  ctx.fillStyle = '#4a5060';
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.18, cy - S * 0.14, S * 0.36, S * 0.28, S * 0.04);
+  ctx.fill();
+  ctx.strokeStyle = '#353a44'; ctx.lineWidth = S * 0.015; ctx.stroke();
+
+  // Cockpit dome at top
+  ctx.fillStyle = '#5a6070';
+  ctx.beginPath(); ctx.arc(cx, cy - S * 0.18, S * 0.12, 0, Math.PI * 2); ctx.fill();
+  // Visor glow (team colour)
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+  ctx.fillStyle = hexToRgba(teamColor, 0.8);
+  ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.18, S * 0.07, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // Mechanical legs
+  ctx.fillStyle = '#404550';
+  if (dir === 0 || dir === 2) {
+    // Wider stance
+    ctx.fillRect(cx - S * 0.22, cy + S * 0.14, S * 0.14, S * 0.22);
+    ctx.fillRect(cx + S * 0.08, cy + S * 0.14, S * 0.14, S * 0.22);
+    // Folded wings at sides (tips)
+    ctx.fillStyle = '#3a404e';
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.18, cy - S * 0.08); ctx.lineTo(cx - S * 0.44, cy + S * 0.04); ctx.lineTo(cx - S * 0.18, cy + S * 0.08); ctx.closePath(); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.18, cy - S * 0.08); ctx.lineTo(cx + S * 0.44, cy + S * 0.04); ctx.lineTo(cx + S * 0.18, cy + S * 0.08); ctx.closePath(); ctx.fill();
+    // Autocannon barrel tips (circles)
+    ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath(); ctx.arc(cx - S * 0.12, cy - S * 0.04, S * 0.035, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.12, cy - S * 0.04, S * 0.035, 0, Math.PI * 2); ctx.fill();
+  } else {
+    // dir 1: side profile
+    ctx.fillRect(cx - S * 0.06, cy + S * 0.14, S * 0.12, S * 0.22);
+    // Swept-back wings behind fuselage
+    ctx.fillStyle = '#3a404e';
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.18, cy - S * 0.05); ctx.lineTo(cx - S * 0.44, cy + S * 0.08); ctx.lineTo(cx - S * 0.18, cy + S * 0.1); ctx.closePath(); ctx.fill();
+    // Autocannon barrel extending forward-right
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.06, S * 0.14, S * 0.04);
+    ctx.fillRect(cx + S * 0.18, cy, S * 0.14, S * 0.04);
+  }
+}
+
+function drawLiberatorAG(ctx, S, dir, teamColor) {
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawLiberatorAG(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  if (dir === 1) {
+    // Side: fuselage profile with downward-angled weapon barrels
+    // Fuselage body
+    ctx.fillStyle = '#3a4050';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.32, cy - S * 0.1, S * 0.64, S * 0.2, S * 0.04);
+    ctx.fill();
+    ctx.strokeStyle = '#2a2f3a'; ctx.lineWidth = S * 0.012; ctx.stroke();
+    // Cockpit
+    ctx.fillStyle = '#4a5060';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.18, cy - S * 0.06, S * 0.1, S * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    // Engine glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.8);
+    ctx.beginPath(); ctx.arc(cx + S * 0.33, cy, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Two downward-angled weapon barrels
+    ctx.fillStyle = '#222';
+    ctx.save();
+    ctx.translate(cx, cy + S * 0.06);
+    ctx.rotate(Math.PI * 0.2);
+    ctx.fillRect(-S * 0.04, 0, S * 0.08, S * 0.2);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(cx + S * 0.12, cy + S * 0.06);
+    ctx.rotate(Math.PI * 0.2);
+    ctx.fillRect(-S * 0.04, 0, S * 0.08, S * 0.2);
+    ctx.restore();
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 0.7);
+    ctx.beginPath(); ctx.arc(cx + S * 0.04, cy + S * 0.28, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.18, cy + S * 0.28, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // dir 0/2: top-down — wide wings, targeting circle, weapon pods
+    // Wide wings (wider than standard Liberator)
+    ctx.fillStyle = '#3a4050';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.48, cy - S * 0.12, S * 0.96, S * 0.24, S * 0.05);
+    ctx.fill();
+    ctx.strokeStyle = '#2a2f3a'; ctx.lineWidth = S * 0.012; ctx.stroke();
+    // Central hull
+    ctx.fillStyle = '#4a5060';
+    ctx.beginPath();
+    ctx.roundRect(cx - S * 0.14, cy - S * 0.2, S * 0.28, S * 0.4, S * 0.05);
+    ctx.fill();
+    // Targeting circle ring (defining visual — team colour ring below hull)
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+    ctx.lineWidth = S * 0.025;
+    ctx.beginPath(); ctx.arc(cx, cy, S * 0.22, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // Engine glow rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.8);
+    ctx.beginPath(); ctx.arc(cx, cy + S * 0.22, S * 0.045, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Weapon pods pointing downward (as small circles at wing tips area)
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.arc(cx - S * 0.3, cy, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.3, cy, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -4324,6 +4704,18 @@ function initSpriteMaterials() {
   UNIT_MATS['BATTLECRUISER_E'] = makeDirTextures(drawBattlecruiser, TEAM_COLOR_ENEMY);
   UNIT_MATS['SCV_F'] = makeDirTextures(drawSCV, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SCV_E'] = makeDirTextures(drawSCV, TEAM_COLOR_ENEMY);
+  UNIT_MATS['REAPER_F'] = makeDirTextures(drawReaper, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['REAPER_E'] = makeDirTextures(drawReaper, TEAM_COLOR_ENEMY);
+  UNIT_MATS['HELLION_F'] = makeDirTextures(drawHellion, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['HELLION_E'] = makeDirTextures(drawHellion, TEAM_COLOR_ENEMY);
+  UNIT_MATS['HELLBAT_F'] = makeDirTextures(drawHellbat, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['HELLBAT_E'] = makeDirTextures(drawHellbat, TEAM_COLOR_ENEMY);
+  UNIT_MATS['MULE_F'] = makeDirTextures(drawMULE, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MULE_E'] = makeDirTextures(drawMULE, TEAM_COLOR_ENEMY);
+  UNIT_MATS['VIKING_ASSAULT_F'] = makeDirTextures(drawVikingAssault, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['VIKING_ASSAULT_E'] = makeDirTextures(drawVikingAssault, TEAM_COLOR_ENEMY);
+  UNIT_MATS['LIBERATOR_AG_F'] = makeDirTextures(drawLiberatorAG, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['LIBERATOR_AG_E'] = makeDirTextures(drawLiberatorAG, TEAM_COLOR_ENEMY);
   UNIT_MATS['SENTRY_F'] = makeDirTextures(drawSentry, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['SENTRY_E'] = makeDirTextures(drawSentry, TEAM_COLOR_ENEMY);
   UNIT_MATS['ADEPT_F'] = makeDirTextures(drawAdept, TEAM_COLOR_FRIENDLY);
