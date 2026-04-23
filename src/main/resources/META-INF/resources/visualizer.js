@@ -3,7 +3,7 @@
 const TILE = 0.7;
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
-const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING', 'RAVEN', 'BANSHEE']);
+const FLYING_UNITS = new Set(['MEDIVAC', 'MUTALISK', 'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR']);
 const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
@@ -117,7 +117,8 @@ window.__test = {
     if (typeof drawThor !== 'undefined') lookup.drawThor = drawThor;
     if (typeof drawViking !== 'undefined') lookup.drawViking = drawViking;
     if (typeof drawRaven    !== 'undefined') lookup.drawRaven    = drawRaven;
-    if (typeof drawBanshee !== 'undefined') lookup.drawBanshee = drawBanshee;
+    if (typeof drawBanshee   !== 'undefined') lookup.drawBanshee   = drawBanshee;
+    if (typeof drawLiberator !== 'undefined') lookup.drawLiberator = drawLiberator;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1758,6 +1759,63 @@ function drawBanshee(ctx, S, dir, teamColor) {
   }
 }
 
+function drawLiberator(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawLiberator(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  if (dir === 0 || dir === 2) {
+    ctx.fillStyle = '#2a3848';
+    [-1, 1].forEach(side => {
+      ctx.beginPath();
+      ctx.moveTo(cx + side * S * 0.06, cy + S * 0.04);
+      ctx.lineTo(cx + side * S * 0.44, cy + S * 0.1);
+      ctx.lineTo(cx + side * S * 0.44, cy + S * 0.2);
+      ctx.lineTo(cx + side * S * 0.04, cy + S * 0.1);
+      ctx.closePath(); ctx.fill();
+    });
+    ctx.fillStyle = '#1a2838';
+    [-0.38, 0.38].forEach(dx => {
+      ctx.beginPath(); ctx.ellipse(cx + dx * S, cy + S * 0.14, S * 0.07, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.fillStyle = hexToRgba(teamColor, 0.6);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 12;
+    const exhaustY = dir === 0 ? S * 0.19 : S * 0.08;
+    [-0.38, 0.38].forEach(dx => {
+      ctx.beginPath(); ctx.ellipse(cx + dx * S, cy + exhaustY, S * 0.04, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+    const bg = ctx.createRadialGradient(cx, cy - S * 0.08, S * 0.04, cx, cy, S * 0.18);
+    bg.addColorStop(0, '#5a6878'); bg.addColorStop(1, '#2a3848');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy - S * 0.04, S * 0.14, S * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = hexToRgba(teamColor, 0.7);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    const cockY = dir === 0 ? cy - S * 0.28 : cy + S * 0.22;
+    ctx.beginPath(); ctx.ellipse(cx, cockY, S * 0.06, S * 0.055, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  } else {
+    const bg = ctx.createLinearGradient(cx - S * 0.34, cy, cx + S * 0.34, cy);
+    bg.addColorStop(0, '#1a2838'); bg.addColorStop(0.4, '#4a5868'); bg.addColorStop(1, '#1a2838');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.34, S * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2a3848';
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.04, cy - S * 0.06); ctx.lineTo(cx + S * 0.04, cy - S * 0.06);
+    ctx.lineTo(cx + S * 0.06, cy - S * 0.3); ctx.lineTo(cx - S * 0.04, cy - S * 0.26); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#1a2838';
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.02, cy - S * 0.28, S * 0.06, S * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = hexToRgba(teamColor, 0.65);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 9;
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.05, cy - S * 0.31, S * 0.04, S * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = hexToRgba(teamColor, 0.65);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.28, cy - S * 0.03, S * 0.055, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1788,8 +1846,10 @@ function initSpriteMaterials() {
   UNIT_MATS['VIKING_E']   = makeDirTextures(drawViking,   TEAM_COLOR_ENEMY);
   UNIT_MATS['RAVEN_F']    = makeDirTextures(drawRaven,    TEAM_COLOR_FRIENDLY);
   UNIT_MATS['RAVEN_E']    = makeDirTextures(drawRaven,    TEAM_COLOR_ENEMY);
-  UNIT_MATS['BANSHEE_F']  = makeDirTextures(drawBanshee,  TEAM_COLOR_FRIENDLY);
-  UNIT_MATS['BANSHEE_E']  = makeDirTextures(drawBanshee,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['BANSHEE_F']    = makeDirTextures(drawBanshee,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['BANSHEE_E']    = makeDirTextures(drawBanshee,   TEAM_COLOR_ENEMY);
+  UNIT_MATS['LIBERATOR_F']  = makeDirTextures(drawLiberator, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['LIBERATOR_E']  = makeDirTextures(drawLiberator, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
