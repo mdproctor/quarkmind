@@ -135,6 +135,7 @@ window.__test = {
     if (typeof drawObserver !== 'undefined') lookup.drawObserver = drawObserver;
     if (typeof drawVoidRay  !== 'undefined') lookup.drawVoidRay  = drawVoidRay;
     if (typeof drawCarrier  !== 'undefined') lookup.drawCarrier  = drawCarrier;
+    if (typeof drawRavager !== 'undefined') lookup.drawRavager = drawRavager;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -2901,6 +2902,158 @@ function drawCarrier(ctx, S, dir, teamColor) {
   }
 }
 
+// drawRavager — evolved Roach, larger and more angular, dark brownish-green Zerg palette.
+// Wide body with bile cannon dome on back and bio-sacs on flanks. Dir-3 mirrors dir-1.
+// Body ellipse centred at (S/2, S/2) covers smoke test pixel (64,64).
+function drawRavager(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawRavager(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+  const baseColor = '#2a1a0a';
+  const midColor  = '#3a2a10';
+  const plateColor = '#4a3418';
+
+  if (dir === 0 || dir === 2) {
+    // Dir 0/2: top-down view — wide body, legs on sides, cannon on top
+    const flip = dir === 2 ? 1 : -1; // flip determines head/tail direction
+
+    // Legs — 4 short angled strokes from body underside
+    ctx.strokeStyle = midColor; ctx.lineWidth = 3;
+    [[-0.32, 0.12], [-0.16, 0.18], [0.16, 0.18], [0.32, 0.12]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx * S * 0.7, cy + S * 0.05);
+      ctx.lineTo(cx + dx * S, cy + dy * S + S * 0.06);
+      ctx.stroke();
+    });
+
+    // Main body — broad rounded ellipse covering centre
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.38, S * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mid carapace plate
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - S * 0.04, S * 0.30, S * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Armour ridge highlight
+    ctx.fillStyle = plateColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - S * 0.06, S * 0.20, S * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head (dir 0) or tail (dir 2)
+    const headY = cy + flip * S * 0.24;
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, headY, S * 0.18, S * 0.13, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (dir === 0) {
+      // Eyes
+      ctx.fillStyle = '#ffe066';
+      ctx.beginPath(); ctx.arc(cx - S * 0.09, headY - S * 0.04, S * 0.03, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx + S * 0.09, headY - S * 0.04, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Bile cannon dome — raised circle on back with wide muzzle
+    const cannonY = cy + flip * S * 0.04; // cannon slightly toward tail
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.arc(cx, cannonY, S * 0.10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = plateColor;
+    ctx.beginPath();
+    ctx.arc(cx, cannonY, S * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+    // Muzzle glow — team colour
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(cx, cannonY, S * 0.04, S * 0.035, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Bio-sacs — 3 small glowing ellipses on each flank
+    [[-0.26, 0.0], [-0.26, 0.10], [0.26, 0.0], [0.26, 0.10], [0, 0.14]].forEach(([dx, dy]) => {
+      const sx = cx + dx * S, sy = cy + dy * S;
+      ctx.fillStyle = hexToRgba(teamColor, 0.85);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, S * 0.04, S * 0.035, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+
+  } else {
+    // Dir 1: right side profile — hunched body, cannon raised at back
+    // Legs
+    ctx.strokeStyle = midColor; ctx.lineWidth = 3;
+    [[cx - S * 0.14, cy + S * 0.08, cx - S * 0.28, cy + S * 0.24],
+     [cx,            cy + S * 0.10, cx,             cy + S * 0.28],
+     [cx + S * 0.14, cy + S * 0.08, cx + S * 0.26, cy + S * 0.24]].forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    });
+
+    // Main body — large ellipse centred at canvas centre
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.36, S * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Carapace plate
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.03, cy - S * 0.06, S * 0.28, S * 0.14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Head — front-left
+    ctx.fillStyle = baseColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.24, cy - S * 0.08, S * 0.13, S * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.ellipse(cx - S * 0.24, cy - S * 0.03, S * 0.10, S * 0.055, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath();
+    ctx.arc(cx - S * 0.30, cy - S * 0.12, S * 0.028, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bile cannon — raised dome at upper-back, angled slightly
+    ctx.fillStyle = midColor;
+    ctx.beginPath();
+    ctx.arc(cx + S * 0.18, cy - S * 0.18, S * 0.09, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = plateColor;
+    ctx.beginPath();
+    ctx.arc(cx + S * 0.18, cy - S * 0.18, S * 0.055, 0, Math.PI * 2);
+    ctx.fill();
+    // Muzzle tip — wide ellipse with team colour glow
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.ellipse(cx + S * 0.18, cy - S * 0.18, S * 0.038, S * 0.032, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Bio-sacs — 2 visible on flank
+    [[cx - S * 0.05, cy - S * 0.08], [cx + S * 0.10, cy - S * 0.07]].forEach(([sx, sy]) => {
+      ctx.fillStyle = hexToRgba(teamColor, 0.85);
+      ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, S * 0.04, S * 0.035, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.shadowBlur = 0;
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -2961,6 +3114,8 @@ function initSpriteMaterials() {
   UNIT_MATS['CARRIER_E']  = makeDirTextures(drawCarrier, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
+  UNIT_MATS['RAVAGER_F']   = makeDirTextures(drawRavager,   TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['RAVAGER_E']   = makeDirTextures(drawRavager,   TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
