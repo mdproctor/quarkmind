@@ -114,6 +114,13 @@ public class SimulatedGame {
             SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
     }
 
+    /** Adds a friendly unit at a specific position — used by ShowcaseResource to provide vision coverage. */
+    public synchronized void spawnFriendlyUnitForTesting(UnitType type, Point2d position) {
+        myUnits.add(new Unit("friendly-" + nextTag++, type, position,
+            SC2Data.maxHealth(type), SC2Data.maxHealth(type),
+            SC2Data.maxShields(type), SC2Data.maxShields(type), 0, 0));
+    }
+
     public void setMinerals(int amount) { this.minerals = amount; }
     public void setVespene(int amount) { this.vespene = amount; }
     public void setSupply(int cap) { this.supply = cap; }
