@@ -120,6 +120,7 @@ window.__test = {
     if (typeof drawBanshee   !== 'undefined') lookup.drawBanshee   = drawBanshee;
     if (typeof drawLiberator !== 'undefined') lookup.drawLiberator = drawLiberator;
     if (typeof drawBattlecruiser !== 'undefined') lookup.drawBattlecruiser = drawBattlecruiser;
+    if (typeof drawSentry !== 'undefined') lookup.drawSentry = drawSentry;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -1888,6 +1889,65 @@ function drawBattlecruiser(ctx, S, dir, teamColor) {
   }
 }
 
+function drawSentry(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawSentry(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2 + S * 0.06;
+
+  // Body — small rounded dark blue-grey ellipse
+  const bw = S * 0.18, bh = S * 0.15;
+  const bodyGrad = ctx.createRadialGradient(cx - S * 0.04, cy - S * 0.04, S * 0.02, cx, cy, bw);
+  bodyGrad.addColorStop(0, '#2a2a5a');
+  bodyGrad.addColorStop(1, '#0e0e2a');
+  ctx.fillStyle = bodyGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, bw, bh, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shield projector hub on top (hidden in dir 2 — behind body)
+  if (dir !== 2) {
+    ctx.fillStyle = '#0a0a20';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - bh - S * 0.04, S * 0.07, S * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba(teamColor, 0.5);
+    ctx.lineWidth = S * 0.015;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - bh - S * 0.04, S * 0.07, S * 0.05, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // Equatorial ring — perspective ellipse
+  const ringRx = S * 0.22;
+  const ringRy = (dir === 1) ? S * 0.08 : S * 0.22;
+  ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+  ctx.lineWidth = S * 0.025;
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, ringRx, ringRy, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Three emitter dots at 0°, 120°, 240° around ring
+  const angles = dir === 2
+    ? [Math.PI * 0.5, Math.PI * 1.17, Math.PI * 1.83]   // shifted slightly for back view
+    : [0, Math.PI * 2 / 3, Math.PI * 4 / 3];
+  ctx.fillStyle = hexToRgba(teamColor, 1.0);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 10;
+  angles.forEach(a => {
+    const ex = cx + Math.cos(a) * ringRx;
+    const ey = cy + Math.sin(a) * ringRy;
+    ctx.beginPath();
+    ctx.arc(ex, ey, S * 0.03, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -1924,6 +1984,8 @@ function initSpriteMaterials() {
   UNIT_MATS['LIBERATOR_E']  = makeDirTextures(drawLiberator, TEAM_COLOR_ENEMY);
   UNIT_MATS['BATTLECRUISER_F'] = makeDirTextures(drawBattlecruiser, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['BATTLECRUISER_E'] = makeDirTextures(drawBattlecruiser, TEAM_COLOR_ENEMY);
+  UNIT_MATS['SENTRY_F'] = makeDirTextures(drawSentry, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['SENTRY_E'] = makeDirTextures(drawSentry, TEAM_COLOR_ENEMY);
   UNIT_MATS['ZERGLING_F']  = makeDirTextures(drawZergling,  TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ZERGLING_E']  = makeDirTextures(drawZergling,  TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
