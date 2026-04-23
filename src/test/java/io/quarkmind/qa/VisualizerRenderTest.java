@@ -3114,4 +3114,313 @@ class VisualizerRenderTest {
         assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Liberator AG enemy must render").isEqualTo(1);
         page.close();
     }
+
+    @Test @Tag("browser")
+    void phoenixDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawPhoenix', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawPhoenix dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void phoenixEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.PHOENIX, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Phoenix enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void phoenixSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.PHOENIX, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double phoenixY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(phoenixY).as("Phoenix Y (%.3f) must be higher than Marine Y (%.3f)".formatted(phoenixY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void oracleDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawOracle', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawOracle dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void oracleEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.ORACLE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Oracle enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void oracleSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.ORACLE, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double oracleY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(oracleY).as("Oracle Y (%.3f) must be higher than Marine Y (%.3f)".formatted(oracleY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void tempestDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawTempest', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawTempest dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void tempestEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.TEMPEST, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Tempest enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void tempestSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.TEMPEST, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double tempestY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(tempestY).as("Tempest Y (%.3f) must be higher than Marine Y (%.3f)".formatted(tempestY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void mothershipDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawMothership', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawMothership dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void mothershipEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MOTHERSHIP, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Mothership enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void mothershipSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MOTHERSHIP, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double mothershipY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(mothershipY).as("Mothership Y (%.3f) must be higher than Marine Y (%.3f)".formatted(mothershipY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void warpPrismDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawWarpPrism', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawWarpPrism dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void warpPrismEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.WARP_PRISM, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Warp Prism enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void warpPrismSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.WARP_PRISM, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double warpPrismY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(warpPrismY).as("Warp Prism Y (%.3f) must be higher than Marine Y (%.3f)".formatted(warpPrismY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void warpPrismPhasingDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawWarpPrismPhasing', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawWarpPrismPhasing dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void warpPrismPhasingEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.WARP_PRISM_PHASING, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Warp Prism Phasing enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void warpPrismPhasingSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.WARP_PRISM_PHASING, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double warpPrismPhasingY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(warpPrismPhasingY).as("Warp Prism Phasing Y (%.3f) must be higher than Marine Y (%.3f)".formatted(warpPrismPhasingY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void interceptorDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawInterceptor', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawInterceptor dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void interceptorEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.INTERCEPTOR, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Interceptor enemy must render").isEqualTo(1);
+        page.close();
+    }
+    @Test @Tag("browser")
+    void interceptorSpawnsHigherThanGroundUnit() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.MARINE, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double marineY = ((List<?>) page.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page.close();
+        orchestrator.startGame();
+        Page page2 = browser.newPage(); page2.navigate(pageUrl.toString());
+        page2.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.INTERCEPTOR, new Point2d(20, 20)); engine.observe();
+        page2.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        @SuppressWarnings("unchecked")
+        double interceptorY = ((List<?>) page2.evaluate("() => window.__test.allEnemyWorldY()")).stream().map(v -> ((Number) v).doubleValue()).toList().get(0);
+        page2.close();
+        assertThat(interceptorY).as("Interceptor Y (%.3f) must be higher than Marine Y (%.3f)".formatted(interceptorY, marineY)).isGreaterThan(marineY + 0.3);
+    }
+
+    @Test @Tag("browser")
+    void adeptPhaseShiftDrawFunctionProducesNonTransparentOutputForAllDirsAndTeams() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.threeReady?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        for (String color : new String[]{TEAM_COLOR_FRIENDLY, TEAM_COLOR_ENEMY}) {
+          for (int dir = 0; dir < 4; dir++) {
+            Number alpha = (Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawAdeptPhaseShift', " + dir + ", '" + color + "')");
+            assertThat(alpha.intValue()).as("drawAdeptPhaseShift dir=" + dir + " team=" + color).isGreaterThan(0);
+          }
+        }
+        page.close();
+    }
+    @Test @Tag("browser")
+    void adeptPhaseShiftEnemySpawnsAndRendersInVisualizer() throws Exception {
+        Page page = browser.newPage(); page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true", null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        simulatedGame.spawnEnemyUnit(UnitType.ADEPT_PHASE_SHIFT, new Point2d(20, 20)); engine.observe();
+        page.waitForFunction("() => window.__test.enemyCount() >= 1", null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        assertThat(((Number) page.evaluate("() => window.__test.enemyCount()")).intValue()).as("one Adept Phase Shift enemy must render").isEqualTo(1);
+        page.close();
+    }
 }

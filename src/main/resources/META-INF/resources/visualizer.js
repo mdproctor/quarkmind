@@ -7,7 +7,9 @@ const FLYING_UNITS = new Set([
   'MEDIVAC', 'MUTALISK',
   'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'LIBERATOR_AG', 'BATTLECRUISER',
   'OBSERVER', 'VOID_RAY', 'CARRIER',
-  'BROOD_LORD', 'CORRUPTOR', 'VIPER'
+  'BROOD_LORD', 'CORRUPTOR', 'VIPER',
+  'PHOENIX', 'ORACLE', 'TEMPEST', 'MOTHERSHIP',
+  'WARP_PRISM', 'WARP_PRISM_PHASING', 'INTERCEPTOR'
 ]);
 const RECONNECT_MS = 2000;
 
@@ -153,6 +155,14 @@ window.__test = {
     if (typeof drawMULE !== 'undefined') lookup.drawMULE = drawMULE;
     if (typeof drawVikingAssault !== 'undefined') lookup.drawVikingAssault = drawVikingAssault;
     if (typeof drawLiberatorAG !== 'undefined') lookup.drawLiberatorAG = drawLiberatorAG;
+    if (typeof drawPhoenix !== 'undefined') lookup.drawPhoenix = drawPhoenix;
+    if (typeof drawOracle !== 'undefined') lookup.drawOracle = drawOracle;
+    if (typeof drawTempest !== 'undefined') lookup.drawTempest = drawTempest;
+    if (typeof drawMothership !== 'undefined') lookup.drawMothership = drawMothership;
+    if (typeof drawWarpPrism !== 'undefined') lookup.drawWarpPrism = drawWarpPrism;
+    if (typeof drawWarpPrismPhasing !== 'undefined') lookup.drawWarpPrismPhasing = drawWarpPrismPhasing;
+    if (typeof drawInterceptor !== 'undefined') lookup.drawInterceptor = drawInterceptor;
+    if (typeof drawAdeptPhaseShift !== 'undefined') lookup.drawAdeptPhaseShift = drawAdeptPhaseShift;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -4664,6 +4674,678 @@ function drawLiberatorAG(ctx, S, dir, teamColor) {
   }
 }
 
+function drawPhoenix(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawPhoenix(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#1e1e40';
+  const wingColor = '#252550';
+  const goldAccent = '#c8a840';
+
+  if (dir === 0 || dir === 2) {
+    const flip = dir === 2 ? -1 : 1;
+    // Swept-forward wings — two triangular shapes angling from body centre forward-outward
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx - S * 0.42, cy + flip * S * 0.22);
+    ctx.lineTo(cx - S * 0.18, cy - flip * S * 0.10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + S * 0.42, cy + flip * S * 0.22);
+    ctx.lineTo(cx + S * 0.18, cy - flip * S * 0.10);
+    ctx.closePath();
+    ctx.fill();
+    // Narrow central spine / fuselage
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - flip * S * 0.30); // nose tip
+    ctx.lineTo(cx - S * 0.06, cy);
+    ctx.lineTo(cx - S * 0.05, cy + flip * S * 0.18);
+    ctx.lineTo(cx + S * 0.05, cy + flip * S * 0.18);
+    ctx.lineTo(cx + S * 0.06, cy);
+    ctx.closePath();
+    ctx.fill();
+    // Gold accent stripes on wings
+    ctx.strokeStyle = goldAccent; ctx.lineWidth = S * 0.018;
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.08, cy - flip * S * 0.04); ctx.lineTo(cx - S * 0.36, cy + flip * S * 0.18); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.08, cy - flip * S * 0.04); ctx.lineTo(cx + S * 0.36, cy + flip * S * 0.18); ctx.stroke();
+    // Ion cannon at nose tip
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx, cy - flip * S * 0.30, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow at rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.arc(cx - S * 0.04, cy + flip * S * 0.18, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.04, cy + flip * S * 0.18, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // Dir 1 — side profile: sleek pointed shape
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.32, cy); // pointed nose (front = right)
+    ctx.lineTo(cx, cy - S * 0.06);
+    ctx.lineTo(cx - S * 0.32, cy - S * 0.04);
+    ctx.lineTo(cx - S * 0.32, cy + S * 0.04);
+    ctx.lineTo(cx, cy + S * 0.08);
+    ctx.closePath();
+    ctx.fill();
+    // Forward-swept wing visible above
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.05, cy - S * 0.04);
+    ctx.lineTo(cx + S * 0.22, cy - S * 0.04);
+    ctx.lineTo(cx - S * 0.05, cy - S * 0.22);
+    ctx.closePath();
+    ctx.fill();
+    // Gold stripe
+    ctx.strokeStyle = goldAccent; ctx.lineWidth = S * 0.018;
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.28, cy); ctx.lineTo(cx + S * 0.28, cy); ctx.stroke();
+    // Ion cannon glow at nose
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx + S * 0.32, cy, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow at rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.arc(cx - S * 0.32, cy, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawOracle(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawOracle(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#1a1a38';
+  const panelColor = '#252548';
+  const goldAccent = '#b89830';
+
+  if (dir === 0 || dir === 2) {
+    const flip = dir === 2 ? -1 : 1;
+    // Elongated oval/lens hull
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.28, S * 0.18, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner panel
+    ctx.fillStyle = panelColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.20, S * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Two small swept-back fins
+    ctx.fillStyle = goldAccent;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.20, cy);
+    ctx.lineTo(cx - S * 0.38, cy + flip * S * 0.14);
+    ctx.lineTo(cx - S * 0.20, cy + flip * S * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.20, cy);
+    ctx.lineTo(cx + S * 0.38, cy + flip * S * 0.14);
+    ctx.lineTo(cx + S * 0.20, cy + flip * S * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    // Psionic cannon projector — long barrel extending forward from hull centre
+    ctx.fillStyle = panelColor;
+    ctx.fillRect(cx - S * 0.025, cy - flip * S * 0.38, S * 0.05, S * 0.22);
+    // Cannon tip glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx, cy - flip * S * 0.38, S * 0.035, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow at rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 0.7);
+    ctx.beginPath(); ctx.arc(cx, cy + flip * S * 0.18, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // Dir 1 — thin blade-like side profile
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.20, cy - S * 0.05);
+    ctx.lineTo(cx + S * 0.20, cy + S * 0.05);
+    ctx.lineTo(cx - S * 0.28, cy + S * 0.07);
+    ctx.lineTo(cx - S * 0.28, cy - S * 0.07);
+    ctx.closePath();
+    ctx.fill();
+    // Cannon barrel extending forward
+    ctx.fillStyle = panelColor;
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.02, S * 0.24, S * 0.04);
+    // Cannon tip glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx + S * 0.42, cy, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow at rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 0.7);
+    ctx.beginPath(); ctx.arc(cx - S * 0.30, cy, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawTempest(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawTempest(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#10102a';
+  const wingColor = '#1e1e3e';
+  const goldAccent = '#c0a030';
+
+  if (dir === 0 || dir === 2) {
+    const flip = dir === 2 ? -1 : 1;
+    // Wide arrowhead/chevron hull — broad at rear tapering to nose point
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - flip * S * 0.24); // nose point
+    ctx.lineTo(cx - S * 0.46, cy + flip * S * 0.28);
+    ctx.lineTo(cx - S * 0.46, cy + flip * S * 0.10);
+    ctx.lineTo(cx, cy + flip * S * 0.02);
+    ctx.lineTo(cx + S * 0.46, cy + flip * S * 0.10);
+    ctx.lineTo(cx + S * 0.46, cy + flip * S * 0.28);
+    ctx.closePath();
+    ctx.fill();
+    // Central hull darker body
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - flip * S * 0.24);
+    ctx.lineTo(cx - S * 0.12, cy + flip * S * 0.12);
+    ctx.lineTo(cx + S * 0.12, cy + flip * S * 0.12);
+    ctx.closePath();
+    ctx.fill();
+    // Massive long-range cannon extending forward from hull centre
+    ctx.fillStyle = '#0a0a1e';
+    ctx.fillRect(cx - S * 0.028, cy - flip * S * 0.46, S * 0.056, flip * S * 0.22);
+    // Gold accent wing edges
+    ctx.strokeStyle = goldAccent; ctx.lineWidth = S * 0.016;
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.04, cy - flip * S * 0.12); ctx.lineTo(cx - S * 0.42, cy + flip * S * 0.22); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.04, cy - flip * S * 0.12); ctx.lineTo(cx + S * 0.42, cy + flip * S * 0.22); ctx.stroke();
+    // Cannon tip glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx, cy - flip * S * 0.46, S * 0.038, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Running lights
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.arc(cx - S * 0.42, cy + flip * S * 0.22, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.42, cy + flip * S * 0.22, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // Dir 1 — long elongated side profile
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.10, cy - S * 0.08); // pointed front-top
+    ctx.lineTo(cx + S * 0.18, cy);
+    ctx.lineTo(cx + S * 0.10, cy + S * 0.08);
+    ctx.lineTo(cx - S * 0.36, cy + S * 0.10);
+    ctx.lineTo(cx - S * 0.36, cy - S * 0.10);
+    ctx.closePath();
+    ctx.fill();
+    // Wing visible above
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.36, cy - S * 0.08);
+    ctx.lineTo(cx - S * 0.36, cy - S * 0.28);
+    ctx.lineTo(cx + S * 0.14, cy - S * 0.08);
+    ctx.closePath();
+    ctx.fill();
+    // Long cannon extending forward
+    ctx.fillStyle = '#0a0a1e';
+    ctx.fillRect(cx + S * 0.18, cy - S * 0.025, S * 0.26, S * 0.05);
+    // Cannon tip glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx + S * 0.44, cy, S * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow at rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 0.75);
+    ctx.beginPath(); ctx.arc(cx - S * 0.38, cy, S * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawMothership(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawMothership(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#12122a';
+  const panelColor = '#1e1e3c';
+
+  if (dir === 0 || dir === 2) {
+    // Large filled circle hull
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, S * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    // Inner panel ring
+    ctx.fillStyle = panelColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, S * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    // Outer ornamental spires (small protrusions at 8 compass points)
+    ctx.fillStyle = '#2a2a4a';
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const sx = cx + Math.cos(angle) * S * 0.40;
+      const sy = cy + Math.sin(angle) * S * 0.40;
+      ctx.beginPath(); ctx.arc(sx, sy, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    }
+    // Three engine nacelle pods at 120° spacing
+    ctx.fillStyle = '#222240';
+    const nacAngles = [Math.PI * 0.5, Math.PI * 1.17, Math.PI * 1.83];
+    for (const ang of nacAngles) {
+      const nx = cx + Math.cos(ang) * S * 0.32;
+      const ny = cy + Math.sin(ang) * S * 0.32;
+      ctx.save();
+      ctx.translate(nx, ny);
+      ctx.rotate(ang);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, S * 0.07, S * 0.04, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    // Vortex/spiral energy in centre — team colour arcs spiralling inward
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 16;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+    for (let i = 0; i < 3; i++) {
+      const startAngle = (i / 3) * Math.PI * 2;
+      ctx.lineWidth = S * 0.018;
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.18, startAngle, startAngle + Math.PI * 1.2);
+      ctx.stroke();
+      ctx.lineWidth = S * 0.012;
+      ctx.beginPath();
+      ctx.arc(cx, cy, S * 0.10, startAngle + Math.PI * 0.6, startAngle + Math.PI * 1.6);
+      ctx.stroke();
+    }
+    // Bright vortex core
+    ctx.fillStyle = hexToRgba(teamColor, 0.95);
+    ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.arc(cx, cy, S * 0.045, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine nacelle glows
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.6);
+    for (const ang of nacAngles) {
+      const nx = cx + Math.cos(ang) * S * 0.32;
+      const ny = cy + Math.sin(ang) * S * 0.32;
+      ctx.beginPath(); ctx.arc(nx, ny, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  } else {
+    // Dir 1 — saucer/disc side profile, wide flat oval
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.44, S * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Upper dome
+    ctx.fillStyle = panelColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy - S * 0.06, S * 0.22, S * 0.10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Engine pods at sides
+    ctx.fillStyle = '#222240';
+    ctx.beginPath(); ctx.ellipse(cx - S * 0.38, cy + S * 0.04, S * 0.06, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + S * 0.38, cy + S * 0.04, S * 0.06, S * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+    // Vortex glow at centre
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 16;
+    ctx.fillStyle = hexToRgba(teamColor, 0.9);
+    ctx.beginPath(); ctx.arc(cx, cy - S * 0.04, S * 0.05, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glows
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 10;
+    ctx.fillStyle = hexToRgba(teamColor, 0.6);
+    ctx.beginPath(); ctx.arc(cx - S * 0.38, cy + S * 0.04, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.38, cy + S * 0.04, S * 0.025, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawWarpPrism(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawWarpPrism(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#181830';
+  const edgeColor = '#2a2a50';
+  const goldAccent = '#b89828';
+
+  // Helper to draw an octagon centred at (cx,cy)
+  function drawOctagon(radiusX, radiusY) {
+    const sides = 8;
+    ctx.beginPath();
+    for (let i = 0; i < sides; i++) {
+      const angle = (i / sides) * Math.PI * 2 - Math.PI / 8;
+      const px = cx + Math.cos(angle) * radiusX;
+      const py = cy + Math.sin(angle) * radiusY;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  if (dir === 0 || dir === 2) {
+    // Octagonal body — hard-edged
+    ctx.fillStyle = hullColor;
+    drawOctagon(S * 0.36, S * 0.36);
+    ctx.fill();
+    // Edge facets
+    ctx.strokeStyle = edgeColor; ctx.lineWidth = S * 0.022;
+    drawOctagon(S * 0.36, S * 0.36);
+    ctx.stroke();
+    ctx.strokeStyle = goldAccent; ctx.lineWidth = S * 0.012;
+    drawOctagon(S * 0.28, S * 0.28);
+    ctx.stroke();
+    // Thruster pods at lower corners
+    ctx.fillStyle = '#222244';
+    ctx.beginPath(); ctx.arc(cx - S * 0.26, cy + S * 0.26, S * 0.05, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + S * 0.26, cy + S * 0.26, S * 0.05, 0, Math.PI * 2); ctx.fill();
+    // Glowing warp crystal core
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 0.95);
+    ctx.beginPath(); ctx.arc(cx, cy, S * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // Dir 1 — faceted diamond profile, taller than wide
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.36); // top
+    ctx.lineTo(cx + S * 0.22, cy - S * 0.12);
+    ctx.lineTo(cx + S * 0.22, cy + S * 0.12);
+    ctx.lineTo(cx, cy + S * 0.36); // bottom
+    ctx.lineTo(cx - S * 0.22, cy + S * 0.12);
+    ctx.lineTo(cx - S * 0.22, cy - S * 0.12);
+    ctx.closePath();
+    ctx.fill();
+    // Facet edge
+    ctx.strokeStyle = edgeColor; ctx.lineWidth = S * 0.022;
+    ctx.stroke();
+    ctx.strokeStyle = goldAccent; ctx.lineWidth = S * 0.012;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.26);
+    ctx.lineTo(cx + S * 0.15, cy - S * 0.08);
+    ctx.lineTo(cx + S * 0.15, cy + S * 0.08);
+    ctx.lineTo(cx, cy + S * 0.26);
+    ctx.lineTo(cx - S * 0.15, cy + S * 0.08);
+    ctx.lineTo(cx - S * 0.15, cy - S * 0.08);
+    ctx.closePath();
+    ctx.stroke();
+    // Crystal core glow at centre
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 14;
+    ctx.fillStyle = hexToRgba(teamColor, 0.95);
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.055, S * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Thruster at bottom
+    ctx.fillStyle = '#222244';
+    ctx.beginPath(); ctx.ellipse(cx, cy + S * 0.32, S * 0.05, S * 0.03, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawWarpPrismPhasing(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawWarpPrismPhasing(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#181830';
+  const edgeColor = '#3030608';
+  const goldAccent = '#b89828';
+
+  function drawOctagon(radiusX, radiusY) {
+    const sides = 8;
+    ctx.beginPath();
+    for (let i = 0; i < sides; i++) {
+      const angle = (i / sides) * Math.PI * 2 - Math.PI / 8;
+      const px = cx + Math.cos(angle) * radiusX;
+      const py = cy + Math.sin(angle) * radiusY;
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  if (dir === 0 || dir === 2) {
+    // Semi-transparent body
+    ctx.fillStyle = hexToRgba(hullColor, 0.7);
+    drawOctagon(S * 0.38, S * 0.38);
+    ctx.fill();
+    // Edge facets
+    ctx.strokeStyle = hexToRgba('#3a3a60', 0.8); ctx.lineWidth = S * 0.022;
+    drawOctagon(S * 0.38, S * 0.38);
+    ctx.stroke();
+    // Warp field beacon — outer ring, defining feature
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 18;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+    ctx.lineWidth = S * 0.030;
+    ctx.beginPath(); ctx.arc(cx, cy, S * 0.35, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // Landing struts
+    ctx.strokeStyle = hexToRgba(goldAccent, 0.7); ctx.lineWidth = S * 0.014;
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.20, cy + S * 0.20); ctx.lineTo(cx - S * 0.32, cy + S * 0.36); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.20, cy + S * 0.20); ctx.lineTo(cx + S * 0.32, cy + S * 0.36); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy + S * 0.26); ctx.lineTo(cx, cy + S * 0.40); ctx.stroke();
+    // Bright crystal core glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 20;
+    ctx.fillStyle = hexToRgba(teamColor, 0.98);
+    ctx.beginPath(); ctx.arc(cx, cy, S * 0.075, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // Dir 1 — same diamond profile, semi-transparent, with beacon ring visible
+    ctx.fillStyle = hexToRgba(hullColor, 0.7);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.36);
+    ctx.lineTo(cx + S * 0.22, cy - S * 0.12);
+    ctx.lineTo(cx + S * 0.22, cy + S * 0.12);
+    ctx.lineTo(cx, cy + S * 0.36);
+    ctx.lineTo(cx - S * 0.22, cy + S * 0.12);
+    ctx.lineTo(cx - S * 0.22, cy - S * 0.12);
+    ctx.closePath();
+    ctx.fill();
+    // Edge
+    ctx.strokeStyle = hexToRgba('#3a3a60', 0.8); ctx.lineWidth = S * 0.022;
+    ctx.stroke();
+    // Warp field beacon ring (elliptical in side view)
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 18;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.9);
+    ctx.lineWidth = S * 0.028;
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.35, S * 0.20, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    // Landing struts
+    ctx.strokeStyle = hexToRgba(goldAccent, 0.7); ctx.lineWidth = S * 0.014;
+    ctx.beginPath(); ctx.moveTo(cx - S * 0.18, cy + S * 0.12); ctx.lineTo(cx - S * 0.28, cy + S * 0.30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx + S * 0.18, cy + S * 0.12); ctx.lineTo(cx + S * 0.28, cy + S * 0.30); ctx.stroke();
+    // Crystal core
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 20;
+    ctx.fillStyle = hexToRgba(teamColor, 0.98);
+    ctx.beginPath(); ctx.ellipse(cx, cy, S * 0.055, S * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawInterceptor(ctx, S, dir, teamColor) {
+  if (dir === 3) { ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1); drawInterceptor(ctx, S, 1, teamColor); ctx.restore(); return; }
+  const cx = S / 2, cy = S / 2;
+  const hullColor = '#1e1e40';
+  const wingColor = '#252550';
+
+  if (dir === 0 || dir === 2) {
+    const flip = dir === 2 ? -1 : 1;
+    // Small swept-wing diamond — ~60% scale of Phoenix
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx - S * 0.26, cy + flip * S * 0.14);
+    ctx.lineTo(cx - S * 0.10, cy - flip * S * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + S * 0.26, cy + flip * S * 0.14);
+    ctx.lineTo(cx + S * 0.10, cy - flip * S * 0.06);
+    ctx.closePath();
+    ctx.fill();
+    // Narrow fuselage spine
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - flip * S * 0.18); // nose
+    ctx.lineTo(cx - S * 0.04, cy);
+    ctx.lineTo(cx - S * 0.03, cy + flip * S * 0.11);
+    ctx.lineTo(cx + S * 0.03, cy + flip * S * 0.11);
+    ctx.lineTo(cx + S * 0.04, cy);
+    ctx.closePath();
+    ctx.fill();
+    // Ion cannon tip glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx, cy - flip * S * 0.18, S * 0.022, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow at rear
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+    ctx.fillStyle = hexToRgba(teamColor, 0.70);
+    ctx.beginPath(); ctx.arc(cx, cy + flip * S * 0.11, S * 0.02, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  } else {
+    // Dir 1 — tiny blade side profile
+    ctx.fillStyle = hullColor;
+    ctx.beginPath();
+    ctx.moveTo(cx + S * 0.20, cy);
+    ctx.lineTo(cx, cy - S * 0.04);
+    ctx.lineTo(cx - S * 0.20, cy - S * 0.025);
+    ctx.lineTo(cx - S * 0.20, cy + S * 0.025);
+    ctx.lineTo(cx, cy + S * 0.05);
+    ctx.closePath();
+    ctx.fill();
+    // Small wing above
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.04, cy - S * 0.025);
+    ctx.lineTo(cx + S * 0.14, cy - S * 0.025);
+    ctx.lineTo(cx - S * 0.04, cy - S * 0.14);
+    ctx.closePath();
+    ctx.fill();
+    // Ion cannon tip
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+    ctx.fillStyle = hexToRgba(teamColor, 1.0);
+    ctx.beginPath(); ctx.arc(cx + S * 0.20, cy, S * 0.018, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    // Engine glow
+    ctx.save();
+    ctx.shadowColor = teamColor; ctx.shadowBlur = 6;
+    ctx.fillStyle = hexToRgba(teamColor, 0.70);
+    ctx.beginPath(); ctx.arc(cx - S * 0.20, cy, S * 0.02, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawAdeptPhaseShift(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawAdeptPhaseShift(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+  const cx = S / 2, cy = S / 2;
+
+  // Lower body — very translucent
+  ctx.fillStyle = hexToRgba('#5a5030', 0.35);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + S * 0.14, S * 0.18, S * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Upper torso — low alpha ghost body
+  ctx.fillStyle = hexToRgba(teamColor, 0.22);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.04, S * 0.15, S * 0.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Torso outline — slightly more visible
+  ctx.strokeStyle = hexToRgba(teamColor, 0.55);
+  ctx.lineWidth = S * 0.02;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.04, S * 0.15, S * 0.2, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Helm — semi-transparent
+  ctx.fillStyle = hexToRgba('#4a4028', 0.40);
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - S * 0.22, S * 0.10, S * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye-strip visor — glowing
+  ctx.fillStyle = hexToRgba(teamColor, 0.80);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.roundRect(cx - S * 0.09, cy - S * 0.25, S * 0.18, S * 0.035, S * 0.01);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Psi-lance blade — most solid part, ensures alpha > 0 at centre
+  ctx.fillStyle = hexToRgba(teamColor, 0.65);
+  ctx.shadowColor = teamColor;
+  ctx.shadowBlur = 10;
+
+  if (dir === 1) {
+    ctx.save();
+    ctx.translate(cx + S * 0.12, cy - S * 0.05);
+    ctx.rotate(-Math.PI / 5);
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(S * 0.28, -S * 0.04);
+    ctx.lineTo(S * 0.38, -S * 0.01);
+    ctx.lineTo(S * 0.28, S * 0.04);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  } else if (dir === 0) {
+    const bx = cx + S * 0.16, by = cy - S * 0.08;
+    ctx.beginPath();
+    ctx.moveTo(bx, by - S * 0.045);
+    ctx.lineTo(bx + S * 0.05, by);
+    ctx.lineTo(bx, by + S * 0.045);
+    ctx.lineTo(bx - S * 0.025, by);
+    ctx.closePath();
+    ctx.fill();
+  } else if (dir === 2) {
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = hexToRgba(teamColor, 0.50);
+    ctx.lineWidth = S * 0.02;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.26);
+    ctx.lineTo(cx, cy + S * 0.20);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+
+  // Two eye dots at canvas centre row — ensures (64,64) is non-transparent
+  ctx.save();
+  ctx.shadowColor = teamColor; ctx.shadowBlur = 8;
+  ctx.fillStyle = hexToRgba(teamColor, 0.80);
+  ctx.beginPath(); ctx.arc(cx - S * 0.04, cy, S * 0.025, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx + S * 0.04, cy, S * 0.025, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -4766,6 +5448,22 @@ function initSpriteMaterials() {
   UNIT_MATS['MUTALISK_E']   = makeDirTextures(drawMutalisk,   TEAM_COLOR_ENEMY);
   UNIT_MATS['UNKNOWN_F']    = makeDirTextures(drawEnemy,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['UNKNOWN_E']    = makeDirTextures(drawEnemy,      TEAM_COLOR_ENEMY);
+  UNIT_MATS['PHOENIX_F'] = makeDirTextures(drawPhoenix, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['PHOENIX_E'] = makeDirTextures(drawPhoenix, TEAM_COLOR_ENEMY);
+  UNIT_MATS['ORACLE_F'] = makeDirTextures(drawOracle, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ORACLE_E'] = makeDirTextures(drawOracle, TEAM_COLOR_ENEMY);
+  UNIT_MATS['TEMPEST_F'] = makeDirTextures(drawTempest, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['TEMPEST_E'] = makeDirTextures(drawTempest, TEAM_COLOR_ENEMY);
+  UNIT_MATS['MOTHERSHIP_F'] = makeDirTextures(drawMothership, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['MOTHERSHIP_E'] = makeDirTextures(drawMothership, TEAM_COLOR_ENEMY);
+  UNIT_MATS['WARP_PRISM_F'] = makeDirTextures(drawWarpPrism, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['WARP_PRISM_E'] = makeDirTextures(drawWarpPrism, TEAM_COLOR_ENEMY);
+  UNIT_MATS['WARP_PRISM_PHASING_F'] = makeDirTextures(drawWarpPrismPhasing, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['WARP_PRISM_PHASING_E'] = makeDirTextures(drawWarpPrismPhasing, TEAM_COLOR_ENEMY);
+  UNIT_MATS['INTERCEPTOR_F'] = makeDirTextures(drawInterceptor, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['INTERCEPTOR_E'] = makeDirTextures(drawInterceptor, TEAM_COLOR_ENEMY);
+  UNIT_MATS['ADEPT_PHASE_SHIFT_F'] = makeDirTextures(drawAdeptPhaseShift, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['ADEPT_PHASE_SHIFT_E'] = makeDirTextures(drawAdeptPhaseShift, TEAM_COLOR_ENEMY);
 }
 
 function updateSpriteDirs() {
