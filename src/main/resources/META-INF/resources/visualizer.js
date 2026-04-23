@@ -7,7 +7,7 @@ const FLYING_UNITS = new Set([
   'MEDIVAC', 'MUTALISK',
   'VIKING', 'RAVEN', 'BANSHEE', 'LIBERATOR', 'BATTLECRUISER',
   'OBSERVER', 'VOID_RAY', 'CARRIER',
-  'CORRUPTOR', 'VIPER'
+  'BROOD_LORD', 'CORRUPTOR', 'VIPER'
 ]);
 const RECONNECT_MS = 2000;
 
@@ -144,6 +144,7 @@ window.__test = {
     if (typeof drawUltralisk !== 'undefined') lookup.drawUltralisk = drawUltralisk;
     if (typeof drawCorruptor !== 'undefined') lookup.drawCorruptor = drawCorruptor;
     if (typeof drawViper !== 'undefined') lookup.drawViper = drawViper;
+    if (typeof drawBroodLord !== 'undefined') lookup.drawBroodLord = drawBroodLord;
     const fn = lookup[name];
     if (!fn) return -1;
     const c = document.createElement('canvas');
@@ -3831,6 +3832,164 @@ function drawViper(ctx, S, dir, teamColor) {
   }
 }
 
+// drawBroodLord — Zerg heavy flying siege unit.
+// Dark charcoal-purple body with large swept-back wings and broodling sacs.
+// Dir-3 mirrors dir-1.
+function drawBroodLord(ctx, S, dir, teamColor) {
+  if (dir === 3) {
+    ctx.save(); ctx.translate(S, 0); ctx.scale(-1, 1);
+    drawBroodLord(ctx, S, 1, teamColor); ctx.restore(); return;
+  }
+
+  const cx = S / 2;
+  const cy = S / 2;
+  const bodyColor  = '#1a0a0a';
+  const wingColor  = '#120606';
+  const sacColor   = '#0a1205';
+
+  ctx.lineCap  = 'round';
+  ctx.lineJoin = 'round';
+
+  if (dir === 0 || dir === 2) {
+    // Top-down view — wings swept back left and right, body oval at centre
+    const wingAngle = (dir === 0) ? 0 : Math.PI;
+
+    // Left wing — large swept-back crescent extending from centre-left
+    ctx.fillStyle = wingColor;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(
+      cx - S * 0.12, cy - S * 0.08,
+      cx - S * 0.44, cy - S * 0.18,
+      cx - S * 0.44, cy + S * 0.06
+    );
+    ctx.bezierCurveTo(
+      cx - S * 0.38, cy + S * 0.22,
+      cx - S * 0.18, cy + S * 0.16,
+      cx, cy + S * 0.08
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // Right wing — mirror of left wing
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.bezierCurveTo(
+      cx + S * 0.12, cy - S * 0.08,
+      cx + S * 0.44, cy - S * 0.18,
+      cx + S * 0.44, cy + S * 0.06
+    );
+    ctx.bezierCurveTo(
+      cx + S * 0.38, cy + S * 0.22,
+      cx + S * 0.18, cy + S * 0.16,
+      cx, cy + S * 0.08
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // Central body oval — covers canvas centre
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.18, S * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Broodling sacs hanging below body — 3 teardrop ellipses
+    const sacOffsets = [[-S * 0.10, S * 0.28], [0, S * 0.36], [S * 0.10, S * 0.28]];
+    sacOffsets.forEach(([dx, dy]) => {
+      const sacY = cy + dy;
+      const sacX = cx + dx;
+      // Outer sac fill (dark greenish-black)
+      ctx.fillStyle = sacColor;
+      ctx.beginPath();
+      ctx.ellipse(sacX, sacY, S * 0.07, S * 0.09, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Team colour glow inside sac
+      ctx.fillStyle = hexToRgba(teamColor, 0.7);
+      ctx.shadowColor = teamColor;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.ellipse(sacX, sacY, S * 0.03, S * 0.04, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // Body detail — armour ridge line down centre
+    ctx.strokeStyle = '#2a0f0f';
+    ctx.lineWidth = S * 0.018;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - S * 0.22);
+    ctx.lineTo(cx, cy + S * 0.22);
+    ctx.stroke();
+
+  } else {
+    // dir === 1 — side view: wings visible behind body, sacs below, body in foreground
+
+    // Wings behind body — two swept-back triangular fills
+    ctx.fillStyle = wingColor;
+    // Upper wing
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.08, cy - S * 0.04);
+    ctx.bezierCurveTo(
+      cx - S * 0.20, cy - S * 0.30,
+      cx + S * 0.28, cy - S * 0.36,
+      cx + S * 0.42, cy - S * 0.14
+    );
+    ctx.bezierCurveTo(
+      cx + S * 0.28, cy - S * 0.08,
+      cx + S * 0.08, cy - S * 0.02,
+      cx - S * 0.08, cy - S * 0.04
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // Lower wing
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.08, cy + S * 0.04);
+    ctx.bezierCurveTo(
+      cx - S * 0.20, cy + S * 0.22,
+      cx + S * 0.28, cy + S * 0.28,
+      cx + S * 0.42, cy + S * 0.10
+    );
+    ctx.bezierCurveTo(
+      cx + S * 0.28, cy + S * 0.04,
+      cx + S * 0.08, cy + S * 0.02,
+      cx - S * 0.08, cy + S * 0.04
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // Body — rounded oval in foreground covering canvas centre
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, S * 0.22, S * 0.16, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Broodling sacs below body — 2 sacs hanging down
+    const sideSacs = [[-S * 0.08, S * 0.24], [S * 0.08, S * 0.26]];
+    sideSacs.forEach(([dx, dy]) => {
+      ctx.fillStyle = sacColor;
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy + dy, S * 0.06, S * 0.08, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = hexToRgba(teamColor, 0.7);
+      ctx.shadowColor = teamColor;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.ellipse(cx + dx, cy + dy, S * 0.025, S * 0.035, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    });
+
+    // Body detail — armour line
+    ctx.strokeStyle = '#2a0f0f';
+    ctx.lineWidth = S * 0.016;
+    ctx.beginPath();
+    ctx.moveTo(cx - S * 0.18, cy);
+    ctx.lineTo(cx + S * 0.18, cy);
+    ctx.stroke();
+  }
+}
+
 // Populated by initSpriteMaterials() — do not read before init() runs
 const UNIT_MATS = {};
 
@@ -3907,6 +4066,8 @@ function initSpriteMaterials() {
   UNIT_MATS['CORRUPTOR_E'] = makeDirTextures(drawCorruptor, TEAM_COLOR_ENEMY);
   UNIT_MATS['VIPER_F'] = makeDirTextures(drawViper, TEAM_COLOR_FRIENDLY);
   UNIT_MATS['VIPER_E'] = makeDirTextures(drawViper, TEAM_COLOR_ENEMY);
+  UNIT_MATS['BROOD_LORD_F'] = makeDirTextures(drawBroodLord, TEAM_COLOR_FRIENDLY);
+  UNIT_MATS['BROOD_LORD_E'] = makeDirTextures(drawBroodLord, TEAM_COLOR_ENEMY);
   UNIT_MATS['ROACH_F']      = makeDirTextures(drawRoach,      TEAM_COLOR_FRIENDLY);
   UNIT_MATS['ROACH_E']      = makeDirTextures(drawRoach,      TEAM_COLOR_ENEMY);
   UNIT_MATS['HYDRALISK_F']  = makeDirTextures(drawHydralisk,  TEAM_COLOR_FRIENDLY);
