@@ -1,5 +1,6 @@
 package io.quarkmind.domain;
 
+import java.util.Map;
 import java.util.Set;
 import static io.quarkmind.domain.UnitAttribute.*;
 
@@ -15,6 +16,44 @@ public final class SC2Data {
     public static final int INITIAL_SUPPLY    = 15;
     public static final int INITIAL_SUPPLY_USED = 12;
     public static final int INITIAL_PROBES    = 12;
+
+    /** Movement speed in tiles/sec at SC2 Faster speed (22.4 loops/sec). */
+    public static final Map<UnitType, Double> UNIT_SPEEDS = Map.ofEntries(
+        Map.entry(UnitType.PROBE,        3.94),
+        Map.entry(UnitType.ZEALOT,       3.15),
+        Map.entry(UnitType.STALKER,      4.13),
+        Map.entry(UnitType.IMMORTAL,     3.15),
+        Map.entry(UnitType.COLOSSUS,     2.77),
+        Map.entry(UnitType.DISRUPTOR,    3.15),
+        Map.entry(UnitType.ADEPT,        3.50),
+        Map.entry(UnitType.ARCHON,       3.94),
+        Map.entry(UnitType.PHOENIX,      5.61),
+        Map.entry(UnitType.ORACLE,       5.61),
+        Map.entry(UnitType.VOID_RAY,     3.50),
+        Map.entry(UnitType.CARRIER,      1.97),
+        Map.entry(UnitType.TEMPEST,      2.63),
+        Map.entry(UnitType.MOTHERSHIP,   1.97),
+        Map.entry(UnitType.OBSERVER,     2.63),
+        Map.entry(UnitType.SCV,          3.94),
+        Map.entry(UnitType.MARINE,       3.15),
+        Map.entry(UnitType.MARAUDER,     2.25),
+        Map.entry(UnitType.MEDIVAC,      3.50),
+        Map.entry(UnitType.DRONE,        2.95),
+        Map.entry(UnitType.ZERGLING,     4.13),
+        Map.entry(UnitType.ROACH,        3.15),
+        Map.entry(UnitType.HYDRALISK,    3.15),
+        Map.entry(UnitType.MUTALISK,     5.61),
+        Map.entry(UnitType.BANELING,     3.50),
+        Map.entry(UnitType.ULTRALISK,    4.13),
+        Map.entry(UnitType.OVERLORD,     1.40),
+        Map.entry(UnitType.OVERSEER,     3.94)
+    );
+
+    public static final double DEFAULT_UNIT_SPEED = 3.00;
+
+    public static double unitSpeed(UnitType type) {
+        return UNIT_SPEEDS.getOrDefault(type, DEFAULT_UNIT_SPEED);
+    }
 
     public static int trainTimeInTicks(UnitType type) {
         return switch (type) {
