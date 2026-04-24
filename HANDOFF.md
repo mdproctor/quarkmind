@@ -1,43 +1,38 @@
-# Handover — 2026-04-23 (end of session)
+# Handover — 2026-04-24 (end of session)
 
-**Head commit:** `1bdaf5c` — showcase all 65 sprites
+**Head commit:** `141f09f` — full 3-race building coverage
 
 ## What Changed This Session
 
-**Sprite coverage complete — all 65 multiplayer units now have draw functions.**
+**E20: Protoss building sprites** — replaced BoxGeometry building meshes with canvas sprite planes. `BUILDING_MATS` map, `makeBuildingTexture()`, `BUILDING_SCALE` replaces old `BUILDING_H/W/COLOUR`. 9 draw functions (Nexus → Twilight Council). `spawnBuildingForTesting(BuildingType, Point2d)` added to `SimulatedGame`.
 
-E18a (11 Protoss) + E18b (9 Zerg) closed the original domain model. Then the replay parser gap was found: 24 units were falling through to UNKNOWN in `Sc2ReplayShared`. E19a (7 Terran), E19b (8 Protoss), E19c (9 Zerg/spawned) filled every gap.
+**E21: Full 3-race building coverage** — `BuildingType` expanded from 9 → 48 types:
+- Protoss: +6 (PhotonCannon, ShieldBattery, DarkShrine, TemplarArchives, FleetBeacon, RoboticsBay)
+- Terran: +15 (CommandCenter → Refinery)
+- Zerg: +18 (Hatchery → Extractor)
 
-New unit types added to enum + replay parser + ActionTranslator:
-- **Terran:** SCV, REAPER, HELLION, HELLBAT, MULE, VIKING_ASSAULT, LIBERATOR_AG, AUTO_TURRET, SIEGE_TANK_SIEGED
-- **Protoss:** PHOENIX, ORACLE, TEMPEST, MOTHERSHIP, WARP_PRISM, WARP_PRISM_PHASING, INTERCEPTOR, ADEPT_PHASE_SHIFT
-- **Zerg:** DRONE, OVERLORD, OVERSEER, BANELING, LOCUST, BROODLING, INFESTED_TERRAN, CHANGELING
+Files changed: `BuildingType.java`, `SC2Data.java`, `Sc2ReplayShared.java` (includes flying/state variants), `ObservationTranslator.java` (`ALL_BUILDINGS` set), `ActionTranslator.java` (3 Zerg/Protoss abilities map to `null` — no ocraft constant exists). 39 new canvas draw functions. Showcase seeds 49 buildings (z=22..34, 6 rows).
 
-**Showcase extended to 65 units** in a 7×10 grid. Added `spawnFriendlyUnitForTesting` to `SimulatedGame` (was EmulatedGame only); 4 Probe observers at (4,5),(11,5),(4,15),(11,15) provide fog coverage. Playwright test asserts 65 enemies.
+**Playwright:** 169 → 218 tests, all passing. Showcase asserts `buildingCount()==49`.
 
-**CLAUDE.md updated:** `spawnFriendlyUnitForTesting` in SimulatedGame helpers section, showcase count 10→65, `mvn clean` note for ClassTooLargeException.
-
-**Test count:** 169 Playwright tests, 0 failures.
+**Showcase layout:** Building rows at tile z=22,24,26,28,32,34. **Negative tile z is out of bounds** — tile z=-2 maps to worldZ=-23.8, exceeding ±23. Use z≥0 only.
 
 ## Immediate Next Step
 
-**Building sprites** — natural next work. Same canvas 2D pattern as unit sprites. Start with `docs/superpowers/specs/` or brainstorm first if scope is unclear. Epic #83 still open.
-
-Key prior art: `ShowcaseResource.java` seeds buildings via `simulatedGame` — check how buildings are currently spawned (BuildingType enum, `spawnBuilding` or equivalent) before writing the plan.
+**Epic #83 still open.** Showcase now covers 65 units + 49 buildings — dev server running at localhost:8080, seeded with `curl -X POST http://localhost:8080/sc2/showcase`. Natural next: enemy buildings (GameState only tracks `myBuildings`; `enemyUnits` covers enemy structures as units — no `enemyBuildings` field exists). Or pivot to a different epic entirely — worth checking #83 scope.
 
 ## Key Technical Notes
 
-- **`ClassTooLargeException` in dev mode** — `mvn clean` before `mvn quarkus:dev` after large schema additions. Quarkus-generated startup handler hits JVM 64KB constant pool limit.
-- **`smokeTestDrawFn` lookup table** — manual entries only; every draw function needs `if (typeof drawX !== 'undefined') lookup.drawX = drawX;` in the `smokeTestDrawFn` function body (~line 98–200 in visualizer.js).
-- **FLYING_UNITS** now has 24 entries — MEDIVAC, MUTALISK, VIKING, RAVEN, BANSHEE, LIBERATOR, BATTLECRUISER, OBSERVER, VOID_RAY, CARRIER, BROOD_LORD, CORRUPTOR, VIPER, LIBERATOR_AG, OVERLORD, OVERSEER, LOCUST, PHOENIX, ORACLE, TEMPEST, MOTHERSHIP, WARP_PRISM, WARP_PRISM_PHASING, INTERCEPTOR.
-- **Playwright fog trap** — `enemyCount()` counts scene objects, not visually visible units. Units in fog count but don't render. Always validate visually after showcase changes.
-- **visualizer.js** is ~6000+ lines, 133 UNIT_MATS entries.
+- **ocraft Abilities gaps:** `BUILD_TEMPLAR_ARCHIVES`, `RESEARCH_LURKER_LEVEL`, `BUILD_NYDUS_CANAL` don't exist in ocraft 0.4.21 — map to `null` in `ActionTranslator.mapBuildAbility()`.
+- **Showcase tile-z constraint:** `gw(gx,gz) = { x: gx*TILE - HALF_W, z: gz*TILE - HALF_H }`. For 64×64 grid, HALF_H=22.4. Tile z=0 → worldZ=-22.4. Negative tile z → outside ±23 bounds.
+- **`smokeTestDrawFn` lookup:** All 48 building draw functions registered (buildings don't need directional variants — smoke test uses dir=0 only).
+- *Unchanged technical notes (ClassTooLargeException, FLYING_UNITS, fog trap) — `git show HEAD~1:HANDOFF.md`*
 
 ## Open Issues
 
 | # | What | Status |
 |---|------|--------|
-| #83 | Epic E14: 3D Visualizer | Open — sprite work done, buildings next |
+| #83 | Epic E14: 3D Visualizer | Open — units + buildings complete |
 | #74 | Unit genericisation | Parked |
 | #13 | Live SC2 smoke test | Blocked on SC2 |
 | #14 | GraalVM native image | Blocked on #13 |
@@ -46,7 +41,6 @@ Key prior art: `ShowcaseResource.java` seeds buildings via `simulatedGame` — c
 
 | Context | Where |
 |---------|-------|
-| Blog entry (this session) | `docs/_posts/2026-04-23-mdp02-e18-e19-the-full-roster.md` |
-| E19 plans | `docs/superpowers/plans/2026-04-23-e19{a,b,c}-*.md` |
+| Blog entry (this session) | `docs/_posts/2026-04-24-mdp01-buildings-all-three-races.md` |
 | Prior handover | `git show HEAD~1:HANDOFF.md` |
-| GitHub | mdproctor/quarkmind (epic #83 open; #88–92 closed) |
+| GitHub | mdproctor/quarkmind (#93 closed, #94 closed, #83 open) |

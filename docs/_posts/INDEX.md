@@ -20,3 +20,4 @@
 | [2026-04-22-mdp01-e15-terran-sprites-and-testing.md](2026-04-22-mdp01-e15-terran-sprites-and-testing.md) | 2026-04-22 | E15: Terran sprites (Marine/Marauder/Medivac) + team colour system; debugging lesson re: invariant tests |
 | [2026-04-23-mdp01-e16-zerg-sprites-showcase-lies.md](2026-04-23-mdp01-e16-zerg-sprites-showcase-lies.md) | 2026-04-23 | E16: Zerg sprites done; showcase bug hid inside a Quarkus profile swap; blue sun killed warm terrain colour |
 | [2026-04-23-mdp02-e18-e19-the-full-roster.md](2026-04-23-mdp02-e18-e19-the-full-roster.md) | 2026-04-23 | All 65 multiplayer unit sprites — coverage gap, design decisions, Quarkus ClassTooLargeException, fog-observer showcase pattern |
+| [2026-04-24-mdp01-buildings-all-three-races.md](2026-04-24-mdp01-buildings-all-three-races.md) | 2026-04-24 | E20+E21: 9 Protoss building sprites, then domain expanded to 48 types (all 3 races), 39 canvas draw functions, tile-z coordinate gotcha |

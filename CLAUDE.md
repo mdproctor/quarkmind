@@ -120,6 +120,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - `clearStagedUnitsForTesting()` — clear the staging area; also called by `reset()`
 - `spawnEnemyUnit(UnitType, Point2d)` — add an enemy to `enemyUnits` (for Playwright render tests)
 - `spawnFriendlyUnitForTesting(UnitType, Point2d)` — add a friendly unit to `myUnits`; use in ShowcaseResource to scatter observer units that provide fog-of-war coverage across a large map
+- `spawnBuildingForTesting(BuildingType, Point2d)` — add a complete (isComplete=true) building directly to `myBuildings`; use in ShowcaseResource and VisualizerRenderTest
 
 **Showcase seeding pattern:** Use `simulatedGame.reset()` directly (not `orchestrator.startGame()`) when seeding dev/QA demo state. `reset()` clears game state without firing `GameStarted`, so the AI scheduler never activates and the showcased state stays static. `engine.observe()` still pushes the seeded state to connected browser sessions.
 
@@ -127,12 +128,15 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 
 **Showcase validation (mandatory before showing the user):** After any change to `ShowcaseResource` or unit Y positioning in `visualizer.js`:
 
-1. **Automated** — run `mvn test -Pplaywright -Dtest=VisualizerRenderTest#showcaseRendersAllUnitsAboveTerrainSurface`: asserts all 65 units render, every sprite Y > `TERRAIN_SURFACE_Y`, no objects outside map bounds.
+1. **Automated** — run `mvn test -Pplaywright -Dtest=VisualizerRenderTest#showcaseRendersAllUnitsAboveTerrainSurface`: asserts all 65 units render, 49 buildings render (`buildingCount()==49`), every sprite Y > `TERRAIN_SURFACE_Y`, no objects outside map bounds.
 2. **Manual** — start `mvn quarkus:dev`, open visualizer, seed with `curl -X POST http://localhost:8080/sc2/showcase`, then verify:
    - All 65 units visible in the camera's default view — no missing units
-   - No units sunk into the terrain grid (sprite Y and 3D model Y use `TERRAIN_SURFACE_Y` as base)
+   - All 49 buildings visible across 6 rows at z=22..34 (Protoss z=22,24; Terran z=26,28; Zerg z=32,34)
+   - No units or buildings sunk into terrain (all use `TERRAIN_SURFACE_Y` as base)
    - Both 2D sprites and 3D sphere models render correctly for all unit types
    - Camera panning and rotation is smooth with no frame-rate drop
+
+**Building layout constraint:** Building showcase rows must use positive tile z values only. The visualizer maps `worldZ = tileZ * TILE − HALF_H`; for a 64×64 grid, tile z=0 maps to worldZ=−22.4 and negative tile z values exceed the ±23 world-unit map boundary. Use z ≥ 0 (practically z ≥ 22 to avoid the unit grid at z=2..20).
 
 **Never use `@QuarkusTest` for tests that can be plain JUnit** — boot cost is significant.
 
