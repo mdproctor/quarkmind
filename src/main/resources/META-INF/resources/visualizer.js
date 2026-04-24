@@ -49,6 +49,7 @@ function initMaterials() {
 
 let terrainLoaded = false;
 let hasRealTerrain = false;
+let cameraMode = localStorage.getItem('quarkmind.cameraMode') || 'sc2';
 
 window.__test = {
   threeReady:    () => !!renderer,
@@ -234,6 +235,7 @@ window.__test = {
   },
 
   panelVisible: () => document.getElementById('unit-panel')?.classList.contains('visible') ?? false,
+  cameraMode: () => cameraMode,
 };
 
 // ── Unit inspect panel ──────────────────────────────────────────────────────
@@ -351,6 +353,89 @@ function hideUnitPanel() {
   document.getElementById('unit-panel')?.classList.remove('visible');
 }
 
+function setupCameraToggle() {
+  const wrap = document.createElement('div');
+  wrap.id = 'cam-toggle';
+  wrap.innerHTML =
+    `<button id="cam-sc2">🎮 SC2</button>` +
+    `<button id="cam-3d">🔭 3D</button>`;
+  document.body.appendChild(wrap);
+
+  const css = document.createElement('style');
+  css.textContent = `
+    #cam-toggle {
+      position:fixed; top:12px; left:12px; z-index:200;
+      display:flex; gap:4px;
+    }
+    #cam-toggle button {
+      background:rgba(0,0,0,0.65); color:#ccc;
+      border:1px solid #555; border-radius:4px;
+      padding:4px 9px; cursor:pointer; font-size:12px;
+    }
+    #cam-toggle button:hover { background:rgba(60,60,60,0.9); }
+    #cam-toggle .cam-active { background:#1a6fd4; border-color:#3a8fee; color:#fff; }
+  `;
+  document.head.appendChild(css);
+
+  function refresh() {
+    document.getElementById('cam-sc2').classList.toggle('cam-active', cameraMode === 'sc2');
+    document.getElementById('cam-3d').classList.toggle('cam-active', cameraMode === '3d');
+    if (cameraMode === 'sc2') tPhi = Math.PI / 3.5; // lock pitch for SC2 feel
+  }
+  refresh();
+
+  document.getElementById('cam-sc2').onclick = () => {
+    cameraMode = 'sc2';
+    localStorage.setItem('quarkmind.cameraMode', 'sc2');
+    refresh();
+  };
+  document.getElementById('cam-3d').onclick = () => {
+    cameraMode = '3d';
+    localStorage.setItem('quarkmind.cameraMode', '3d');
+    refresh();
+  };
+}
+
+function setupKeyboardControls() {
+  const keys = new Set();
+  window.addEventListener('keydown', e => {
+    // Don't capture keys when user is typing in an input
+    if (e.target.tagName === 'INPUT') return;
+    keys.add(e.key);
+  });
+  window.addEventListener('keyup', e => keys.delete(e.key));
+
+  (function panLoop() {
+    const speed = camDist * 0.008;
+    const fwd = new THREE.Vector3(-Math.sin(camTheta), 0, -Math.cos(camTheta));
+    const rgt = new THREE.Vector3( Math.cos(camTheta), 0, -Math.sin(camTheta));
+
+    if (keys.has('w') || keys.has('ArrowUp'))    camTarget.addScaledVector(fwd,  speed);
+    if (keys.has('s') || keys.has('ArrowDown'))  camTarget.addScaledVector(fwd, -speed);
+    if (keys.has('a') || keys.has('ArrowLeft'))  camTarget.addScaledVector(rgt, -speed);
+    if (keys.has('d') || keys.has('ArrowRight')) camTarget.addScaledVector(rgt,  speed);
+
+    requestAnimationFrame(panLoop);
+  })();
+}
+
+function applyLayoutCss() {
+  const layoutCss = document.createElement('style');
+  layoutCss.textContent = `
+    * { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; background: #000; }
+    canvas { display: block; width: 100vw !important; height: 100vh !important; }
+    #hud {
+      position: fixed; top: 12px; right: 12px; z-index: 200;
+      background: rgba(0,0,0,0.65); color: #e0e0e0;
+      padding: 6px 12px; border-radius: 4px;
+      font-family: monospace; font-size: 13px;
+      pointer-events: none;
+    }
+  `;
+  document.head.appendChild(layoutCss);
+}
+
 async function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
@@ -371,6 +456,9 @@ async function init() {
   initMaterials();
   initSpriteMaterials();  // ← directional canvas texture materials
   setupCamera();
+  setupCameraToggle();
+  setupKeyboardControls();
+  applyLayoutCss();
   setupLighting();
   await loadTerrain();
   connectWebSocket();
@@ -396,9 +484,11 @@ function animate() {
 
 function setupCamera() {
   updateCamera();
-  let drag = false, lastX = 0, lastY = 0, rDrag = false;
+  let drag = false, lastX = 0, lastY = 0, panDrag = false;
   renderer.domElement.addEventListener('mousedown', e => {
-    drag = true; lastX = e.clientX; lastY = e.clientY; rDrag = e.button === 2;
+    drag = true; lastX = e.clientX; lastY = e.clientY;
+    // SC2 mode: left drag pans; 3D mode: left drag orbits, right drag pans
+    panDrag = cameraMode === 'sc2' ? e.button === 0 : e.button === 2;
     e.preventDefault();
   });
   renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
@@ -406,15 +496,17 @@ function setupCamera() {
     if (!drag) return;
     const dx = e.clientX - lastX, dy = e.clientY - lastY;
     lastX = e.clientX; lastY = e.clientY;
-    if (rDrag) {
+    if (panDrag) {
       const right = new THREE.Vector3();
       camera.getWorldDirection(right); right.cross(camera.up).normalize();
-      camTarget.addScaledVector(right, -dx * 0.03);
-      camTarget.y += dy * 0.03;
-    } else {
+      const s = camDist * 0.012;
+      camTarget.addScaledVector(right, -dx * s * 0.05);
+      camTarget.y += dy * s * 0.05;
+    } else if (cameraMode === '3d' && !panDrag) {
       tTheta -= dx * 0.012;
-      tPhi = Math.max(0.08, Math.min(Math.PI/2.05, tPhi - dy * 0.012));
+      tPhi = Math.max(0.08, Math.min(Math.PI / 2.05, tPhi - dy * 0.012));
     }
+    // SC2 mode non-pan drag: no orbit — ignore
   });
   window.addEventListener('mouseup', () => { drag = false; });
   renderer.domElement.addEventListener('wheel', e => {

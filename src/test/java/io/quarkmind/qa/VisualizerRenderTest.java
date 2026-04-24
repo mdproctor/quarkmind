@@ -4089,4 +4089,35 @@ class VisualizerRenderTest {
             assertThat(visible).isEqualTo(false);
         }
     }
+
+    @Test
+    @Tag("browser")
+    void canvasCoversFullViewport() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.terrainReady()");
+            // Use the Three.js renderer canvas (first canvas, direct child of body)
+            var box = page.locator("body > canvas").boundingBox();
+            assertThat(box.width).isGreaterThanOrEqualTo(1270.0);   // allow 1px rounding
+            assertThat(box.height).isGreaterThanOrEqualTo(710.0);
+        }
+    }
+
+    @Test
+    @Tag("browser")
+    void cameraToggleButtonsExist() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext();
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.terrainReady()");
+            assertThat(page.locator("#cam-sc2").count()).isEqualTo(1);
+            assertThat(page.locator("#cam-3d").count()).isEqualTo(1);
+            // Default mode is SC2
+            Object mode = page.evaluate("() => window.__test.cameraMode()");
+            assertThat(mode).isEqualTo("sc2");
+        }
+    }
 }
