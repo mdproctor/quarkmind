@@ -258,6 +258,7 @@ async function init() {
   await loadTerrain();
   connectWebSocket();
   initConfigPanel();
+  initReplayControls();
   animate();
 }
 
@@ -8523,6 +8524,100 @@ function initConfigPanel() {
     status.style.color = isError ? '#ff4444' : '#88ff88';
     setTimeout(() => { status.textContent = ''; }, 2500);
   }
+}
+
+// ── Replay control bar ──────────────────────────────────────────────────────
+async function initReplayControls() {
+  // Only show in replay profile
+  const meta = await fetchJson('/qa/current-map');
+  if (!meta) return;
+
+  const status = await fetchJson('/qa/replay/status');
+  const totalLoops = status ? status.totalLoops : 1;
+
+  const bar = document.createElement('div');
+  bar.id = 'replay-bar';
+  bar.innerHTML = `
+    <button id="rb-rewind" title="Rewind to start">⏮</button>
+    <button id="rb-pp" title="Play / Pause">⏸</button>
+    <input id="rb-scrub" type="range" min="0" max="${totalLoops}" value="0" step="22">
+    <span id="rb-time">0:00 / ${fmtLoop(totalLoops)}</span>
+    <button class="rb-speed" data-x="0">½×</button>
+    <button class="rb-speed rb-speed-active" data-x="1">1×</button>
+    <button class="rb-speed" data-x="2">2×</button>
+    <button class="rb-speed" data-x="4">4×</button>
+  `;
+  document.body.appendChild(bar);
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #replay-bar {
+      position: fixed; bottom: 0; left: 0; width: 100%; height: 44px;
+      background: rgba(0,0,0,0.82); display: flex; align-items: center;
+      gap: 8px; padding: 0 14px; box-sizing: border-box; z-index: 200;
+      color: #fff; font-family: monospace; font-size: 13px;
+    }
+    #replay-bar button {
+      background: #2a2a2a; color: #ddd; border: 1px solid #555;
+      border-radius: 4px; padding: 3px 9px; cursor: pointer; font-size: 13px;
+    }
+    #replay-bar button:hover { background: #444; }
+    .rb-speed-active { background: #1a6fd4 !important; border-color: #3a8fee !important; color: #fff !important; }
+    #rb-scrub { flex: 1; cursor: pointer; }
+    #rb-time { min-width: 100px; text-align: center; color: #aaa; }
+  `;
+  document.head.appendChild(style);
+
+  let playing = true;
+
+  document.getElementById('rb-rewind').onclick = async () => {
+    playing = false;
+    document.getElementById('rb-pp').textContent = '▶';
+    await fetch('/qa/replay/pause', { method: 'POST' });
+    await fetch('/qa/replay/seek?loop=0', { method: 'POST' });
+    document.getElementById('rb-scrub').value = 0;
+    document.getElementById('rb-time').textContent = `0:00 / ${fmtLoop(totalLoops)}`;
+  };
+
+  document.getElementById('rb-pp').onclick = async () => {
+    if (playing) {
+      await fetch('/qa/replay/pause', { method: 'POST' });
+      document.getElementById('rb-pp').textContent = '▶';
+    } else {
+      await fetch('/qa/replay/resume', { method: 'POST' });
+      document.getElementById('rb-pp').textContent = '⏸';
+    }
+    playing = !playing;
+  };
+
+  const scrub = document.getElementById('rb-scrub');
+  scrub.addEventListener('mouseup', async () => {
+    await fetch(`/qa/replay/seek?loop=${scrub.value}`, { method: 'POST' });
+  });
+
+  document.querySelectorAll('.rb-speed').forEach(btn => {
+    btn.onclick = async () => {
+      const x = parseInt(btn.dataset.x, 10);
+      await fetch(`/qa/replay/speed?multiplier=${x}`, { method: 'POST' });
+      document.querySelectorAll('.rb-speed').forEach(b => b.classList.remove('rb-speed-active'));
+      btn.classList.add('rb-speed-active');
+    };
+  });
+
+  // Poll status every 500ms to update scrub position and time
+  setInterval(async () => {
+    if (!playing) return;
+    const s = await fetchJson('/qa/replay/status');
+    if (!s) return;
+    scrub.value = s.loop;
+    document.getElementById('rb-time').textContent =
+      `${fmtLoop(s.loop)} / ${fmtLoop(s.totalLoops)}`;
+  }, 500);
+}
+
+function fmtLoop(loop) {
+  const secs = Math.floor(loop / 22.4);
+  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
 }
 
 init();
