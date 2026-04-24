@@ -34,6 +34,15 @@ public class AgentOrchestrator {
 
     private final AtomicReference<TickTimings> lastTickTimings = new AtomicReference<>();
 
+    private volatile boolean schedulerPaused = false;
+    private volatile int speedMultiplier = 1;
+
+    public void pauseScheduler()  { schedulerPaused = true; }
+    public void resumeScheduler() { schedulerPaused = false; }
+    public boolean isSchedulerPaused() { return schedulerPaused; }
+    public void setSpeedMultiplier(int x) { speedMultiplier = Math.max(0, Math.min(8, x)); }
+    public int getSpeedMultiplier() { return speedMultiplier; }
+
     /** Returns timings from the last completed tick, or null if no tick has run yet. */
     public TickTimings getLastTickTimings() { return lastTickTimings.get(); }
 
@@ -52,6 +61,7 @@ public class AgentOrchestrator {
 
     @Scheduled(every = "${starcraft.tick.interval:500ms}", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     public void gameTick() {
+        if (schedulerPaused) return;
         if (!engine.isConnected()) return;
 
         long t0 = System.currentTimeMillis();

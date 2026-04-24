@@ -25,6 +25,9 @@ public class GameStateBroadcaster {
     @Inject VisibilityHolder visibilityHolder;
 
     private final Set<WebSocketConnection> sessions = new CopyOnWriteArraySet<>();
+    private volatile boolean suppressed = false;
+
+    public void setSuppressed(boolean s) { this.suppressed = s; }
 
     @PostConstruct
     void init() {
@@ -51,7 +54,7 @@ public class GameStateBroadcaster {
     }
 
     private void onFrame(GameState state) {
-        if (sessions.isEmpty()) return;
+        if (suppressed || sessions.isEmpty()) return;
         try {
             String json = toJson(state);
             sessions.forEach(s -> s.sendText(json)

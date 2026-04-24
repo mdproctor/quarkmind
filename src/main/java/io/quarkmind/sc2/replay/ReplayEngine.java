@@ -151,4 +151,8 @@ public class ReplayEngine implements SC2Engine {
     public boolean isReplayComplete() {
         return game.isComplete();
     }
+
+    public long currentLoop() { return game != null ? game.currentLoop() : 0; }
+    public long totalLoops()  { return game != null ? game.totalLoops()  : 0; }
+    public void seekTo(long loop) { if (game != null) game.seekTo(loop); }
 }
