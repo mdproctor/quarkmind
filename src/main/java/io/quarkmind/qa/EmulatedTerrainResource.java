@@ -1,6 +1,7 @@
 package io.quarkmind.qa;
 
 import io.quarkmind.domain.TerrainGrid;
+import io.quarkmind.qa.TerrainResponse;
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -46,11 +47,4 @@ public class EmulatedTerrainResource {
         return Response.ok(new TerrainResponse(grid.width(), grid.height(), walls, highGround, ramps)).build();
     }
 
-    public record TerrainResponse(
-        int width,
-        int height,
-        List<int[]> walls,
-        List<int[]> highGround,
-        List<int[]> ramps
-    ) {}
 }
