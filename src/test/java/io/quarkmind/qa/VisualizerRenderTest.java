@@ -4075,4 +4075,18 @@ class VisualizerRenderTest {
             assertThat(result).isEqualTo(false);
         }
     }
+
+    @Test
+    @Tag("browser")
+    void unitPanelHiddenInitially() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext();
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.terrainReady()");
+            // Panel should exist but not be visible (no click yet)
+            Object visible = page.evaluate("() => window.__test.panelVisible()");
+            assertThat(visible).isEqualTo(false);
+        }
+    }
 }

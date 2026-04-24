@@ -232,7 +232,124 @@ window.__test = {
     fn(ctx2d, 128, dir, teamColor);
     return ctx2d.getImageData(64, 64, 1, 1).data[3]; // alpha at centre
   },
+
+  panelVisible: () => document.getElementById('unit-panel')?.classList.contains('visible') ?? false,
 };
+
+// ── Unit inspect panel ──────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const ndcMouse  = new THREE.Vector2();
+
+function setupInspectPanel() {
+  const panel = document.createElement('div');
+  panel.id = 'unit-panel';
+  panel.innerHTML = `
+    <canvas id="up-portrait" width="64" height="64"></canvas>
+    <div id="up-info">
+      <div id="up-name"></div>
+      <div id="up-team"></div>
+      <div class="up-row"><label>HP</label>
+        <div class="up-bar"><div id="up-hp" class="up-fill"></div></div>
+        <span id="up-hp-txt"></span></div>
+      <div class="up-row sh-row"><label>SH</label>
+        <div class="up-bar"><div id="up-sh" class="up-fill" style="background:#4488ff"></div></div>
+        <span id="up-sh-txt"></span></div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+
+  const css = document.createElement('style');
+  css.textContent = `
+    #unit-panel {
+      position:fixed; bottom:56px; right:12px; width:234px;
+      background:rgba(0,0,0,0.88); color:#fff; border:1px solid #444;
+      border-radius:6px; padding:10px; display:flex; gap:10px;
+      transform:translateX(260px); transition:transform 150ms ease;
+      z-index:150; font-family:monospace; font-size:12px;
+    }
+    #unit-panel.visible { transform:translateX(0); }
+    #up-portrait { border-radius:3px; flex-shrink:0; }
+    #up-info { flex:1; min-width:0; }
+    #up-name { font-weight:bold; font-size:13px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #up-team { color:#aaa; margin-bottom:6px; font-size:11px; }
+    .up-row { display:flex; align-items:center; gap:5px; margin-bottom:3px; }
+    .up-row label { width:16px; color:#888; font-size:10px; flex-shrink:0; }
+    .up-bar { flex:1; height:7px; background:#333; border-radius:3px; overflow:hidden; }
+    .up-fill { height:100%; background:#44cc44; border-radius:3px; transition:width 200ms; }
+    .sh-row { display:none; }
+  `;
+  document.head.appendChild(css);
+
+  // Raycasting on click (only if not a drag)
+  let mouseDownX = 0, mouseDownY = 0;
+  renderer.domElement.addEventListener('mousedown', e => {
+    mouseDownX = e.clientX; mouseDownY = e.clientY;
+  }, true); // capture phase so we see it before the camera drag handler
+
+  renderer.domElement.addEventListener('click', e => {
+    const dx = e.clientX - mouseDownX, dy = e.clientY - mouseDownY;
+    if (dx*dx + dy*dy > 25) return; // was a drag
+
+    ndcMouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    ndcMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(ndcMouse, camera);
+
+    const allSprites = [...unitSprites.values(), ...enemySprites.values()];
+    const hits = raycaster.intersectObjects(allSprites);
+    if (hits.length > 0) {
+      const obj = hits[0].object;
+      showUnitPanel(obj.userData.unitTag, obj.userData.isEnemy);
+    } else {
+      hideUnitPanel();
+    }
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideUnitPanel();
+  });
+}
+
+function showUnitPanel(tag, isEnemy) {
+  fetch(`/qa/unit/${encodeURIComponent(tag)}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      document.getElementById('up-name').textContent = data.type.replace(/_/g, ' ');
+      document.getElementById('up-team').textContent = isEnemy ? '⚔ Enemy' : '🛡 Friendly';
+
+      const hpPct = data.maxHealth > 0 ? (data.health / data.maxHealth * 100) : 0;
+      const hpEl  = document.getElementById('up-hp');
+      hpEl.style.width      = hpPct + '%';
+      hpEl.style.background = hpPct > 50 ? '#44cc44' : hpPct > 25 ? '#cccc44' : '#cc4444';
+      document.getElementById('up-hp-txt').textContent = `${data.health}/${data.maxHealth}`;
+
+      const shRow = document.querySelector('.sh-row');
+      if (data.maxShields > 0) {
+        shRow.style.display = 'flex';
+        const shPct = data.shields / data.maxShields * 100;
+        document.getElementById('up-sh').style.width = shPct + '%';
+        document.getElementById('up-sh-txt').textContent = `${data.shields}/${data.maxShields}`;
+      } else {
+        shRow.style.display = 'none';
+      }
+
+      // Portrait
+      const pCanvas = document.getElementById('up-portrait');
+      const pCtx    = pCanvas.getContext('2d');
+      pCtx.clearRect(0, 0, 64, 64);
+      const tColor = isEnemy ? '#ff4422' : '#4488ff';
+      const fnName = 'draw' + data.type.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join('');
+      if (typeof window[fnName] === 'function') {
+        window[fnName](pCtx, 32, 32, 0, tColor);
+      }
+
+      document.getElementById('unit-panel').classList.add('visible');
+    });
+}
+
+function hideUnitPanel() {
+  document.getElementById('unit-panel')?.classList.remove('visible');
+}
 
 async function init() {
   scene = new THREE.Scene();
@@ -259,6 +376,7 @@ async function init() {
   connectWebSocket();
   initConfigPanel();
   initReplayControls();
+  setupInspectPanel();
   animate();
 }
 
@@ -608,6 +726,9 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
       const mats = UNIT_MATS[key] ?? UNIT_MATS['UNKNOWN_' + (isEnemy ? 'E' : 'F')];
       const sp = new THREE.Sprite(mats[0]);
       sp.userData.mats = mats;
+      sp.userData.unitTag  = u.tag;
+      sp.userData.unitType = u.type;
+      sp.userData.isEnemy  = isEnemy;
       sp.scale.set(TILE * 1.4, TILE * 1.4, 1);
       // Base both sprite and 3D model on TERRAIN_SURFACE_Y so they sit above ground
       // in both mock (TERRAIN_SURFACE_Y=0.08) and emulated (TERRAIN_SURFACE_Y=TILE) profiles.
