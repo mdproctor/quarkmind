@@ -114,6 +114,24 @@ class ReplayEngineTest {
         assertThat(engine.observe().minerals()).isGreaterThan(0);
     }
 
+    @Test
+    void connectParsesMapName() {
+        engine.connect();
+        assertThat(engine.getMapName()).isEqualTo("TorchesAIE_v4");
+    }
+
+    @Test
+    void connectParsesMapDimensions() {
+        engine.connect();
+        assertThat(engine.getMapWidth()).isEqualTo(160);
+        assertThat(engine.getMapHeight()).isEqualTo(208);
+    }
+
+    @Test
+    void mapNameIsNullBeforeConnect() {
+        assertThat(engine.getMapName()).isNull();
+    }
+
     // --- Helpers ---
 
     private static void setField(Object obj, String name, Object value) throws Exception {

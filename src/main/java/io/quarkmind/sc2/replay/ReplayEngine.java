@@ -51,13 +51,47 @@ public class ReplayEngine implements SC2Engine {
     private boolean connected = false;
     private final List<Consumer<GameState>> frameListeners = new CopyOnWriteArrayList<>();
 
+    private String mapName;
+    private int mapWidth;
+    private int mapHeight;
+
     @Override
     public void connect() {
         log.infof("[REPLAY] Loading replay: %s (player %d)", replayFile, watchedPlayerId);
         game = new ReplaySimulatedGame(Path.of(replayFile), watchedPlayerId);
+        parseMapMetadata(Path.of(replayFile));
         connected = true;
-        log.infof("[REPLAY] Replay loaded — %d tracker events ready", game.eventCount());
+        log.infof("[REPLAY] Replay loaded — %d tracker events ready, map=%s (%dx%d)",
+                game.eventCount(), mapName, mapWidth, mapHeight);
     }
+
+    private void parseMapMetadata(Path replayPath) {
+        try (var mpq = new hu.belicza.andras.mpq.MpqParser(replayPath)) {
+            byte[] meta = mpq.getFile("replay.gamemetadata.json");
+            if (meta != null) {
+                var node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(meta);
+                String raw = node.path("MapName").asText(null);
+                if (raw != null && raw.endsWith(".SC2Map")) {
+                    mapName = raw.substring(0, raw.length() - 7);
+                }
+            }
+            hu.scelight.sc2.rep.model.Replay r =
+                hu.scelight.sc2.rep.factory.RepParserEngine.parseReplay(
+                    replayPath,
+                    java.util.EnumSet.of(hu.scelight.sc2.rep.factory.RepContent.INIT_DATA));
+            if (r != null && r.initData != null) {
+                var gd = r.initData.getGameDescription();
+                mapWidth  = gd.getMapSizeX() != null ? gd.getMapSizeX() : 0;
+                mapHeight = gd.getMapSizeY() != null ? gd.getMapSizeY() : 0;
+            }
+        } catch (Exception e) {
+            log.warnf("[REPLAY] Cannot parse map metadata: %s", e.getMessage());
+        }
+    }
+
+    @Override public String getMapName()   { return mapName; }
+    @Override public int    getMapWidth()  { return mapWidth; }
+    @Override public int    getMapHeight() { return mapHeight; }
 
     @Override
     public void joinGame() {
