@@ -1,0 +1,13 @@
+{
+  "baseUrl": "https://aiarena.net/wiki/184/plugin/attachments/download/",
+  "packs": [
+    {
+      "id": 45,
+      "maps": ["TorchesAIE_v4", "IncorporealAIE_v4", "LeyLinesAIE_v3", "PersephoneAIE_v4", "PylonAIE_v4"]
+    },
+    {
+      "id": 44,
+      "maps": ["MagannathaAIE", "UltraloveAIE", "IncorporealAIE", "LeyLinesAIE", "PersephoneAIE", "PylonAIE", "TorchesAIE", "LastFantasyAIE"]
+    }
+  ]
+}
