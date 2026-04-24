@@ -48,6 +48,7 @@ function initMaterials() {
 }
 
 let terrainLoaded = false;
+let hasRealTerrain = false;
 
 window.__test = {
   threeReady:    () => !!renderer,
@@ -59,6 +60,7 @@ window.__test = {
   buildingCount: () => buildingMeshes.size,
   stagingCount:  () => stagingSprites.size,
   geyserCount:   () => geyserMeshes.size,
+  hasRealTerrain: () => terrainLoaded && hasRealTerrain,
   fogOpacity:    (x, z) => {
     const p = fogPlanes.get(`${x},${z}`);
     return p ? (p.visible ? p.material.opacity : 0) : -1;
@@ -350,18 +352,40 @@ function setupLighting() {
 
 async function loadTerrain() {
   let walls = [], highGround = [], ramps = [];
-  let hasRealTerrain = false;
+  let isEmulatedMode = false;
+
+  // Phase 1: replay profile
   try {
-    const r = await fetch('/qa/emulated/terrain');
-    if (r.ok) {
-      const d = await r.json();
-      GRID_W = d.width; GRID_H = d.height;
-      walls      = d.walls      || [];
-      highGround = d.highGround || [];
-      ramps      = d.ramps      || [];
-      hasRealTerrain = true;
+    const mapMeta = await fetchJson('/qa/current-map');
+    if (mapMeta) {
+      GRID_W = mapMeta.mapWidth;
+      GRID_H = mapMeta.mapHeight;
+      const terrainResp = await fetch(`/qa/terrain?map=${encodeURIComponent(mapMeta.mapName)}`);
+      if (terrainResp.ok) {
+        const d = await terrainResp.json();
+        walls      = d.walls      || [];
+        highGround = d.highGround || [];
+        ramps      = d.ramps      || [];
+        hasRealTerrain = true;
+      }
     }
-  } catch (_) { /* non-emulated profiles: flat grid */ }
+  } catch (_) {}
+
+  // Phase 2: emulated profile
+  if (!hasRealTerrain) {
+    try {
+      const r = await fetch('/qa/emulated/terrain');
+      if (r.ok) {
+        const d = await r.json();
+        GRID_W = d.width; GRID_H = d.height;
+        walls      = d.walls      || [];
+        highGround = d.highGround || [];
+        ramps      = d.ramps      || [];
+        hasRealTerrain = true;
+        isEmulatedMode = true;
+      }
+    } catch (_) {}
+  }
 
   HALF_W = (GRID_W * TILE) / 2;
   HALF_H = (GRID_H * TILE) / 2;
@@ -369,6 +393,16 @@ async function loadTerrain() {
   const wallSet = new Set(walls.map(([x,z])      => `${x},${z}`));
   const highSet = new Set(highGround.map(([x,z]) => `${x},${z}`));
   const rampSet = new Set(ramps.map(([x,z])      => `${x},${z}`));
+
+  if (hasRealTerrain) {
+    const groundPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(GRID_W * TILE, GRID_H * TILE),
+      mGround
+    );
+    groundPlane.rotation.x = -Math.PI / 2;
+    groundPlane.position.set(0, 0.04, 0);
+    scene.add(groundPlane);
+  }
 
   const sharedEdgesGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(TILE, 0.01, TILE));
   for (let gz = 0; gz < GRID_H; gz++) {
@@ -381,6 +415,7 @@ async function loadTerrain() {
       if      (wallSet.has(key)) { h = TILE * 1.2; mat = mWall; }
       else if (highSet.has(key)) { h = TILE * 0.6; mat = mHigh; }
       else if (rampSet.has(key)) { h = TILE * 0.25; mat = mRamp; }
+      else if (hasRealTerrain) { continue; } // LOW — covered by base plane
 
       const tile = new THREE.Mesh(new THREE.BoxGeometry(TILE*0.98, h, TILE*0.98), mat);
       tile.position.set(cx, h/2, cz);
@@ -397,7 +432,7 @@ async function loadTerrain() {
   // Fog planes — only created in emulated mode where visibility data exists.
   // Skipping them in mock/replay modes removes 4096 objects from the scene graph,
   // cutting per-frame traversal cost roughly in half.
-  if (hasRealTerrain) {
+  if (isEmulatedMode) {
     const fogMat = new THREE.MeshBasicMaterial({
       color: 0x888888, transparent: true,  // light grey for out-of-vision areas
       side: THREE.DoubleSide, depthWrite: false
@@ -428,6 +463,13 @@ async function loadTerrain() {
   }
   updateCamera();
   terrainLoaded = true;
+}
+
+async function fetchJson(url) {
+  try {
+    const r = await fetch(url);
+    return r.ok ? r.json() : null;
+  } catch (_) { return null; }
 }
 
 function gw(gx, gz) {

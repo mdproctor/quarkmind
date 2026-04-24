@@ -4063,4 +4063,16 @@ class VisualizerRenderTest {
         assertThat(((Number) page.evaluate("() => window.__test.smokeTestDrawFn('drawExtractor', 0, '" + TEAM_COLOR_FRIENDLY + "')")).intValue()).as("drawExtractor").isGreaterThan(0);
         page.close();
     }
+
+    @Test
+    @Tag("browser")
+    void hasRealTerrainIsFalseInMockProfile() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.terrainReady()");
+            Object result = page.evaluate("() => window.__test.hasRealTerrain()");
+            assertThat(result).isEqualTo(false);
+        }
+    }
 }
