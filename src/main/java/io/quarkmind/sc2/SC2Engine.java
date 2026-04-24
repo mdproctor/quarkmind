@@ -41,4 +41,8 @@ public interface SC2Engine {
 
     /** Register a listener called on every {@link #observe()} invocation. Default: no-op. */
     default void addFrameListener(Consumer<GameState> listener) {}
+
+    default String getMapName()   { return null; }
+    default int    getMapWidth()  { return 0; }
+    default int    getMapHeight() { return 0; }
 }
