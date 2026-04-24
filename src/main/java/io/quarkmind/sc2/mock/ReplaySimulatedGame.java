@@ -9,10 +9,13 @@ import hu.scelightapi.sc2.rep.model.trackerevents.IPlayerStatsEvent;
 import hu.scelightapi.sc2.rep.model.trackerevents.ITrackerEvents;
 import io.quarkmind.domain.*;
 import io.quarkmind.sc2.intent.Intent;
+import io.quarkmind.sc2.replay.UnitOrder;
+import io.quarkmind.sc2.replay.UnitOrderTracker;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -39,6 +42,8 @@ public class ReplaySimulatedGame extends SimulatedGame {
 
     private int eventCursor;
     private long currentLoop;
+    private UnitOrderTracker orderTracker;
+    private long totalLoops = 0;
 
     /**
      * @param replayFile      path to a parseable .SC2Replay file
@@ -52,6 +57,9 @@ public class ReplaySimulatedGame extends SimulatedGame {
         }
         this.trackerEvents = replay.trackerEvents.getEvents();
         this.watchedPlayerId = watchedPlayerId;
+        if (trackerEvents.length > 0) {
+            this.totalLoops = trackerEvents[trackerEvents.length - 1].getLoop();
+        }
         reset();
     }
 
@@ -67,6 +75,7 @@ public class ReplaySimulatedGame extends SimulatedGame {
         clearAll();
         setGameFrame(0);
         pendingBuildings.clear();
+        if (orderTracker != null) orderTracker.reset();
         eventCursor = 0;
         currentLoop = 0;
         drainEventsUpTo(0);
@@ -80,6 +89,7 @@ public class ReplaySimulatedGame extends SimulatedGame {
         currentLoop += LOOPS_PER_TICK;
         setGameFrame(currentLoop / LOOPS_PER_TICK);
         drainEventsUpTo(currentLoop);
+        if (orderTracker != null) advanceMovement();
     }
 
     /** Intents are ignored — replay state is authoritative. */
@@ -164,6 +174,7 @@ public class ReplaySimulatedGame extends SimulatedGame {
         removeUnitByTag(tag);
         removeBuildingByTag(tag);
         pendingBuildings.remove(tag);
+        if (orderTracker != null) orderTracker.removeUnit(tag);
     }
 
     private void applyUnitInit(Event rawEvent) {
@@ -187,6 +198,40 @@ public class ReplaySimulatedGame extends SimulatedGame {
         String tag = makeTag(tagIndex, tagRecycle);
         if (pendingBuildings.remove(tag) != null) {
             markBuildingComplete(tag);
+        }
+    }
+
+    // --- Movement integration ---
+
+    public void loadOrders(List<UnitOrder> orders) {
+        this.orderTracker = new UnitOrderTracker();
+        this.orderTracker.loadOrders(orders);
+    }
+
+    public long totalLoops()  { return totalLoops; }
+    public long currentLoop() { return currentLoop; }
+
+    public synchronized void seekTo(long targetLoop) {
+        reset();
+        while (currentLoop < targetLoop && !isComplete()) {
+            currentLoop += LOOPS_PER_TICK;
+            setGameFrame(currentLoop / LOOPS_PER_TICK);
+            drainEventsUpTo(currentLoop);
+            if (orderTracker != null) advanceMovement();
+        }
+    }
+
+    private void advanceMovement() {
+        Map<String, Point2d> positions = new HashMap<>();
+        Map<String, UnitType> types    = new HashMap<>();
+        for (var u : getMyUnits())    { positions.put(u.tag(), u.position()); types.put(u.tag(), u.type()); }
+        for (var u : getEnemyUnits()) { positions.put(u.tag(), u.position()); types.put(u.tag(), u.type()); }
+
+        orderTracker.advance(currentLoop, positions, types);
+
+        for (var e : positions.entrySet()) {
+            replaceUnitPosition(e.getKey(), e.getValue());
+            replaceEnemyPosition(e.getKey(), e.getValue());
         }
     }
 
