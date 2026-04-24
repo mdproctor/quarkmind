@@ -41,6 +41,13 @@ mvn quarkus:dev -Dquarkus.profile=replay
 # Default replay: Nothing_4720936.SC2Replay — override with -Dstarcraft.replay.file=...
 ```
 
+**NEVER redirect Quarkus server stdout to a file without size limits.**
+The game loop logs every tick; an overnight run fills the disk.
+- Wrong: `mvn quarkus:dev ... > /tmp/server.log 2>&1 &`
+- Right: `mvn quarkus:dev ...` (console only — Ctrl+C to stop)
+- Right for background: `mvn quarkus:dev ... > /dev/null 2>&1 &`
+- If you need logs in background: use the profile's `quarkus.log.file.*` config (already rotation-capped at 4G globally).
+
 **Run (emulated physics, no SC2 needed):**
 ```bash
 mvn quarkus:dev -Dquarkus.profile=emulated
@@ -195,7 +202,7 @@ Running from the parent installs all modules including `casehub-persistence-memo
 The SC2 replay parser (`scelight-mpq` + `scelight-s2protocol`) is built from the Scelight fork:
 
 ```bash
-cd /Users/mdproctor/claude/scelight && ./scripts/publish-replay-libs.sh
+cd /Users/mdproctor/dev/scelight && ./scripts/publish-replay-libs.sh
 ```
 
 Run this when setting up a new environment or after any change to the `feature/standalone-modules` branch. Takes ~10 seconds.
