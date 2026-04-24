@@ -4,6 +4,7 @@ import io.quarkus.arc.profile.UnlessBuildProfile;
 import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkmind.domain.*;
 import io.quarkmind.sc2.intent.*;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -157,6 +158,23 @@ public class SimulatedGame {
             : b);
     }
     protected void removeEnemyByTag(String tag) { enemyUnits.removeIf(u -> u.tag().equals(tag)); }
+
+    protected void replaceUnitPosition(String tag, Point2d newPos) {
+        myUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
+                       u.shields(), u.maxShields(), u.weaponCooldownTicks(), u.blinkCooldownTicks())
+            : u);
+    }
+
+    protected void replaceEnemyPosition(String tag, Point2d newPos) {
+        enemyUnits.replaceAll(u -> u.tag().equals(tag)
+            ? new Unit(u.tag(), u.type(), newPos, u.health(), u.maxHealth(),
+                       u.shields(), u.maxShields(), u.weaponCooldownTicks(), u.blinkCooldownTicks())
+            : u);
+    }
+
+    protected List<Unit> getMyUnits()    { return Collections.unmodifiableList(myUnits); }
+    protected List<Unit> getEnemyUnits() { return Collections.unmodifiableList(enemyUnits); }
     protected void clearAll() {
         myUnits.clear();
         myBuildings.clear();
