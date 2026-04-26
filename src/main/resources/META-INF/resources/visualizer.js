@@ -8806,6 +8806,7 @@ async function initReplayControls() {
   const scrub = document.getElementById('rb-scrub');
   scrub.addEventListener('mouseup', async () => {
     await fetch(`/qa/replay/seek?loop=${scrub.value}`, { method: 'POST' });
+    scrub.blur(); // return focus to document so WASD/arrow keys work again
   });
 
   document.querySelectorAll('.rb-speed').forEach(btn => {
