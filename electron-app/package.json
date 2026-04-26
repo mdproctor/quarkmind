@@ -1,0 +1,12 @@
+{
+  "name": "quarkmind-viewer",
+  "version": "1.0.0",
+  "description": "QuarkMind SC2 replay viewer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^34.5.8"
+  }
+}
