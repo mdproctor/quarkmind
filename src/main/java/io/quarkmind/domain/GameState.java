@@ -12,6 +12,7 @@ public record GameState(
     List<Unit> enemyUnits,
     List<Unit> enemyStagingArea,
     List<Resource> geysers,
+    List<Resource> mineralPatches,
     long gameFrame
 ) {
     public GameState {
@@ -20,5 +21,6 @@ public record GameState(
         enemyUnits       = List.copyOf(enemyUnits);
         enemyStagingArea = List.copyOf(enemyStagingArea);
         geysers          = List.copyOf(geysers);
+        mineralPatches   = List.copyOf(mineralPatches);
     }
 }

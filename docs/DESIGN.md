@@ -7,7 +7,7 @@ QuarkMind (formerly "starcraft", package root `io.quarkmind`) is a Quarkus appli
 All four plugin seams (Strategy, Economics, Tactics, Scouting) are implemented using different R&D frameworks. The bot can connect to a live SC2 process and issue real game commands. An emulation engine (`EmulatedGame`) provides physics-based game simulation without requiring a live SC2 binary, served with a PixiJS 8 live visualizer in an Electron window.
 
 **GitHub:** `mdproctor/quarkmind`
-**Test count:** 236 (unit + integration + Playwright E2E)
+**Test count:** 240 (unit + integration + Playwright E2E)
 
 ---
 
@@ -47,7 +47,7 @@ Plain Java records in `domain/` — no framework dependencies, always native-com
 
 | Record | Purpose |
 |---|---|
-| `GameState` | Snapshot: minerals, vespene, supply, unit lists, game frame |
+| `GameState` | Snapshot: minerals, vespene, supply, unit lists, mineral patches, geysers, game frame |
 | `Unit` | Single unit: tag, type, position, health, shields, maxShields |
 | `Building` | Single building: tag, type, position, health, isComplete |
 | `UnitType` | Enum: PROBE, ZEALOT, STALKER, IMMORTAL, COLOSSUS, CARRIER, etc. |
@@ -129,7 +129,7 @@ Plugins are registered at startup by `QuarkMindTaskRegistrar` — injecting each
 | Class | Role |
 |---|---|
 | `SimulatedGame` | Hand-crafted stateful SC2 simulation; CDI bean in `%mock` profile |
-| `ReplaySimulatedGame` | Replay-driven variant; plain Java, driven from real `.SC2Replay` tracker events (PlayerStats, UnitBorn, UnitDied, UnitInit, UnitDone) |
+| `ReplaySimulatedGame` | Replay-driven variant; plain Java, driven from real `.SC2Replay` tracker events (PlayerStats, UnitBorn, UnitDied, UnitInit, UnitDone). Captures neutral units (`ctrlId==0`) as mineral patches and geysers. |
 | `ReplayEngine` | `SC2Engine` for `%replay` profile — observe-only, records agent intents |
 | `EmulatedGame` | Physics simulation engine: mineral harvesting, build times, movement, combat (E1-E3 complete); CDI bean in `%emulated` profile |
 | `EmulatedEngine` | `SC2Engine` wrapping `EmulatedGame`; active on `@IfBuildProfile("emulated")` |

@@ -139,7 +139,16 @@ public class ReplaySimulatedGame extends SimulatedGame {
         String tag      = makeTag(event.getUnitTagIndex(), event.getUnitTagRecycle());
         Integer ctrlId  = event.getControlPlayerId();
 
-        if (Sc2ReplayShared.BUILDING_NAMES.contains(unitName)) {
+        if (ctrlId != null && ctrlId == 0) {
+            // Neutral unit — mineral patches and geysers
+            Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
+            if (Sc2ReplayShared.isGeyser(unitName)) {
+                addGeyser(new Resource(tag, pos, Sc2ReplayShared.defaultGeyserAmount(unitName)));
+            } else if (Sc2ReplayShared.isMineralPatch(unitName)) {
+                addMineralPatch(new Resource(tag, pos, Sc2ReplayShared.defaultMineralAmount(unitName)));
+            }
+            // Other neutral types (rocks, debris) are ignored
+        } else if (Sc2ReplayShared.BUILDING_NAMES.contains(unitName)) {
             // Initial structures (Nexus at loop 0) arrive as UnitBorn, already complete
             if (ctrlId != null && ctrlId == watchedPlayerId) {
                 BuildingType bt = toBuildingType(unitName);
@@ -154,10 +163,9 @@ public class ReplaySimulatedGame extends SimulatedGame {
             if (ut == UnitType.UNKNOWN) return;
             if (ctrlId != null && ctrlId == watchedPlayerId) {
                 Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
-                // TODO(E4): replay tracker events don't include instantaneous shield values.
-                // Shields are set to 0 for now — acceptable since ReplaySimulatedGame is observe-only.
+                // Replay tracker events don't include instantaneous shield values — set to 0.
                 addUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut), 0, 0, 0, 0));
-            } else if (ctrlId != null && ctrlId != 0) {
+            } else if (ctrlId != null) {
                 // Enemy unit — use tracker-event tag so GAME_EVENTS movement orders can be matched
                 Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
                 addEnemyUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut), 0, 0, 0, 0));
@@ -172,7 +180,10 @@ public class ReplaySimulatedGame extends SimulatedGame {
         if (tagIndex == null || tagRecycle == null) return;
         String tag = makeTag(tagIndex, tagRecycle);
         removeUnitByTag(tag);
+        removeEnemyByTag(tag);
         removeBuildingByTag(tag);
+        removeGeyserByTag(tag);
+        removeMineralPatchByTag(tag);
         pendingBuildings.remove(tag);
         if (orderTracker != null) orderTracker.removeUnit(tag);
     }

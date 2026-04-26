@@ -9,6 +9,27 @@ final class Sc2ReplayShared {
 
     static final int LOOPS_PER_TICK = 22;
 
+    static boolean isGeyser(String unitName) {
+        return unitName.contains("VespeneGeyser") || unitName.contains("RichVespeneGeyser")
+            || unitName.equals("SpacePlatformGeyser");
+    }
+
+    static boolean isMineralPatch(String unitName) {
+        return unitName.startsWith("MineralField") || unitName.startsWith("RichMineralField")
+            || unitName.startsWith("LabMineralField") || unitName.startsWith("PurifierMineralField")
+            || unitName.startsWith("BattleStationMineralField");
+    }
+
+    static int defaultGeyserAmount(String unitName) {
+        return unitName.contains("Rich") ? 2500 : 2250;
+    }
+
+    static int defaultMineralAmount(String unitName) {
+        if (unitName.contains("450")) return 450;
+        if (unitName.contains("750")) return 750;
+        return 1500;
+    }
+
     static final Set<String> BUILDING_NAMES = Set.of(
         // Protoss
         "Nexus", "Pylon", "Gateway", "WarpGate", "CyberneticsCore", "Assimilator",

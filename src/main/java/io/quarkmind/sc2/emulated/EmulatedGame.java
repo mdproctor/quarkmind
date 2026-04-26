@@ -559,6 +559,7 @@ public class EmulatedGame {
                 visibleEnemies,
                 visibleStaging,
                 List.copyOf(geysers),
+                List.of(),   // mineralPatches: not modelled in emulated physics
                 gameFrame);
         }
         return new GameState(
@@ -568,6 +569,7 @@ public class EmulatedGame {
             List.copyOf(enemyUnits),
             List.copyOf(enemyStagingArea),
             List.copyOf(geysers),
+            List.of(),   // mineralPatches: not modelled in emulated physics
             gameFrame);
     }
 

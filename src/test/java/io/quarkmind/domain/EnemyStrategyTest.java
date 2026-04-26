@@ -96,7 +96,7 @@ class EnemyStrategyTest {
         GameState state = new GameState(50, 0, 15, 12,
             List.of(), List.of(), List.of(),
             List.of(staged),   // enemyStagingArea
-            List.of(), 0L);
+            List.of(), List.of(), 0L);
         assertThat(state.enemyStagingArea()).hasSize(1);
         assertThat(state.enemyStagingArea().get(0).tag()).isEqualTo("s-1");
     }

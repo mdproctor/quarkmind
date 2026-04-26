@@ -23,6 +23,7 @@ class GameStateBroadcasterTest {
             List.of(),
             List.of(),   // enemyStagingArea
             List.of(new Resource("geyser-0", new Point2d(5f, 11f), 2250)),
+            List.of(),   // mineralPatches
             42L
         );
 

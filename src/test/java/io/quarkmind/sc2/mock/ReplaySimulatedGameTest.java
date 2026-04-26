@@ -4,6 +4,9 @@ import io.quarkmind.domain.*;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -95,6 +98,60 @@ class ReplaySimulatedGameTest {
         assertThat(state.gameFrame()).isEqualTo(0L);
         assertThat(state.myBuildings().stream().anyMatch(b -> b.type() == BuildingType.NEXUS)).isTrue();
         assertThat(state.myUnits().stream().filter(u -> u.type() == UnitType.PROBE).count()).isEqualTo(12);
+    }
+
+    // --- Neutral resources (issue #107) ---
+
+    @Test
+    void mineralPatchesPresentAtLoopZero() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        GameState state = game.snapshot();
+        assertThat(state.mineralPatches())
+            .as("Mineral patches present from replay neutral units at loop 0")
+            .isNotEmpty();
+    }
+
+    @Test
+    void geysersPresentFromReplayAtLoopZero() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        GameState state = game.snapshot();
+        assertThat(state.geysers())
+            .as("Geysers present from replay neutral units at loop 0")
+            .isNotEmpty();
+    }
+
+    @Test
+    void neutralResourceTagsNotInUnitCollections() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        GameState state = game.snapshot();
+
+        Set<String> neutralTags = Stream.concat(
+            state.mineralPatches().stream().map(Resource::tag),
+            state.geysers().stream().map(Resource::tag)
+        ).collect(Collectors.toSet());
+
+        Set<String> unitTags = Stream.concat(
+            state.myUnits().stream().map(Unit::tag),
+            state.enemyUnits().stream().map(Unit::tag)
+        ).collect(Collectors.toSet());
+
+        assertThat(neutralTags).as("Neutral resource tags must be non-empty").isNotEmpty();
+        assertThat(neutralTags).as("Neutral resources must not appear in unit collections")
+            .doesNotContainAnyElementsOf(unitTags);
+    }
+
+    @Test
+    void neutralResourcesRestoredAfterReset() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        int initialMinerals = game.snapshot().mineralPatches().size();
+        int initialGeysers  = game.snapshot().geysers().size();
+
+        for (int i = 0; i < 100; i++) game.tick();
+
+        game.reset();
+        GameState state = game.snapshot();
+        assertThat(state.mineralPatches()).as("Mineral patches restored after reset").hasSize(initialMinerals);
+        assertThat(state.geysers()).as("Geysers restored after reset").hasSize(initialGeysers);
     }
 
     @Test

@@ -87,6 +87,7 @@ public final class ObservationTranslator {
             enemies,
             List.of(),   // enemyStagingArea — not applicable for real SC2
             List.of(),   // geysers: neutral unit detection deferred to Phase 3+
+            List.of(),   // mineralPatches: neutral unit detection deferred to Phase 3+
             obs.getGameLoop()
         );
     }

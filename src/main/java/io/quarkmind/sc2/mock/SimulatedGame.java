@@ -22,6 +22,7 @@ public class SimulatedGame {
     private final List<Building> myBuildings = new CopyOnWriteArrayList<>();
     private final List<Unit> enemyUnits = new CopyOnWriteArrayList<>();
     private final List<Resource> geysers = new CopyOnWriteArrayList<>();
+    private final List<Resource> mineralPatches = new CopyOnWriteArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new CopyOnWriteArrayList<>();
     // E4: staging test helper — lets VisualizerRenderTest inject staged units
     private final List<Unit> testStagingArea = new CopyOnWriteArrayList<>();
@@ -94,7 +95,7 @@ public class SimulatedGame {
         return new GameState(minerals, vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits),
             List.copyOf(testStagingArea),   // enemyStagingArea — populated by test helpers
-            List.copyOf(geysers), gameFrame.get());
+            List.copyOf(geysers), List.copyOf(mineralPatches), gameFrame.get());
     }
 
     /** Test helper: adds a unit to the staging area returned by snapshot(). */
@@ -181,8 +182,14 @@ public class SimulatedGame {
         myBuildings.clear();
         enemyUnits.clear();
         geysers.clear();
+        mineralPatches.clear();
         pendingCompletions.clear();
     }
+
+    protected void addGeyser(Resource r)              { geysers.add(r); }
+    protected void removeGeyserByTag(String tag)      { geysers.removeIf(r -> r.tag().equals(tag)); }
+    protected void addMineralPatch(Resource r)         { mineralPatches.add(r); }
+    protected void removeMineralPatchByTag(String tag) { mineralPatches.removeIf(r -> r.tag().equals(tag)); }
 
     public List<Resource> getGeysers() { return List.copyOf(geysers); }
 }
