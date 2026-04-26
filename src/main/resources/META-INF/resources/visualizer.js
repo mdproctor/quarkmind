@@ -288,7 +288,7 @@ function setupInspectPanel() {
     mouseDownX = e.clientX; mouseDownY = e.clientY;
   }, true); // capture phase so we see it before the camera drag handler
 
-  renderer.domElement.addEventListener('click', e => {
+  renderer.domElement.addEventListener('mouseup', e => {
     const dx = e.clientX - mouseDownX, dy = e.clientY - mouseDownY;
     if (dx*dx + dy*dy > 25) return; // was a drag
 
