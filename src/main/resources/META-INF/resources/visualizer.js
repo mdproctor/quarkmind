@@ -51,7 +51,8 @@ function initMaterials() {
 
 let terrainLoaded = false;
 let hasRealTerrain = false;
-let cameraMode = localStorage.getItem('quarkmind.cameraMode') || 'sc2';
+let cameraMode   = localStorage.getItem('quarkmind.cameraMode') || 'sc2';
+let enemyVisible = true;
 
 window.__test = {
   threeReady:    () => !!renderer,
@@ -242,8 +243,9 @@ window.__test = {
     return ctx2d.getImageData(64, 64, 1, 1).data[3]; // alpha at centre
   },
 
-  panelVisible: () => document.getElementById('unit-panel')?.classList.contains('visible') ?? false,
-  cameraMode: () => cameraMode,
+  panelVisible:       () => document.getElementById('unit-panel')?.classList.contains('visible') ?? false,
+  cameraMode:         () => cameraMode,
+  enemyLayerVisible:  () => enemyVisible,
 };
 
 // ── Unit inspect panel ──────────────────────────────────────────────────────
@@ -404,6 +406,37 @@ function setupCameraToggle() {
   };
 }
 
+function toggleEnemyLayer() {
+  enemyVisible = !enemyVisible;
+  enemySprites.forEach(sp => { sp.visible = enemyVisible; });
+  enemy3dMeshes.forEach(m  => { m.visible  = enemyVisible; });
+  enemyBuildingMeshes.forEach(m => { m.visible = enemyVisible; });
+  stagingSprites.forEach(sp => { sp.visible = enemyVisible; });
+  stagingMeshes.forEach(m   => { m.visible  = enemyVisible; });
+  const btn = document.getElementById('btn-enemy-toggle');
+  if (btn) btn.style.opacity = enemyVisible ? '1' : '0.45';
+}
+
+function setupEnemyToggle() {
+  const btn = document.createElement('button');
+  btn.id = 'btn-enemy-toggle';
+  btn.textContent = '👁 Enemy';
+  btn.title = 'Show/hide enemy units and buildings';
+  const css = document.createElement('style');
+  css.textContent = `
+    #btn-enemy-toggle {
+      position:fixed; top:12px; left:210px; z-index:200;
+      background:rgba(0,0,0,0.65); color:#ccc;
+      border:1px solid #555; border-radius:4px;
+      padding:4px 9px; cursor:pointer; font-size:12px;
+    }
+    #btn-enemy-toggle:hover { background:rgba(60,60,60,0.9); }
+  `;
+  document.head.appendChild(css);
+  btn.onclick = toggleEnemyLayer;
+  document.body.appendChild(btn);
+}
+
 function setupKeyboardControls() {
   const keys = new Set();
   window.addEventListener('keydown', e => {
@@ -465,6 +498,7 @@ async function init() {
   initSpriteMaterials();  // ← directional canvas texture materials
   setupCamera();
   setupCameraToggle();
+  setupEnemyToggle();
   setupKeyboardControls();
   applyLayoutCss();
   setupLighting();
@@ -840,6 +874,7 @@ function syncEnemyBuildings(buildings) {
       // Tint enemy buildings red to distinguish from friendly
       sp.material = mat.clone();
       sp.material.color.setHex(0xff4422);
+      sp.visible = enemyVisible;
       scene.add(sp);
       enemyBuildingMeshes.set(b.tag, sp);
     }
@@ -881,12 +916,14 @@ function syncUnitLayer(spriteMap, meshMap, units, isEnemy) {
       const flyingY = TERRAIN_SURFACE_Y + TILE * 1.1;
       const unitY   = FLYING_UNITS.has(u.type) ? flyingY : groundY;
       sp.position.set(wp.x, unitY, wp.z);
+      if (isEnemy) sp.visible = enemyVisible;
       group2d.add(sp);
       spriteMap.set(u.tag, sp);
 
       // 3D sphere model — ground center one sphere-radius above terrain surface
       const g = make3dModel(isEnemy ? 0xcc3322 : 0x4488dd, isEnemy ? 0x330000 : 0x112244);
       g.position.set(wp.x, FLYING_UNITS.has(u.type) ? flyingY : TERRAIN_SURFACE_Y + TILE * 0.4, wp.z);
+      if (isEnemy) g.visible = enemyVisible;
       group3d.add(g);
       if (meshMap instanceof Map) meshMap.set(u.tag, g);
     } else {

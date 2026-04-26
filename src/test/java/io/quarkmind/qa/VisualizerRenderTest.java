@@ -4133,6 +4133,83 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Enemy visibility toggle (issue #110) ---
+
+    /**
+     * Enemy visibility toggle: initial state must be visible.
+     */
+    @Test
+    @Tag("browser")
+    void enemyLayerVisibleByDefault() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnEnemyUnit(UnitType.ZERGLING, new Point2d(20, 20));
+            engine.observe();
+            page.waitForFunction("() => window.__test.enemyCount() >= 1");
+            Object visible = page.evaluate("() => window.__test.enemyLayerVisible()");
+            assertThat(visible).as("enemy layer is visible by default").isEqualTo(true);
+        }
+    }
+
+    /**
+     * Enemy visibility toggle: clicking toggle button hides enemy sprites.
+     */
+    @Test
+    @Tag("browser")
+    void enemyLayerHiddenAfterToggle() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnEnemyUnit(UnitType.ZERGLING, new Point2d(20, 20));
+            engine.observe();
+            page.waitForFunction("() => window.__test.enemyCount() >= 1");
+            page.click("#btn-enemy-toggle");
+            Object visible = page.evaluate("() => window.__test.enemyLayerVisible()");
+            assertThat(visible).as("enemy layer hidden after one toggle").isEqualTo(false);
+        }
+    }
+
+    /**
+     * Enemy visibility toggle: second click restores enemy sprites.
+     */
+    @Test
+    @Tag("browser")
+    void enemyLayerRestoredAfterSecondToggle() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnEnemyUnit(UnitType.ZERGLING, new Point2d(20, 20));
+            engine.observe();
+            page.waitForFunction("() => window.__test.enemyCount() >= 1");
+            page.click("#btn-enemy-toggle");
+            page.click("#btn-enemy-toggle");
+            Object visible = page.evaluate("() => window.__test.enemyLayerVisible()");
+            assertThat(visible).as("enemy layer restored after two toggles").isEqualTo(true);
+        }
+    }
+
+    /**
+     * Enemy visibility toggle: friendly units are unaffected by the toggle.
+     */
+    @Test
+    @Tag("browser")
+    void friendlyUnitsUnaffectedByEnemyToggle() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            engine.observe();
+            page.waitForFunction("() => window.__test.unitCount() >= 12");
+            page.click("#btn-enemy-toggle");
+            int units = ((Number) page.evaluate("() => window.__test.unitCount()")).intValue();
+            assertThat(units).as("friendly unit count unchanged after enemy toggle").isEqualTo(12);
+        }
+    }
+
     // --- Mineral patches and enemy buildings (issue #109) ---
 
     /**
