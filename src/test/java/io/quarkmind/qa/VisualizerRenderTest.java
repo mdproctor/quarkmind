@@ -1894,6 +1894,18 @@ class VisualizerRenderTest {
         int buildings = ((Number) page.evaluate("() => window.__test.buildingCount()")).intValue();
         assertThat(buildings).as("49 showcase buildings must render").isEqualTo(49);
 
+        // 2b. 8 mineral patches rendered
+        page.waitForFunction("() => window.__test.mineralCount() >= 8",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        int minerals = ((Number) page.evaluate("() => window.__test.mineralCount()")).intValue();
+        assertThat(minerals).as("8 showcase mineral patches must render").isEqualTo(8);
+
+        // 2c. 1 enemy building rendered
+        page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        int enemyBuildings = ((Number) page.evaluate("() => window.__test.enemyBuildingCount()")).intValue();
+        assertThat(enemyBuildings).as("1 showcase enemy building must render").isEqualTo(1);
+
         // 3. No unit sunk at or below terrain surface
         double terrainSurfaceY = ((Number) page.evaluate("() => TERRAIN_SURFACE_Y")).doubleValue();
         @SuppressWarnings("unchecked")
@@ -4119,5 +4131,107 @@ class VisualizerRenderTest {
             Object mode = page.evaluate("() => window.__test.cameraMode()");
             assertThat(mode).isEqualTo("sc2");
         }
+    }
+
+    // --- Mineral patches and enemy buildings (issue #109) ---
+
+    /**
+     * Mineral patch render test: a mineral patch injected into game state must appear
+     * as a mesh in the visualizer. Validates mineralMeshes Map and syncMineralPatches().
+     */
+    @Test
+    @Tag("browser")
+    void mineralPatchRendersWhenPresent() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnMineralPatchForTesting(new Point2d(15, 15), 1500);
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.mineralCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.mineralCount()")).intValue();
+        assertThat(count).as("one mineral patch must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
+     * Mineral disappear test: a mineral patch removed from game state must vanish.
+     */
+    @Test
+    @Tag("browser")
+    void mineralPatchDisappearsWhenRemoved() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnMineralPatchForTesting(new Point2d(15, 15), 1500);
+        engine.observe();
+        page.waitForFunction("() => window.__test.mineralCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        String mineralTag = simulatedGame.snapshot().mineralPatches().get(0).tag();
+        simulatedGame.removeMineralPatchForTesting(mineralTag);
+        engine.observe();
+        page.waitForFunction("() => window.__test.mineralCount() === 0",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.mineralCount()")).intValue();
+        assertThat(count).as("mineral patch removed from game state must vanish").isEqualTo(0);
+        page.close();
+    }
+
+    /**
+     * Enemy building render test: an enemy building injected into game state must render.
+     * Validates enemyBuildingMeshes Map and syncEnemyBuildings().
+     */
+    @Test
+    @Tag("browser")
+    void enemyBuildingRendersWhenPresent() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(20, 20));
+        engine.observe();
+
+        page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyBuildingCount()")).intValue();
+        assertThat(count).as("one enemy building must render").isEqualTo(1);
+        page.close();
+    }
+
+    /**
+     * Enemy building disappear test: removed from game state must vanish from the scene.
+     */
+    @Test
+    @Tag("browser")
+    void enemyBuildingDisappearsWhenRemoved() throws Exception {
+        Page page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(20, 20));
+        engine.observe();
+        page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        String enemyBldgTag = simulatedGame.snapshot().enemyBuildings().get(0).tag();
+        simulatedGame.removeEnemyBuildingForTesting(enemyBldgTag);
+        engine.observe();
+        page.waitForFunction("() => window.__test.enemyBuildingCount() === 0",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+        int count = ((Number) page.evaluate("() => window.__test.enemyBuildingCount()")).intValue();
+        assertThat(count).as("enemy building removed from game state must vanish").isEqualTo(0);
+        page.close();
     }
 }

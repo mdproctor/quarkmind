@@ -7,7 +7,7 @@ QuarkMind (formerly "starcraft", package root `io.quarkmind`) is a Quarkus appli
 All four plugin seams (Strategy, Economics, Tactics, Scouting) are implemented using different R&D frameworks. The bot can connect to a live SC2 process and issue real game commands. An emulation engine (`EmulatedGame`) provides physics-based game simulation without requiring a live SC2 binary, served with a PixiJS 8 live visualizer in an Electron window.
 
 **GitHub:** `mdproctor/quarkmind`
-**Test count:** 244 (unit + integration + Playwright E2E)
+**Test count:** 248 (unit + integration + Playwright E2E)
 
 ---
 
@@ -170,7 +170,7 @@ A PixiJS 8 live visualizer renders game state each tick, served by Quarkus over 
 
 | Component | Role |
 |---|---|
-| `GameStateBroadcaster` | `SC2Engine` frame listener; pushes JSON game state to all WebSocket clients on each tick |
+| `GameStateBroadcaster` | `SC2Engine` frame listener; pushes JSON game state to all WebSocket clients on each tick; `GameState` now includes `mineralPatches` and `enemyBuildings` |
 | `SpriteProxyResource` | Server-side Liquipedia sprite fetch, re-served to browser (CORS bypass for WebGL texture loading) |
 | `visualizer.js` | PixiJS 8 application: unit sprites, health tinting (yellow→red), death removal |
 | `pixi.min.js` | Bundled locally in `META-INF/resources/` — no CDN dependency, works offline |

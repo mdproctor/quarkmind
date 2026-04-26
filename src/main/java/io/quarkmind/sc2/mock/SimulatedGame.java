@@ -131,6 +131,27 @@ public class SimulatedGame {
             SC2Data.maxBuildingHealth(type), SC2Data.maxBuildingHealth(type), true));
     }
 
+    /** Adds a mineral patch at a specific position — used by ShowcaseResource and VisualizerRenderTest. */
+    public synchronized void spawnMineralPatchForTesting(Point2d position, int remaining) {
+        mineralPatches.add(new Resource("mineral-test-" + nextTag++, position, remaining));
+    }
+
+    /** Removes a mineral patch by tag — used by VisualizerRenderTest to test disappearance. */
+    public synchronized void removeMineralPatchForTesting(String tag) {
+        mineralPatches.removeIf(r -> r.tag().equals(tag));
+    }
+
+    /** Adds a complete enemy building — used by ShowcaseResource and VisualizerRenderTest. */
+    public synchronized void spawnEnemyBuildingForTesting(BuildingType type, Point2d position) {
+        enemyBuildings.add(new Building("enemy-bldg-test-" + nextTag++, type, position,
+            SC2Data.maxBuildingHealth(type), SC2Data.maxBuildingHealth(type), true));
+    }
+
+    /** Removes an enemy building by tag — used by VisualizerRenderTest to test disappearance. */
+    public synchronized void removeEnemyBuildingForTesting(String tag) {
+        enemyBuildings.removeIf(b -> b.tag().equals(tag));
+    }
+
     public void setMinerals(int amount) { this.minerals = amount; }
     public void setVespene(int amount) { this.vespene = amount; }
     public void setSupply(int cap) { this.supply = cap; }

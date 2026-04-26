@@ -9,6 +9,7 @@ import io.quarkmind.agent.AgentOrchestrator;
 import io.quarkmind.domain.BuildingType;
 import io.quarkmind.domain.Point2d;
 import io.quarkmind.domain.UnitType;
+import io.quarkmind.domain.Resource;
 import io.quarkmind.sc2.SC2Engine;
 import io.quarkmind.sc2.mock.SimulatedGame;
 
@@ -197,12 +198,22 @@ public class ShowcaseResource {
         simulatedGame.spawnBuildingForTesting(BuildingType.ULTRALISK_CAVERN,  new Point2d(16, 34));
         simulatedGame.spawnBuildingForTesting(BuildingType.EXTRACTOR,         new Point2d(18, 34));
 
+        // z=36: 8 mineral patches in a row (within map bounds: worldZ=36*0.7-22.4=2.8)
+        for (int i = 0; i < 8; i++) {
+            simulatedGame.spawnMineralPatchForTesting(new Point2d(2 + i * 2, 36), 1500);
+        }
+
+        // z=38: 1 enemy Hatchery (demonstrates enemy building rendering)
+        simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(8, 38));
+
         engine.observe();
 
         return Response.ok(Map.of(
-            "status",    "showcase seeded",
-            "enemies",   "65 units: Terran(22) + Protoss(22) + Zerg(21)",
-            "buildings", "49 buildings: 1 Nexus (reset) + 9 Protoss + 6 new Protoss + 15 Terran + 18 Zerg"
+            "status",         "showcase seeded",
+            "enemies",        "65 units: Terran(22) + Protoss(22) + Zerg(21)",
+            "buildings",      "49 buildings: 1 Nexus (reset) + 9 Protoss + 6 new Protoss + 15 Terran + 18 Zerg",
+            "minerals",       "8 mineral patches at z=36",
+            "enemyBuildings", "1 Hatchery at z=38"
         )).build();
     }
 }

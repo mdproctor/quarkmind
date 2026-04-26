@@ -30,8 +30,10 @@ const unitSprites    = new Map();
 const unit3dMeshes   = new Map();
 const enemySprites   = new Map();
 const enemy3dMeshes  = new Map();
-const buildingMeshes = new Map();
-const geyserMeshes   = new Map();
+const buildingMeshes      = new Map();
+const enemyBuildingMeshes = new Map();
+const geyserMeshes        = new Map();
+const mineralMeshes       = new Map();
 const stagingSprites = new Map();
 const stagingMeshes  = new Map();
 const fogPlanes      = new Map();
@@ -58,9 +60,11 @@ window.__test = {
   hudText:       () => document.getElementById('hud')?.textContent ?? '',
   unitCount:     () => unitSprites.size,
   enemyCount:    () => enemySprites.size,
-  buildingCount: () => buildingMeshes.size,
-  stagingCount:  () => stagingSprites.size,
-  geyserCount:   () => geyserMeshes.size,
+  buildingCount:      () => buildingMeshes.size,
+  enemyBuildingCount: () => enemyBuildingMeshes.size,
+  stagingCount:       () => stagingSprites.size,
+  geyserCount:        () => geyserMeshes.size,
+  mineralCount:       () => mineralMeshes.size,
   hasRealTerrain: () => terrainLoaded && hasRealTerrain,
   fogOpacity:    (x, z) => {
     const p = fogPlanes.get(`${x},${z}`);
@@ -68,11 +72,13 @@ window.__test = {
   },
   fogVisible:    (x, z) => fogPlanes.get(`${x},${z}`)?.visible ?? false,
   spriteCount: prefix => {
-    if (prefix === 'unit')     return unitSprites.size;
-    if (prefix === 'enemy')    return enemySprites.size;
-    if (prefix === 'building') return buildingMeshes.size;
-    if (prefix === 'geyser')   return geyserMeshes.size;
-    if (prefix === 'staging')  return stagingSprites.size;
+    if (prefix === 'unit')          return unitSprites.size;
+    if (prefix === 'enemy')         return enemySprites.size;
+    if (prefix === 'building')      return buildingMeshes.size;
+    if (prefix === 'enemyBuilding') return enemyBuildingMeshes.size;
+    if (prefix === 'geyser')        return geyserMeshes.size;
+    if (prefix === 'mineral')       return mineralMeshes.size;
+    if (prefix === 'staging')       return stagingSprites.size;
     return 0;
   },
   sprite: key => {
@@ -81,8 +87,10 @@ window.__test = {
     let obj = null;
     if (prefix === 'unit')     obj = unitSprites.get(tag);
     if (prefix === 'enemy')    obj = enemySprites.get(tag);
-    if (prefix === 'building') obj = buildingMeshes.get(tag);
-    if (prefix === 'geyser')   obj = geyserMeshes.get(tag);
+    if (prefix === 'building')      obj = buildingMeshes.get(tag);
+    if (prefix === 'enemyBuilding') obj = enemyBuildingMeshes.get(tag);
+    if (prefix === 'geyser')        obj = geyserMeshes.get(tag);
+    if (prefix === 'mineral')       obj = mineralMeshes.get(tag);
     if (prefix === 'staging')  obj = stagingSprites.get(tag);
     if (!obj) return null;
     // Return a plain serialisable object for Playwright to receive
@@ -748,8 +756,10 @@ const BUILDING_SCALE = {
 };
 
 function syncUnits(state) {
-  syncBuildings(state.myBuildings   || []);
-  syncGeysers(state.geysers         || []);
+  syncBuildings(state.myBuildings       || []);
+  syncEnemyBuildings(state.enemyBuildings || []);
+  syncGeysers(state.geysers             || []);
+  syncMineralPatches(state.mineralPatches || []);
   syncUnitLayer(unitSprites,   unit3dMeshes,  state.myUnits          || [], false);
   syncUnitLayer(enemySprites,  enemy3dMeshes, state.enemyUnits        || [], true);
   syncUnitLayer(stagingSprites, stagingMeshes, state.enemyStagingArea  || [], true);
@@ -793,6 +803,49 @@ function syncGeysers(geysers) {
   });
   geyserMeshes.forEach((m, tag) => {
     if (!seen.has(tag)) { scene.remove(m); geyserMeshes.delete(tag); }
+  });
+}
+
+function syncMineralPatches(patches) {
+  const seen = new Set();
+  patches.forEach(p => {
+    seen.add(p.tag);
+    if (!mineralMeshes.has(p.tag)) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(TILE * 0.5, TILE * 0.15, TILE * 0.3),
+        new THREE.MeshLambertMaterial({ color: 0x44aacc, emissive: 0x001133 })
+      );
+      const wp = gw(p.position.x, p.position.y);
+      mesh.position.set(wp.x, TILE * 0.075, wp.z);
+      scene.add(mesh);
+      mineralMeshes.set(p.tag, mesh);
+    }
+  });
+  mineralMeshes.forEach((m, tag) => {
+    if (!seen.has(tag)) { scene.remove(m); mineralMeshes.delete(tag); }
+  });
+}
+
+function syncEnemyBuildings(buildings) {
+  const seen = new Set();
+  buildings.forEach(b => {
+    seen.add(b.tag);
+    if (!enemyBuildingMeshes.has(b.tag)) {
+      const mat = BUILDING_MATS[b.type] ?? BUILDING_MATS['UNKNOWN'];
+      const { w, h } = BUILDING_SCALE[b.type] ?? { w: 1.8, h: 1.8 };
+      const sp = new THREE.Sprite(mat);
+      sp.scale.set(TILE * w, TILE * h, 1);
+      const wp = gw(b.position.x, b.position.y);
+      sp.position.set(wp.x, TERRAIN_SURFACE_Y + TILE * h * 0.5, wp.z);
+      // Tint enemy buildings red to distinguish from friendly
+      sp.material = mat.clone();
+      sp.material.color.setHex(0xff4422);
+      scene.add(sp);
+      enemyBuildingMeshes.set(b.tag, sp);
+    }
+  });
+  enemyBuildingMeshes.forEach((m, tag) => {
+    if (!seen.has(tag)) { scene.remove(m); enemyBuildingMeshes.delete(tag); }
   });
 }
 
