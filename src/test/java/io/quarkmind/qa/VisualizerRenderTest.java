@@ -4133,6 +4133,135 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Unit inspect panel click-through E2E ---
+
+    /**
+     * Click-to-inspect: clicking a unit sprite must slide in the panel and show
+     * the unit's type name and HP. Exercises the full path:
+     *   mouseup → raycaster → /qa/unit/{tag} fetch → DOM update → panel visible.
+     *
+     * Uses a Marine (Terran, no shields) at an isolated tile so the raycaster
+     * hits unambiguously. worldToScreen() gives the exact canvas pixel to click.
+     */
+    @Test
+    @Tag("browser")
+    void unitInspectPanelShowsNameAndHpOnClick() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+
+            // Tile (14,14) → world (-12.6,-12.6) — close to camTarget(-16,-16) so on-screen,
+            // and clear of the probe cluster which sits at z=9.
+            simulatedGame.spawnFriendlyUnitForTesting(UnitType.MARINE, new Point2d(14, 14));
+            engine.observe();
+            page.waitForFunction("() => window.__test.unitCount() >= 13");
+
+            // Get the Marine's tag from the game state snapshot.
+            String marineTag = simulatedGame.snapshot().myUnits().stream()
+                .filter(u -> u.type() == UnitType.MARINE).findFirst()
+                .orElseThrow(() -> new AssertionError("Marine not in game state")).tag();
+
+            // clickUnit is async — it fires the raycaster, awaits the fetch+DOM pipeline,
+            // and resolves true when the panel is visible. page.evaluate(async ...) awaits it.
+            boolean hit = (boolean) page.evaluate(
+                "async () => window.__test.clickUnit('" + marineTag + "', false)");
+            assertTrue(hit, "Raycaster must hit the Marine sprite and panel must open");
+            assertTrue((Boolean) page.evaluate("() => window.__test.panelVisible()"),
+                "Panel must be visible after clickUnit resolves");
+
+            String name = (String) page.evaluate(
+                "() => document.getElementById('up-name').textContent");
+            String hp = (String) page.evaluate(
+                "() => document.getElementById('up-hp-txt').textContent");
+
+            assertThat(name).as("panel unit name").containsIgnoringCase("MARINE");
+            assertThat(hp).as("panel HP text").contains("45");
+        }
+    }
+
+    /**
+     * Click-to-inspect: Protoss unit must show the shield row with non-zero values.
+     * Probe has maxShields=20 in mock mode. The .sh-row must be visible and
+     * up-sh-txt must contain the shield values.
+     */
+    @Test
+    @Tag("browser")
+    void unitInspectPanelShowsShieldsForProtossUnit() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+
+            simulatedGame.spawnFriendlyUnitForTesting(UnitType.PROBE, new Point2d(14, 14));
+            engine.observe();
+            page.waitForFunction("() => window.__test.unitCount() >= 13");
+
+            String probeTag = simulatedGame.snapshot().myUnits().stream()
+                .filter(u -> u.type() == UnitType.PROBE && u.tag().startsWith("friendly-"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Spawned Probe not in game state")).tag();
+
+            boolean hit = (boolean) page.evaluate(
+                "async () => window.__test.clickUnit('" + probeTag + "', false)");
+            assertTrue(hit, "Raycaster must hit the Probe sprite and panel must open");
+            assertTrue((Boolean) page.evaluate("() => window.__test.panelVisible()"),
+                "Panel must be visible after clickUnit resolves");
+
+            // Shield row must be visible (not display:none) for Protoss units
+            String shDisplay = (String) page.evaluate(
+                "() => document.querySelector('.sh-row').style.display");
+            String shText = (String) page.evaluate(
+                "() => document.getElementById('up-sh-txt').textContent");
+
+            assertThat(shDisplay).as("shield row must be visible for Protoss").isEqualTo("flex");
+            assertThat(shText).as("shield text must show non-zero values").isNotEmpty();
+            assertThat(shText).as("shield text must contain a slash").contains("/");
+        }
+    }
+
+    /**
+     * Click-to-inspect: clicking empty space after a unit is selected must hide the panel.
+     */
+    @Test
+    @Tag("browser")
+    void unitInspectPanelHidesOnClickingEmptySpace() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+
+            simulatedGame.spawnFriendlyUnitForTesting(UnitType.MARINE, new Point2d(14, 14));
+            engine.observe();
+            page.waitForFunction("() => window.__test.unitCount() >= 13");
+
+            String mTag = simulatedGame.snapshot().myUnits().stream()
+                .filter(u -> u.type() == UnitType.MARINE).findFirst()
+                .orElseThrow().tag();
+
+            // Open the panel via clickUnit (async — awaits fetch+DOM), then hide via Escape
+            page.evaluate("async () => window.__test.clickUnit('" + mTag + "', false)");
+            page.waitForFunction("() => window.__test.panelVisible()",
+                null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+            page.keyboard().press("Escape");
+            page.waitForFunction("() => !window.__test.panelVisible()",
+                null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+
+            assertThat((Boolean) page.evaluate("() => window.__test.panelVisible()"))
+                .as("panel hidden after clicking empty space").isFalse();
+        }
+    }
+
     // --- Creep rendering (issue #111) ---
 
     /**

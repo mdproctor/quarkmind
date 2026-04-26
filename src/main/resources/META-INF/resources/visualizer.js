@@ -108,11 +108,38 @@ window.__test = {
       hasMask: obj.userData?.hasMask ?? false,
     };
   },
-  worldToScreen: (wx, wz) => {
+  worldToScreen: (wx, wz, wy = 0) => {
     if (!camera || !renderer) return { x: 0, y: 0 };
-    const v = new THREE.Vector3(wx, 0, wz).project(camera);
+    const v = new THREE.Vector3(wx, wy, wz).project(camera);
     const sz = renderer.getSize(new THREE.Vector2());
     return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+  },
+  // Projects a sprite's actual Three.js world position through the camera — more
+  // reliable than worldToScreen() because it uses the sprite's true rendered position.
+  unitScreenPos: tag => {
+    const sp = unitSprites.get(tag) ?? enemySprites.get(tag);
+    if (!sp || !camera || !renderer) return { x: -1, y: -1 };
+    const v = sp.position.clone().project(camera);
+    const sz = renderer.getSize(new THREE.Vector2());
+    return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+  },
+  // Fires the real Three.js raycaster at the sprite's NDC position, opens the
+  // inspect panel, and awaits the full fetch+DOM pipeline before resolving.
+  // page.evaluate("async () => window.__test.clickUnit(tag)") will await this,
+  // so the panel is guaranteed visible when page.evaluate() returns.
+  clickUnit: async (tag, isEnemy = false) => {
+    const sp = isEnemy ? enemySprites.get(tag) : unitSprites.get(tag);
+    if (!sp || !camera) return false;
+    const ndc = sp.position.clone().project(camera);
+    ndcMouse.x = ndc.x;
+    ndcMouse.y = ndc.y;
+    raycaster.setFromCamera(ndcMouse, camera);
+    const allSprites = [...unitSprites.values(), ...enemySprites.values()];
+    const hits = raycaster.intersectObjects(allSprites);
+    if (hits.length === 0) return false;
+    const obj = hits[0].object;
+    await showUnitPanelAsync(obj.userData.unitTag, obj.userData.isEnemy);
+    return true;
   },
 
   unitMatsKeys: () => Object.keys(UNIT_MATS),
@@ -330,37 +357,42 @@ function showUnitPanel(tag, isEnemy) {
     .then(r => r.ok ? r.json() : null)
     .then(data => {
       if (!data) return;
-      document.getElementById('up-name').textContent = data.type.replace(/_/g, ' ');
-      document.getElementById('up-team').textContent = isEnemy ? '⚔ Enemy' : '🛡 Friendly';
-
-      const hpPct = data.maxHealth > 0 ? (data.health / data.maxHealth * 100) : 0;
-      const hpEl  = document.getElementById('up-hp');
-      hpEl.style.width      = hpPct + '%';
-      hpEl.style.background = hpPct > 50 ? '#44cc44' : hpPct > 25 ? '#cccc44' : '#cc4444';
-      document.getElementById('up-hp-txt').textContent = `${data.health}/${data.maxHealth}`;
-
-      const shRow = document.querySelector('.sh-row');
-      if (data.maxShields > 0) {
-        shRow.style.display = 'flex';
-        const shPct = data.shields / data.maxShields * 100;
-        document.getElementById('up-sh').style.width = shPct + '%';
-        document.getElementById('up-sh-txt').textContent = `${data.shields}/${data.maxShields}`;
-      } else {
-        shRow.style.display = 'none';
-      }
-
-      // Portrait
-      const pCanvas = document.getElementById('up-portrait');
-      const pCtx    = pCanvas.getContext('2d');
-      pCtx.clearRect(0, 0, 64, 64);
-      const tColor = isEnemy ? '#ff4422' : '#4488ff';
-      const fnName = 'draw' + data.type.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join('');
-      if (typeof window[fnName] === 'function') {
-        window[fnName](pCtx, 32, 32, 0, tColor);
-      }
-
+      _populateUnitPanel(data, isEnemy);
       document.getElementById('unit-panel').classList.add('visible');
     });
+}
+
+async function showUnitPanelAsync(tag, isEnemy) {
+  const r    = await fetch(`/qa/unit/${encodeURIComponent(tag)}`);
+  const data = r.ok ? await r.json() : null;
+  if (!data) return;
+  _populateUnitPanel(data, isEnemy);
+  document.getElementById('unit-panel').classList.add('visible');
+}
+
+function _populateUnitPanel(data, isEnemy) {
+  document.getElementById('up-name').textContent = data.type.replace(/_/g, ' ');
+  document.getElementById('up-team').textContent = isEnemy ? '⚔ Enemy' : '🛡 Friendly';
+  const hpPct = data.maxHealth > 0 ? (data.health / data.maxHealth * 100) : 0;
+  const hpEl  = document.getElementById('up-hp');
+  hpEl.style.width      = hpPct + '%';
+  hpEl.style.background = hpPct > 50 ? '#44cc44' : hpPct > 25 ? '#cccc44' : '#cc4444';
+  document.getElementById('up-hp-txt').textContent = `${data.health}/${data.maxHealth}`;
+  const shRow = document.querySelector('.sh-row');
+  if (data.maxShields > 0) {
+    shRow.style.display = 'flex';
+    const shPct = data.shields / data.maxShields * 100;
+    document.getElementById('up-sh').style.width = shPct + '%';
+    document.getElementById('up-sh-txt').textContent = `${data.shields}/${data.maxShields}`;
+  } else {
+    shRow.style.display = 'none';
+  }
+  const pCanvas = document.getElementById('up-portrait');
+  const pCtx    = pCanvas.getContext('2d');
+  pCtx.clearRect(0, 0, 64, 64);
+  const tColor = isEnemy ? '#ff4422' : '#4488ff';
+  const fnName = 'draw' + data.type.split('_').map(w => w[0] + w.slice(1).toLowerCase()).join('');
+  if (typeof window[fnName] === 'function') window[fnName](pCtx, 32, 0, tColor);
 }
 
 function hideUnitPanel() {
