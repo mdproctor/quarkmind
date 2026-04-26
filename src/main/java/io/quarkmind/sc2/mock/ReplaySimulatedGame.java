@@ -158,9 +158,9 @@ public class ReplaySimulatedGame extends SimulatedGame {
                 // Shields are set to 0 for now — acceptable since ReplaySimulatedGame is observe-only.
                 addUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut), 0, 0, 0, 0));
             } else if (ctrlId != null && ctrlId != 0) {
-                // Enemy unit — visible on map
+                // Enemy unit — use tracker-event tag so GAME_EVENTS movement orders can be matched
                 Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
-                spawnEnemyUnit(ut, pos);
+                addEnemyUnit(new Unit(tag, ut, pos, defaultUnitHealth(ut), defaultUnitHealth(ut), 0, 0, 0, 0));
             }
         }
     }

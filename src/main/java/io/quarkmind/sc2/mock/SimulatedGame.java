@@ -157,6 +157,7 @@ public class SimulatedGame {
             ? new Building(b.tag(), b.type(), b.position(), b.health(), b.maxHealth(), true)
             : b);
     }
+    protected void addEnemyUnit(Unit u)          { enemyUnits.add(u); }
     protected void removeEnemyByTag(String tag) { enemyUnits.removeIf(u -> u.tag().equals(tag)); }
 
     protected void replaceUnitPosition(String tag, Point2d newPos) {
