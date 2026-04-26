@@ -29,8 +29,8 @@ function createWindow() {
 
 function startServer() {
   javaProc = spawn('java', [
-    '-jar', JAR,
     '-Dquarkus.profile=replay',
+    '-jar', JAR,
   ], {
     cwd:      PROJECT_DIR,
     stdio:    'ignore',   // never write to any file

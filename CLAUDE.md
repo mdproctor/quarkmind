@@ -41,6 +41,16 @@ mvn quarkus:dev -Dquarkus.profile=replay
 # Default replay: Nothing_4720936.SC2Replay — override with -Dstarcraft.replay.file=...
 ```
 
+**Build jar for Electron viewer (must use replay profile — @IfBuildProfile("replay") is build-time):**
+```bash
+mvn package -DskipTests -Dquarkus.profile=replay -q
+```
+
+**Launch Electron viewer:**
+```bash
+cd electron-app && npm start
+```
+
 **NEVER redirect Quarkus server stdout to a file without size limits.**
 The game loop logs every tick; an overnight run fills the disk.
 - Wrong: `mvn quarkus:dev ... > /tmp/server.log 2>&1 &`
