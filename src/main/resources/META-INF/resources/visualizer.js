@@ -1,6 +1,8 @@
 // visualizer.js — QuarkMind 3D visualizer (Three.js r128)
 
 const TILE = 0.7;
+const CREEP_RADIUS = 10; // approximation: tiles within this radius of a creep-producing building
+const CREEP_BUILDINGS = new Set(['HATCHERY', 'LAIR', 'HIVE']);
 const TEAM_COLOR_FRIENDLY = '#4488ff';
 const TEAM_COLOR_ENEMY    = '#ff4422';
 const FLYING_UNITS = new Set([
@@ -34,6 +36,7 @@ const buildingMeshes      = new Map();
 const enemyBuildingMeshes = new Map();
 const geyserMeshes        = new Map();
 const mineralMeshes       = new Map();
+const creepMeshes         = new Map(); // key: "x:z", value: THREE.Mesh
 const stagingSprites = new Map();
 const stagingMeshes  = new Map();
 const fogPlanes      = new Map();
@@ -66,6 +69,7 @@ window.__test = {
   stagingCount:       () => stagingSprites.size,
   geyserCount:        () => geyserMeshes.size,
   mineralCount:       () => mineralMeshes.size,
+  creepTileCount:     () => creepMeshes.size,
   hasRealTerrain: () => terrainLoaded && hasRealTerrain,
   fogOpacity:    (x, z) => {
     const p = fogPlanes.get(`${x},${z}`);
@@ -792,7 +796,8 @@ const BUILDING_SCALE = {
 function syncUnits(state) {
   syncBuildings(state.myBuildings       || []);
   syncEnemyBuildings(state.enemyBuildings || []);
-  syncGeysers(state.geysers             || []);
+  syncCreep(state.enemyBuildings          || []);
+  syncGeysers(state.geysers               || []);
   syncMineralPatches(state.mineralPatches || []);
   syncUnitLayer(unitSprites,   unit3dMeshes,  state.myUnits          || [], false);
   syncUnitLayer(enemySprites,  enemy3dMeshes, state.enemyUnits        || [], true);
@@ -881,6 +886,50 @@ function syncEnemyBuildings(buildings) {
   });
   enemyBuildingMeshes.forEach((m, tag) => {
     if (!seen.has(tag)) { scene.remove(m); enemyBuildingMeshes.delete(tag); }
+  });
+}
+
+function syncCreep(enemyBuildings) {
+  const wantedTiles = new Set();
+  enemyBuildings.forEach(b => {
+    if (!CREEP_BUILDINGS.has(b.type)) return;
+    const cx = Math.round(b.position.x), cz = Math.round(b.position.y);
+    for (let dx = -CREEP_RADIUS; dx <= CREEP_RADIUS; dx++) {
+      for (let dz = -CREEP_RADIUS; dz <= CREEP_RADIUS; dz++) {
+        if (dx * dx + dz * dz <= CREEP_RADIUS * CREEP_RADIUS) {
+          wantedTiles.add(`${cx + dx}:${cz + dz}`);
+        }
+      }
+    }
+  });
+
+  // Add new tiles
+  wantedTiles.forEach(key => {
+    if (!creepMeshes.has(key)) {
+      const [tx, tz] = key.split(':').map(Number);
+      const mesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(TILE, TILE),
+        new THREE.MeshBasicMaterial({
+          color: 0x4a1a6e, transparent: true, opacity: 0.45,
+          depthWrite: false, side: THREE.DoubleSide
+        })
+      );
+      const wp = gw(tx, tz);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(wp.x, 0.02, wp.z); // just above ground, below geysers/minerals
+      scene.add(mesh);
+      creepMeshes.set(key, mesh);
+    }
+  });
+
+  // Remove stale tiles
+  creepMeshes.forEach((mesh, key) => {
+    if (!wantedTiles.has(key)) {
+      scene.remove(mesh);
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+      creepMeshes.delete(key);
+    }
   });
 }
 

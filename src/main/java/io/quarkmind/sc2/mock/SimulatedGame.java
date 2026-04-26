@@ -40,7 +40,9 @@ public class SimulatedGame {
         myUnits.clear();
         myBuildings.clear();
         enemyUnits.clear();
+        enemyBuildings.clear();
         geysers.clear();
+        mineralPatches.clear();
         pendingCompletions.clear();
         testStagingArea.clear();
         nextTag = 200;

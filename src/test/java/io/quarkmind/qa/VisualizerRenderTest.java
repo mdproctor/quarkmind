@@ -4133,6 +4133,68 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Creep rendering (issue #111) ---
+
+    /**
+     * Creep render test: a Hatchery enemy building must produce creep tiles around it.
+     */
+    @Test
+    @Tag("browser")
+    void creepRendersAroundHatchery() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(32, 32));
+            engine.observe();
+            page.waitForFunction("() => window.__test.creepTileCount() > 0",
+                null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+            int count = ((Number) page.evaluate("() => window.__test.creepTileCount()")).intValue();
+            assertThat(count).as("Hatchery must produce creep tiles").isGreaterThan(0);
+        }
+    }
+
+    /**
+     * Creep disappear test: creep tiles removed when the source Hatchery dies.
+     */
+    @Test
+    @Tag("browser")
+    void creepDisappearsWhenHatcheryRemoved() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(32, 32));
+            engine.observe();
+            page.waitForFunction("() => window.__test.creepTileCount() > 0");
+            String tag = simulatedGame.snapshot().enemyBuildings().get(0).tag();
+            simulatedGame.removeEnemyBuildingForTesting(tag);
+            engine.observe();
+            page.waitForFunction("() => window.__test.creepTileCount() === 0",
+                null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+            int count = ((Number) page.evaluate("() => window.__test.creepTileCount()")).intValue();
+            assertThat(count).as("creep must disappear when Hatchery is removed").isEqualTo(0);
+        }
+    }
+
+    /**
+     * Non-Zerg buildings must not produce creep.
+     */
+    @Test
+    @Tag("browser")
+    void noCreepForNonZergBuilding() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnEnemyBuildingForTesting(BuildingType.BARRACKS, new Point2d(20, 20));
+            engine.observe();
+            page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1");
+            int count = ((Number) page.evaluate("() => window.__test.creepTileCount()")).intValue();
+            assertThat(count).as("non-Zerg enemy building must not produce creep").isEqualTo(0);
+        }
+    }
+
     // --- Enemy visibility toggle (issue #110) ---
 
     /**
