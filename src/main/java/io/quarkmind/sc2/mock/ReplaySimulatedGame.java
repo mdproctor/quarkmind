@@ -149,12 +149,17 @@ public class ReplaySimulatedGame extends SimulatedGame {
             }
             // Other neutral types (rocks, debris) are ignored
         } else if (Sc2ReplayShared.BUILDING_NAMES.contains(unitName)) {
-            // Initial structures (Nexus at loop 0) arrive as UnitBorn, already complete
+            BuildingType bt = toBuildingType(unitName);
+            Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
             if (ctrlId != null && ctrlId == watchedPlayerId) {
-                BuildingType bt = toBuildingType(unitName);
+                // Initial friendly structures (Nexus at loop 0) arrive as UnitBorn, already complete
                 if (bt != BuildingType.UNKNOWN) {
-                    Point2d pos = new Point2d(event.getXCoord(), event.getYCoord());
                     addBuilding(new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), true));
+                }
+            } else if (ctrlId != null && ctrlId != 0) {
+                // Enemy building — track it
+                if (bt != BuildingType.UNKNOWN) {
+                    addEnemyBuilding(new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), true));
                 }
             }
         } else {
@@ -182,6 +187,7 @@ public class ReplaySimulatedGame extends SimulatedGame {
         removeUnitByTag(tag);
         removeEnemyByTag(tag);
         removeBuildingByTag(tag);
+        removeEnemyBuildingByTag(tag);
         removeGeyserByTag(tag);
         removeMineralPatchByTag(tag);
         pendingBuildings.remove(tag);
@@ -191,14 +197,21 @@ public class ReplaySimulatedGame extends SimulatedGame {
     private void applyUnitInit(Event rawEvent) {
         IBaseUnitEvent event = (IBaseUnitEvent) rawEvent;
         Integer ctrlId = event.getControlPlayerId();
-        if (ctrlId == null || ctrlId != watchedPlayerId) return;
+        if (ctrlId == null) return;
         String       unitName = event.getUnitTypeName().toString();
         String       tag      = makeTag(event.getUnitTagIndex(), event.getUnitTagRecycle());
         BuildingType bt       = toBuildingType(unitName);
         Point2d      pos      = new Point2d(event.getXCoord(), event.getYCoord());
-        Building b = new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), false);
-        pendingBuildings.put(tag, b);
-        addBuilding(b);
+        if (ctrlId == watchedPlayerId) {
+            Building b = new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), false);
+            pendingBuildings.put(tag, b);
+            addBuilding(b);
+        } else if (ctrlId != 0 && bt != BuildingType.UNKNOWN) {
+            // Enemy building under construction — add immediately as incomplete
+            Building b = new Building(tag, bt, pos, defaultBuildingHealth(bt), defaultBuildingHealth(bt), false);
+            pendingBuildings.put(tag, b);
+            addEnemyBuilding(b);
+        }
     }
 
     private void applyUnitDone(Event event) {
@@ -207,8 +220,10 @@ public class ReplaySimulatedGame extends SimulatedGame {
         Integer tagRecycle = event.get("unitTagRecycle");
         if (tagIndex == null || tagRecycle == null) return;
         String tag = makeTag(tagIndex, tagRecycle);
-        if (pendingBuildings.remove(tag) != null) {
+        Building pending = pendingBuildings.remove(tag);
+        if (pending != null) {
             markBuildingComplete(tag);
+            markEnemyBuildingComplete(tag);
         }
     }
 

@@ -10,6 +10,7 @@ public record GameState(
     List<Unit> myUnits,
     List<Building> myBuildings,
     List<Unit> enemyUnits,
+    List<Building> enemyBuildings,
     List<Unit> enemyStagingArea,
     List<Resource> geysers,
     List<Resource> mineralPatches,
@@ -19,6 +20,7 @@ public record GameState(
         myUnits          = List.copyOf(myUnits);
         myBuildings      = List.copyOf(myBuildings);
         enemyUnits       = List.copyOf(enemyUnits);
+        enemyBuildings   = List.copyOf(enemyBuildings);
         enemyStagingArea = List.copyOf(enemyStagingArea);
         geysers          = List.copyOf(geysers);
         mineralPatches   = List.copyOf(mineralPatches);

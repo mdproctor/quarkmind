@@ -21,6 +21,7 @@ public class SimulatedGame {
     private final List<Unit> myUnits = new CopyOnWriteArrayList<>();
     private final List<Building> myBuildings = new CopyOnWriteArrayList<>();
     private final List<Unit> enemyUnits = new CopyOnWriteArrayList<>();
+    private final List<Building> enemyBuildings = new CopyOnWriteArrayList<>();
     private final List<Resource> geysers = new CopyOnWriteArrayList<>();
     private final List<Resource> mineralPatches = new CopyOnWriteArrayList<>();
     private final List<PendingCompletion> pendingCompletions = new CopyOnWriteArrayList<>();
@@ -94,6 +95,7 @@ public class SimulatedGame {
     public synchronized GameState snapshot() {
         return new GameState(minerals, vespene, supply, supplyUsed,
             List.copyOf(myUnits), List.copyOf(myBuildings), List.copyOf(enemyUnits),
+            List.copyOf(enemyBuildings),
             List.copyOf(testStagingArea),   // enemyStagingArea — populated by test helpers
             List.copyOf(geysers), List.copyOf(mineralPatches), gameFrame.get());
     }
@@ -158,8 +160,15 @@ public class SimulatedGame {
             ? new Building(b.tag(), b.type(), b.position(), b.health(), b.maxHealth(), true)
             : b);
     }
-    protected void addEnemyUnit(Unit u)          { enemyUnits.add(u); }
-    protected void removeEnemyByTag(String tag) { enemyUnits.removeIf(u -> u.tag().equals(tag)); }
+    protected void addEnemyUnit(Unit u)              { enemyUnits.add(u); }
+    protected void removeEnemyByTag(String tag)      { enemyUnits.removeIf(u -> u.tag().equals(tag)); }
+    protected void addEnemyBuilding(Building b)         { enemyBuildings.add(b); }
+    protected void removeEnemyBuildingByTag(String tag) { enemyBuildings.removeIf(b -> b.tag().equals(tag)); }
+    protected void markEnemyBuildingComplete(String tag) {
+        enemyBuildings.replaceAll(b -> b.tag().equals(tag)
+            ? new Building(b.tag(), b.type(), b.position(), b.health(), b.maxHealth(), true)
+            : b);
+    }
 
     protected void replaceUnitPosition(String tag, Point2d newPos) {
         myUnits.replaceAll(u -> u.tag().equals(tag)
@@ -181,6 +190,7 @@ public class SimulatedGame {
         myUnits.clear();
         myBuildings.clear();
         enemyUnits.clear();
+        enemyBuildings.clear();
         geysers.clear();
         mineralPatches.clear();
         pendingCompletions.clear();

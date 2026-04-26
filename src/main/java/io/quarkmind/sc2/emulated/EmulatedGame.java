@@ -557,6 +557,7 @@ public class EmulatedGame {
                 vespene, supply, supplyUsed,
                 friendlyWithCooldown, List.copyOf(myBuildings),
                 visibleEnemies,
+                List.of(),   // enemyBuildings: not modelled in emulated physics
                 visibleStaging,
                 List.copyOf(geysers),
                 List.of(),   // mineralPatches: not modelled in emulated physics
@@ -567,6 +568,7 @@ public class EmulatedGame {
             vespene, supply, supplyUsed,
             friendlyWithCooldown, List.copyOf(myBuildings),
             List.copyOf(enemyUnits),
+            List.of(),   // enemyBuildings: not modelled in emulated physics
             List.copyOf(enemyStagingArea),
             List.copyOf(geysers),
             List.of(),   // mineralPatches: not modelled in emulated physics

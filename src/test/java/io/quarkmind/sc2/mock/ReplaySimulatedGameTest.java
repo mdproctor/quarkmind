@@ -100,6 +100,62 @@ class ReplaySimulatedGameTest {
         assertThat(state.myUnits().stream().filter(u -> u.type() == UnitType.PROBE).count()).isEqualTo(12);
     }
 
+    // --- Enemy buildings (issue #108) ---
+
+    @Test
+    void enemyBuildingsPresentAfterAdvancing() {
+        // Zerg opponent (player 2) starts with a Hatchery — it should appear in enemyBuildings
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        // Advance a few ticks to ensure initial UnitBorn events at loop 0 are processed
+        // (loop 0 events are applied during reset(), so this may already be satisfied)
+        GameState state = game.snapshot();
+        assertThat(state.enemyBuildings())
+            .as("Enemy Hatchery present from replay at loop 0")
+            .isNotEmpty();
+    }
+
+    @Test
+    void enemyBuildingTagsNotInFriendlyOrUnitCollections() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        GameState state = game.snapshot();
+
+        Set<String> enemyBuildingTags = state.enemyBuildings().stream()
+            .map(Building::tag).collect(Collectors.toSet());
+
+        Set<String> otherTags = Stream.of(
+            state.myUnits().stream().map(Unit::tag),
+            state.myBuildings().stream().map(Building::tag),
+            state.enemyUnits().stream().map(Unit::tag)
+        ).flatMap(s -> s).collect(Collectors.toSet());
+
+        assertThat(enemyBuildingTags).as("Enemy building tags must be non-empty").isNotEmpty();
+        assertThat(enemyBuildingTags)
+            .as("Enemy buildings must not overlap with friendly or unit collections")
+            .doesNotContainAnyElementsOf(otherTags);
+    }
+
+    @Test
+    void enemyBuildingsGrowOverTime() {
+        // After 4 minutes Zerg should have built beyond the initial Hatchery
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        int initialEnemyBuildings = game.snapshot().enemyBuildings().size();
+        for (int i = 0; i < 240; i++) game.tick();
+        assertThat(game.snapshot().enemyBuildings().size())
+            .as("Enemy has more buildings after 4 minutes")
+            .isGreaterThan(initialEnemyBuildings);
+    }
+
+    @Test
+    void enemyBuildingsRestoredAfterReset() {
+        ReplaySimulatedGame game = new ReplaySimulatedGame(REPLAY, 1);
+        int initialCount = game.snapshot().enemyBuildings().size();
+        for (int i = 0; i < 100; i++) game.tick();
+        game.reset();
+        assertThat(game.snapshot().enemyBuildings())
+            .as("Enemy buildings restored to initial count after reset")
+            .hasSize(initialCount);
+    }
+
     // --- Neutral resources (issue #107) ---
 
     @Test
