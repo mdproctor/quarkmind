@@ -252,6 +252,69 @@
                 </plugins>
             </build>
         </profile>
+        <!--
+            Replay visual pixel tests — proves elements are genuinely visible to the user,
+            not just mathematically present in the scene graph.
+
+            Requires: mvn package -DskipTests -Dquarkus.profile=replay (replay jar must exist)
+            Requires: Chromium installed (mvn exec:java ... CLI install chromium)
+
+            Run with: mvn test -Pplaywright-replay
+            What it does:
+              1. Builds the replay jar (quarkus.profile=replay)
+              2. Starts the jar on port 8082
+              3. Opens headless Chromium at the visualizer
+              4. Aims camera at each resource type (mineral/geyser/creep)
+              5. Samples the actual WebGL pixel and asserts the expected colour
+            Failure = the element is NOT visible to a user, regardless of what
+            the scene graph reports.
+        -->
+        <profile>
+            <id>playwright-replay</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration combine.self="override">
+                            <groups>browser</groups>
+                            <excludedGroups>benchmark</excludedGroups>
+                            <includes>
+                                <include>**/ReplayVisualizerIT.java</include>
+                            </includes>
+                            <argLine>@{argLine}</argLine>
+                            <systemPropertyVariables>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>${maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                    <!-- Build the replay jar before running the visual tests -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>build-replay-jar</id>
+                                <phase>generate-test-resources</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <exec executable="mvn" failonerror="true">
+                                            <arg value="package"/>
+                                            <arg value="-DskipTests"/>
+                                            <arg value="-Dquarkus.profile=replay"/>
+                                            <arg value="-q"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
         <!-- Run Playwright browser tests: mvn test -Pplaywright -->
         <profile>
             <id>playwright</id>
