@@ -109,6 +109,39 @@ window.__test = {
     }
     return null;
   },
+  // Aims the camera directly at the first mineral in the scene and returns
+  // its screen position. If no minerals exist, returns null.
+  // Used by replay integration tests to guarantee a mineral is in view.
+  focusOnFirstMineral: () => {
+    const sp = mineralMeshes.values().next().value;
+    if (!sp) return null;
+    camTarget.set(sp.position.x, 0, sp.position.z);
+    tDist = camDist;
+    updateCamera();
+    const v = sp.position.clone().project(camera);
+    const sz = renderer.getSize(new THREE.Vector2());
+    return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+  },
+  focusOnFirstCreep: () => {
+    const mesh = creepMeshes.values().next().value;
+    if (!mesh) return null;
+    camTarget.set(mesh.position.x, 0, mesh.position.z);
+    tDist = camDist;
+    updateCamera();
+    const v = mesh.position.clone().project(camera);
+    const sz = renderer.getSize(new THREE.Vector2());
+    return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+  },
+  focusOnFirstGeyser: () => {
+    const sp = geyserMeshes.values().next().value;
+    if (!sp) return null;
+    camTarget.set(sp.position.x, 0, sp.position.z);
+    tDist = camDist;
+    updateCamera();
+    const v = sp.position.clone().project(camera);
+    const sz = renderer.getSize(new THREE.Vector2());
+    return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+  },
   // Returns screen centre of the first geyser on screen, or null.
   firstGeyserScreenPos: () => {
     if (!camera || !renderer) return null;
@@ -1004,13 +1037,14 @@ function syncCreep(enemyBuildings) {
         new THREE.MeshBasicMaterial({
           // Bright SC2-style purple — visible on sandy terrain at any opacity.
           // Real terrain ground plane sits at y=0.04; creep must be above it.
-          color: 0x9030c0, transparent: true, opacity: 0.6,
-          depthWrite: false, side: THREE.DoubleSide
+          color: 0x9030c0, transparent: true, opacity: 0.7,
+          depthWrite: false, depthTest: false, side: THREE.DoubleSide
         })
       );
       const wp = gw(tx, tz);
       mesh.rotation.x = -Math.PI / 2;
-      mesh.position.set(wp.x, 0.06, wp.z); // above ground plane (y=0.04)
+      mesh.renderOrder = 10;  // render after opaque terrain
+      mesh.position.set(wp.x, 0.08, wp.z); // above ground plane (y=0.04)
       scene.add(mesh);
       creepMeshes.set(key, mesh);
     }
