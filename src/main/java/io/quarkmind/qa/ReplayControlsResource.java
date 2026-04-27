@@ -57,15 +57,27 @@ public class ReplayControlsResource {
     @GET @Path("/snapshot") @Produces(MediaType.APPLICATION_JSON)
     public Response snapshot() {
         var state = engine.observe();
+        // Count by type for unit breakdown
+        var myUnitCounts = new java.util.TreeMap<String, Long>();
+        state.myUnits().forEach(u -> myUnitCounts.merge(u.type().name(), 1L, Long::sum));
+        var enemyUnitCounts = new java.util.TreeMap<String, Long>();
+        state.enemyUnits().forEach(u -> enemyUnitCounts.merge(u.type().name(), 1L, Long::sum));
+        var enemyBldgCounts = new java.util.TreeMap<String, Long>();
+        state.enemyBuildings().forEach(b -> enemyBldgCounts.merge(b.type().name(), 1L, Long::sum));
+        var myBldgCounts = new java.util.TreeMap<String, Long>();
+        state.myBuildings().forEach(b -> myBldgCounts.merge(b.type().name(), 1L, Long::sum));
+
         return Response.ok(new java.util.LinkedHashMap<String, Object>() {{
+            put("loop",           state.gameFrame() * 22);
+            put("minerals",       state.minerals());
+            put("vespene",        state.vespene());
+            put("supply",         state.supplyUsed() + "/" + state.supply());
             put("mineralPatches", state.mineralPatches().size());
             put("geysers",        state.geysers().size());
-            put("enemyBuildings", state.enemyBuildings().size());
-            put("myUnits",        state.myUnits().size());
-            put("enemyUnits",     state.enemyUnits().size());
-            put("firstMineral",   state.mineralPatches().isEmpty() ? null : state.mineralPatches().get(0));
-            put("firstGeyser",    state.geysers().isEmpty() ? null : state.geysers().get(0));
-            put("firstEnemyBldg", state.enemyBuildings().isEmpty() ? null : state.enemyBuildings().get(0));
+            put("myUnits",        myUnitCounts);
+            put("myBuildings",    myBldgCounts);
+            put("enemyUnits",     enemyUnitCounts);
+            put("enemyBuildings", enemyBldgCounts);
         }}).build();
     }
 
