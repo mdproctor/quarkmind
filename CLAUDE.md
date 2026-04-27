@@ -105,7 +105,7 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - Flow integration tests emit to a SmallRye channel and assert after `Thread.sleep(300)` — the flow processes asynchronously
 
 **Playwright render tests** (`@QuarkusTest` + `@Tag("browser")`, excluded from default surefire run — need Chromium installed):
-- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, on-screen position projection via `window.__test` API (Three.js renderer; `window.__test` exposes: `threeReady()`, `terrainReady()`, `wsConnected()`, `hudText()`, `unitCount()`, `enemyCount()`, `buildingCount()`, `stagingCount()`, `geyserCount()`, `fogOpacity(x,z)`, `worldToScreen(wx,wz)`, `unitMatsKeys()`, `allEnemyWorldY()`, `smokeTestDrawFn(name,dir,teamColor)`)
+- `VisualizerRenderTest` — asserts sprite counts, positions, HUD text, on-screen position projection via `window.__test` API (Three.js renderer; `window.__test` exposes: `threeReady()`, `terrainReady()`, `wsConnected()`, `hudText()`, `unitCount()`, `enemyCount()`, `buildingCount()`, `enemyBuildingCount()`, `stagingCount()`, `geyserCount()`, `mineralCount()`, `creepTileCount()`, `enemyLayerVisible()`, `fogOpacity(x,z)`, `worldToScreen(wx,wz,wy=0)`, `unitScreenPos(tag)`, `clickUnit(tag,isEnemy)`, `unitMatsKeys()`, `allEnemyWorldY()`, `smokeTestDrawFn(name,dir,teamColor)`, `panelVisible()`, `cameraMode()`)
   - `unitMatsKeys()` — array of all registered UNIT_MATS keys (e.g. `'MARINE_F'`, `'MARINE_E'`)
   - `allEnemyWorldY()` — array of Three.js world Y positions for all current enemy sprites
   - `smokeTestDrawFn(name, dir, teamColor)` — invokes named draw fn on a temp 128×128 canvas, returns centre pixel alpha (0–255), or -1 if function not found
@@ -138,6 +138,10 @@ mvn quarkus:dev -Dquarkus.profile=sc2
 - `spawnEnemyUnit(UnitType, Point2d)` — add an enemy to `enemyUnits` (for Playwright render tests)
 - `spawnFriendlyUnitForTesting(UnitType, Point2d)` — add a friendly unit to `myUnits`; use in ShowcaseResource to scatter observer units that provide fog-of-war coverage across a large map
 - `spawnBuildingForTesting(BuildingType, Point2d)` — add a complete (isComplete=true) building directly to `myBuildings`; use in ShowcaseResource and VisualizerRenderTest
+- `spawnMineralPatchForTesting(Point2d, int remaining)` — add a mineral patch to `mineralPatches`; use in ShowcaseResource and VisualizerRenderTest
+- `removeMineralPatchForTesting(String tag)` — remove by tag; used to test patch disappearance in VisualizerRenderTest
+- `spawnEnemyBuildingForTesting(BuildingType, Point2d)` — add a complete enemy building to `enemyBuildings`; use in ShowcaseResource and VisualizerRenderTest
+- `removeEnemyBuildingForTesting(String tag)` — remove by tag; used to test enemy building disappearance
 
 **Showcase seeding pattern:** Use `simulatedGame.reset()` directly (not `orchestrator.startGame()`) when seeding dev/QA demo state. `reset()` clears game state without firing `GameStarted`, so the AI scheduler never activates and the showcased state stays static. `engine.observe()` still pushes the seeded state to connected browser sessions.
 
