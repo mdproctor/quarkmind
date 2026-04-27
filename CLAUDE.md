@@ -112,8 +112,15 @@ mvn quarkus:dev -Dquarkus.profile=sc2
   - `allSceneObjectsAreWithinMapBounds` — traverses the full Three.js scene graph and asserts no mesh/sprite is outside map bounds (|x/z| ≤ 23, y ≤ 5); catches tile-position overflows and stale meshes without visual inspection
 - `VisualizerFogRenderTest` — asserts Three.js fog plane state via `window.__test.fogOpacity(x,z)` and correct `GameStateBroadcast` envelope parsing (HUD shows minerals, not undefined)
 - Install Chromium once: `mvn exec:java -e -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"`
-- Run with: `mvn test -Pplaywright` (profile configured in pom.xml, runs `@Tag("browser")` tests)
+- Run mock-mode visual tests: `mvn test -Pplaywright` (runs `@Tag("browser")` tests against mock profile)
 - Excluded from default surefire run via `excludedGroups=benchmark,browser`
+
+**Replay visual pixel tests** (`ReplayVisualizerIT`, `@Tag("browser")`) — the only tests that prove elements are genuinely visible in the replay viewer (not just present in the scene graph):
+- Starts the real replay jar on port 8082, opens headless Chromium, samples actual WebGL pixels
+- Asserts mineral pixel is cyan (B>R), geyser pixel is green (G>R), creep pixel is purple (B>G)
+- Run with: `mvn test -Pplaywright-replay` (builds replay jar automatically, then runs pixel tests)
+- **Run after any change to `visualizer.js`, `GameState`, or the domain model** — prevents "mathematically present but humanly invisible" regressions
+- Adding a new visual element? Add a `focusOnFirstX()` function to `window.__test` and a pixel test in `ReplayVisualizerIT` before closing the issue
 
 **WebSocket integration tests** (`@QuarkusTest`, run in normal suite):
 - `GameStateWebSocketTest` — connects via `java.net.http.WebSocket`, calls `engine.observe()` directly (not `gameTick()`) to avoid triggering async Flow economics which pollutes IntentQueue across tests
