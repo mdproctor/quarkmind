@@ -74,6 +74,20 @@ window.__test = {
   mineralCount:       () => mineralMeshes.size,
   creepTileCount:     () => creepMeshes.size,
   markerScale:        () => MARKER_SCALE,
+  // Returns true if any mesh in the given internal map projects within the NDC [-1,1] cube.
+  // Used by Playwright tests to verify elements are actually visible to the camera.
+  _anyOnScreen: map => {
+    if (!camera) return false;
+    for (const mesh of map.values()) {
+      const v = mesh.position.clone().project(camera);
+      if (Math.abs(v.x) <= 1 && Math.abs(v.y) <= 1 && v.z < 1) return true;
+    }
+    return false;
+  },
+  anyMineralOnScreen:     () => window.__test._anyOnScreen(mineralMeshes),
+  anyGeyserOnScreen:      () => window.__test._anyOnScreen(geyserMeshes),
+  anyCreepOnScreen:       () => window.__test._anyOnScreen(creepMeshes),
+  anyEnemyBuildingOnScreen: () => window.__test._anyOnScreen(enemyBuildingMeshes),
   hasRealTerrain: () => terrainLoaded && hasRealTerrain,
   fogOpacity:    (x, z) => {
     const p = fogPlanes.get(`${x},${z}`);

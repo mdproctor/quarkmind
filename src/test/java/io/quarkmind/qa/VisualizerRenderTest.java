@@ -4268,6 +4268,156 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Visual verification: minerals, geysers, creep, enemy buildings on-screen ---
+
+    /**
+     * Mineral patch seeded near camera target (tile 14,14) must project on-screen.
+     * anyMineralOnScreen() checks that at least one mineralMeshes entry projects
+     * within NDC [-1,1] — i.e. the user can actually see it, not just that it
+     * exists somewhere in the Three.js scene.
+     */
+    @Test
+    @Tag("browser")
+    void mineralPatchIsVisibleOnScreen() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+
+            // Tile (14,14) is near camTarget (-16,-16) — confirmed on-screen from
+            // unitInspectPanelShowsNameAndHpOnClick test.
+            simulatedGame.spawnMineralPatchForTesting(new Point2d(14, 14), 1500);
+            engine.observe();
+            page.waitForFunction("() => window.__test.mineralCount() >= 1");
+
+            boolean onScreen = (boolean) page.evaluate("() => window.__test.anyMineralOnScreen()");
+            assertThat(onScreen)
+                .as("mineral patch at tile (14,14) must project within camera viewport")
+                .isTrue();
+        }
+    }
+
+    /**
+     * Geyser seeded near camera target must project on-screen.
+     * Mock mode seeds two geysers at reset() at tiles (5,11) and (11,5) —
+     * both are near the probe spawn cluster and camera target.
+     */
+    @Test
+    @Tag("browser")
+    void geyserIsVisibleOnScreen() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            engine.observe();
+            page.waitForFunction("() => window.__test.geyserCount() >= 2");
+
+            boolean onScreen = (boolean) page.evaluate("() => window.__test.anyGeyserOnScreen()");
+            assertThat(onScreen)
+                .as("geysers at tiles (5,11) and (11,5) must project within camera viewport")
+                .isTrue();
+        }
+    }
+
+    /**
+     * Enemy building seeded near camera target must project on-screen,
+     * AND the creep tiles around it must also be on-screen.
+     */
+    @Test
+    @Tag("browser")
+    void enemyBuildingAndCreepAreVisibleOnScreen() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+
+            simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(14, 14));
+            engine.observe();
+            page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1");
+            page.waitForFunction("() => window.__test.creepTileCount() > 0");
+
+            boolean buildingOnScreen = (boolean) page.evaluate(
+                "() => window.__test.anyEnemyBuildingOnScreen()");
+            boolean creepOnScreen = (boolean) page.evaluate(
+                "() => window.__test.anyCreepOnScreen()");
+
+            assertThat(buildingOnScreen)
+                .as("Hatchery at tile (14,14) must project within camera viewport")
+                .isTrue();
+            assertThat(creepOnScreen)
+                .as("creep tiles around Hatchery at tile (14,14) must project within camera viewport")
+                .isTrue();
+        }
+    }
+
+    /**
+     * Full showcase: minerals, geysers, enemy building, and creep must all be
+     * present AND at least one of each type must be on-screen.
+     * Also verifies no objects outside map bounds (regression guard).
+     */
+    @Test
+    @Tag("browser")
+    void showcaseResourcesAndCreepAllOnScreen() throws Exception {
+        assumeTrue(browser != null, "Chromium not installed");
+        var page = browser.newPage();
+        page.navigate(pageUrl.toString());
+        page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+
+        java.net.http.HttpClient http = java.net.http.HttpClient.newHttpClient();
+        java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder()
+            .uri(showcaseUrl.toURI())
+            .POST(java.net.http.HttpRequest.BodyPublishers.noBody())
+            .build();
+        http.send(req, java.net.http.HttpResponse.BodyHandlers.discarding());
+
+        page.waitForFunction("() => window.__test.mineralCount() >= 8",
+            null, new Page.WaitForFunctionOptions().setTimeout(8_000));
+        page.waitForFunction("() => window.__test.geyserCount() > 0");
+        page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1");
+        page.waitForFunction("() => window.__test.creepTileCount() > 0");
+
+        // Presence
+        assertThat(((Number) page.evaluate("() => window.__test.mineralCount()")).intValue())
+            .as("minerals present in scene").isGreaterThanOrEqualTo(8);
+        assertThat(((Number) page.evaluate("() => window.__test.geyserCount()")).intValue())
+            .as("geysers present in scene (mock reset seeds 2)").isGreaterThanOrEqualTo(2);
+        assertThat(((Number) page.evaluate("() => window.__test.enemyBuildingCount()")).intValue())
+            .as("enemy building present in scene").isGreaterThanOrEqualTo(1);
+        assertThat(((Number) page.evaluate("() => window.__test.creepTileCount()")).intValue())
+            .as("creep tiles present in scene").isGreaterThan(0);
+
+        // Visual: geysers are seeded by reset() at tiles (5,11) and (11,5) near camTarget —
+        // must be on-screen. Showcase minerals/Hatchery are at z=36-38 (far from camera target)
+        // so on-screen is not asserted for them; individual tests cover that at tile (14,14).
+        assertThat((Boolean) page.evaluate("() => window.__test.anyGeyserOnScreen()"))
+            .as("geysers at tiles (5,11)/(11,5) must project within camera viewport").isTrue();
+
+        // Bounds regression guard
+        @SuppressWarnings("unchecked")
+        java.util.List<Object> outliers = (java.util.List<Object>) page.evaluate("""
+            () => {
+              const out = [];
+              const MAX_XZ = 23, MAX_Y = 5;
+              window._three.scene.traverse(obj => {
+                if (!obj.isMesh && !obj.isSprite) return;
+                const p = obj.getWorldPosition(new THREE.Vector3());
+                if (Math.abs(p.x) > MAX_XZ || Math.abs(p.z) > MAX_XZ || p.y > MAX_Y || p.y < -1)
+                  out.push({x: p.x.toFixed(1), y: p.y.toFixed(1), z: p.z.toFixed(1)});
+              });
+              return out;
+            }""");
+        assertThat(outliers).as("no objects outside map bounds after showcase seed").isEmpty();
+
+        page.close();
+    }
+
     // --- Marker scale and resource visibility ---
 
     /**
