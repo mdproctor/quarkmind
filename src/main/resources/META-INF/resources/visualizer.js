@@ -18,6 +18,9 @@ const RECONNECT_MS = 2000;
 
 let GRID_W = 64, GRID_H = 64;
 let HALF_W, HALF_H;
+// Scales marker geometry (minerals, geysers, creep) with the map size so they
+// remain visible on large real SC2 maps (160×208) vs the 64-tile mock map.
+let MARKER_SCALE = 1;
 let TERRAIN_SURFACE_Y = 0.08; // updated in loadTerrain — mock=0.08, emulated=TILE
 let camTheta = Math.PI*0.25, camPhi = Math.PI/3.5, camDist = 18;
 // Game content starts at tile (9,9) = world (-16.1, -16.1). Start camera looking there.
@@ -70,6 +73,7 @@ window.__test = {
   geyserCount:        () => geyserMeshes.size,
   mineralCount:       () => mineralMeshes.size,
   creepTileCount:     () => creepMeshes.size,
+  markerScale:        () => MARKER_SCALE,
   hasRealTerrain: () => terrainLoaded && hasRealTerrain,
   fogOpacity:    (x, z) => {
     const p = fogPlanes.get(`${x},${z}`);
@@ -678,6 +682,8 @@ async function loadTerrain() {
 
   HALF_W = (GRID_W * TILE) / 2;
   HALF_H = (GRID_H * TILE) / 2;
+  // Markers scale with map: on 64-tile mock MARKER_SCALE=1; on 160×208 real map ≈3
+  MARKER_SCALE = Math.max(1, (GRID_W + GRID_H) / 128);
 
   const wallSet = new Set(walls.map(([x,z])      => `${x},${z}`));
   const highSet = new Set(highGround.map(([x,z]) => `${x},${z}`));
@@ -862,7 +868,7 @@ function syncGeysers(geysers) {
     seen.add(g.tag);
     if (!geyserMeshes.has(g.tag)) {
       const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TILE*0.6, TILE*0.25, TILE*0.6),
+        new THREE.BoxGeometry(TILE*0.6*MARKER_SCALE, TILE*0.25*MARKER_SCALE, TILE*0.6*MARKER_SCALE),
         new THREE.MeshLambertMaterial({ color: 0x224422, emissive: 0x001100 })
       );
       const wp = gw(g.position.x, g.position.y);
@@ -883,7 +889,7 @@ function syncMineralPatches(patches) {
     seen.add(p.tag);
     if (!mineralMeshes.has(p.tag)) {
       const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TILE * 0.5, TILE * 0.15, TILE * 0.3),
+        new THREE.BoxGeometry(TILE*0.5*MARKER_SCALE, TILE*0.15*MARKER_SCALE, TILE*0.3*MARKER_SCALE),
         new THREE.MeshLambertMaterial({ color: 0x44aacc, emissive: 0x001133 })
       );
       const wp = gw(p.position.x, p.position.y);
@@ -940,7 +946,7 @@ function syncCreep(enemyBuildings) {
     if (!creepMeshes.has(key)) {
       const [tx, tz] = key.split(':').map(Number);
       const mesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(TILE, TILE),
+        new THREE.PlaneGeometry(TILE * MARKER_SCALE, TILE * MARKER_SCALE),
         new THREE.MeshBasicMaterial({
           color: 0x4a1a6e, transparent: true, opacity: 0.45,
           depthWrite: false, side: THREE.DoubleSide

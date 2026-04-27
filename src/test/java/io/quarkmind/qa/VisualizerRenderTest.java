@@ -4268,6 +4268,51 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Marker scale and resource visibility ---
+
+    /**
+     * Marker scale must be 1 in mock mode (64×64 map). On real maps (160×208) it
+     * scales up so minerals, geysers, and creep tiles are visible.
+     */
+    @Test
+    @Tag("browser")
+    void markerScaleIsOneInMockMode() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.terrainReady()");
+            Number scale = (Number) page.evaluate("() => window.__test.markerScale()");
+            assertThat(scale.doubleValue())
+                .as("MARKER_SCALE must be 1 for 64×64 mock map")
+                .isEqualTo(1.0);
+        }
+    }
+
+    /**
+     * Minerals and geysers render in mock mode with MARKER_SCALE=1.
+     * Confirms the full path: spawnMineralPatchForTesting → broadcast → syncMineralPatches → scene.
+     * On real maps (160×208) MARKER_SCALE≈3 scales the geometry proportionally.
+     */
+    @Test
+    @Tag("browser")
+    void mineralAndGeyserRenderWithCorrectMarkerScale() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(); var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            simulatedGame.spawnMineralPatchForTesting(new Point2d(14, 14), 1500);
+            engine.observe();
+            page.waitForFunction("() => window.__test.mineralCount() >= 1");
+            // Verify minerals render and marker scale is 1 (64×64 mock map)
+            int minerals = ((Number) page.evaluate("() => window.__test.mineralCount()")).intValue();
+            int geysers  = ((Number) page.evaluate("() => window.__test.geyserCount()")).intValue();
+            Number scale = (Number) page.evaluate("() => window.__test.markerScale()");
+            assertThat(minerals).as("mineral rendered").isGreaterThan(0);
+            assertThat(geysers).as("geysers rendered (from reset)").isGreaterThan(0);
+            assertThat(scale.doubleValue()).as("MARKER_SCALE=1 for 64-tile mock map").isEqualTo(1.0);
+        }
+    }
+
     // --- Creep rendering (issue #111) ---
 
     /**

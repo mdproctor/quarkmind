@@ -54,6 +54,21 @@ public class ReplayControlsResource {
         return Response.noContent().build();
     }
 
+    @GET @Path("/snapshot") @Produces(MediaType.APPLICATION_JSON)
+    public Response snapshot() {
+        var state = engine.observe();
+        return Response.ok(new java.util.LinkedHashMap<String, Object>() {{
+            put("mineralPatches", state.mineralPatches().size());
+            put("geysers",        state.geysers().size());
+            put("enemyBuildings", state.enemyBuildings().size());
+            put("myUnits",        state.myUnits().size());
+            put("enemyUnits",     state.enemyUnits().size());
+            put("firstMineral",   state.mineralPatches().isEmpty() ? null : state.mineralPatches().get(0));
+            put("firstGeyser",    state.geysers().isEmpty() ? null : state.geysers().get(0));
+            put("firstEnemyBldg", state.enemyBuildings().isEmpty() ? null : state.enemyBuildings().get(0));
+        }}).build();
+    }
+
     @POST @Path("/speed")
     public Response speed(@QueryParam("multiplier") int multiplier) {
         if (multiplier < 0 || multiplier > 8) {
