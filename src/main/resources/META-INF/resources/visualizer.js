@@ -85,6 +85,41 @@ window.__test = {
     return false;
   },
   anyMineralOnScreen:     () => window.__test._anyOnScreen(mineralMeshes),
+  // Sample the actual rendered pixel at screen position (x,y) from the WebGL canvas.
+  // preserveDrawingBuffer:true is required on the renderer — set in init().
+  // Returns {r,g,b,a} or null if the canvas is not available.
+  samplePixel: (x, y) => {
+    const canvas = renderer?.domElement;
+    if (!canvas) return null;
+    const c = document.createElement('canvas');
+    c.width = 1; c.height = 1;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(canvas, Math.round(x), Math.round(y), 1, 1, 0, 0, 1, 1);
+    const d = ctx.getImageData(0, 0, 1, 1).data;
+    return { r: d[0], g: d[1], b: d[2], a: d[3] };
+  },
+  // Returns screen centre {x,y} of the first mineral on screen, or null.
+  firstMineralScreenPos: () => {
+    if (!camera || !renderer) return null;
+    for (const sp of mineralMeshes.values()) {
+      const v = sp.position.clone().project(camera);
+      if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || v.z >= 1) continue;
+      const sz = renderer.getSize(new THREE.Vector2());
+      return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+    }
+    return null;
+  },
+  // Returns screen centre of the first geyser on screen, or null.
+  firstGeyserScreenPos: () => {
+    if (!camera || !renderer) return null;
+    for (const sp of geyserMeshes.values()) {
+      const v = sp.position.clone().project(camera);
+      if (Math.abs(v.x) > 1 || Math.abs(v.y) > 1 || v.z >= 1) continue;
+      const sz = renderer.getSize(new THREE.Vector2());
+      return { x: Math.round((v.x+1)/2*sz.width), y: Math.round((-v.y+1)/2*sz.height) };
+    }
+    return null;
+  },
   anyGeyserOnScreen:      () => window.__test._anyOnScreen(geyserMeshes),
   anyCreepOnScreen:       () => window.__test._anyOnScreen(creepMeshes),
   anyEnemyBuildingOnScreen: () => window.__test._anyOnScreen(enemyBuildingMeshes),
@@ -535,7 +570,7 @@ async function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   document.body.appendChild(renderer.domElement);

@@ -4271,14 +4271,19 @@ class VisualizerRenderTest {
     // --- Visual verification: minerals, geysers, creep, enemy buildings on-screen ---
 
     /**
-     * Mineral patch seeded near camera target (tile 14,14) must project on-screen.
-     * anyMineralOnScreen() checks that at least one mineralMeshes entry projects
-     * within NDC [-1,1] — i.e. the user can actually see it, not just that it
-     * exists somewhere in the Three.js scene.
+     * TRUE visual test for mineral: samples the actual rendered WebGL pixel at the
+     * mineral's projected screen position and asserts it is cyan-coloured, not
+     * terrain sandy. A mesh that exists in the scene but is buried, too small, or
+     * wrong colour will FAIL this test — unlike NDC-projection checks which only
+     * verify mathematical presence.
+     *
+     * Mineral colour: 0x44ccff → R≈68, G≈204, B≈255.
+     * Terrain sandy:          → R≈184, G≈149, B≈106.
+     * Test criterion: rendered pixel must be clearly bluer than sandy (B > G, G > R).
      */
     @Test
     @Tag("browser")
-    void mineralPatchIsVisibleOnScreen() {
+    void mineralPatchPixelIsCyanNotTerrain() {
         assumeTrue(browser != null, "Chromium not installed");
         try (var context = browser.newContext(
                  new Browser.NewContextOptions().setViewportSize(1280, 720));
@@ -4286,27 +4291,46 @@ class VisualizerRenderTest {
             page.navigate(pageUrl.toString());
             page.waitForFunction("() => window.__test && window.__test.wsConnected()");
 
-            // Tile (14,14) is near camTarget (-16,-16) — confirmed on-screen from
-            // unitInspectPanelShowsNameAndHpOnClick test.
             simulatedGame.spawnMineralPatchForTesting(new Point2d(14, 14), 1500);
             engine.observe();
             page.waitForFunction("() => window.__test.mineralCount() >= 1");
 
-            boolean onScreen = (boolean) page.evaluate("() => window.__test.anyMineralOnScreen()");
-            assertThat(onScreen)
-                .as("mineral patch at tile (14,14) must project within camera viewport")
-                .isTrue();
+            // Wait one render frame then get the sprite's actual screen position
+            page.waitForTimeout(100);
+            @SuppressWarnings("unchecked")
+            Map<?, ?> pos = (Map<?, ?>) page.evaluate(
+                "() => window.__test.firstMineralScreenPos()");
+            assertThat(pos).as("mineral must project on-screen").isNotNull();
+
+            int sx = ((Number) pos.get("x")).intValue();
+            int sy = ((Number) pos.get("y")).intValue();
+            assertTrue(sx > 0 && sx < 1280 && sy > 0 && sy < 720,
+                "mineral screen pos must be inside viewport: (" + sx + "," + sy + ")");
+
+            // Sample the actual rendered pixel
+            @SuppressWarnings("unchecked")
+            Map<?, ?> pixel = (Map<?, ?>) page.evaluate(
+                "() => window.__test.samplePixel(" + sx + ", " + sy + ")");
+            int r = ((Number) pixel.get("r")).intValue();
+            int g = ((Number) pixel.get("g")).intValue();
+            int b = ((Number) pixel.get("b")).intValue();
+
+            // Mineral cyan (0x44ccff) blended with terrain: B should dominate over R.
+            // Terrain sandy (0xb8956a): R>G>B. Anything with B>R is not pure terrain.
+            assertThat(b).as(
+                "mineral pixel must be blue-dominant (cyan sprite), not sandy terrain. "
+                + "Got R=%d G=%d B=%d at (%d,%d)".formatted(r, g, b, sx, sy))
+                .isGreaterThan(r);
         }
     }
 
     /**
-     * Geyser seeded near camera target must project on-screen.
-     * Mock mode seeds two geysers at reset() at tiles (5,11) and (11,5) —
-     * both are near the probe spawn cluster and camera target.
+     * TRUE visual test for geyser: pixel at the geyser's screen position must be
+     * green-dominant (0x00dd66), not sandy terrain (R>G>B).
      */
     @Test
     @Tag("browser")
-    void geyserIsVisibleOnScreen() {
+    void geyserPixelIsGreenNotTerrain() {
         assumeTrue(browser != null, "Chromium not installed");
         try (var context = browser.newContext(
                  new Browser.NewContextOptions().setViewportSize(1280, 720));
@@ -4316,10 +4340,27 @@ class VisualizerRenderTest {
             engine.observe();
             page.waitForFunction("() => window.__test.geyserCount() >= 2");
 
-            boolean onScreen = (boolean) page.evaluate("() => window.__test.anyGeyserOnScreen()");
-            assertThat(onScreen)
-                .as("geysers at tiles (5,11) and (11,5) must project within camera viewport")
-                .isTrue();
+            page.waitForTimeout(100);
+            @SuppressWarnings("unchecked")
+            Map<?, ?> pos = (Map<?, ?>) page.evaluate(
+                "() => window.__test.firstGeyserScreenPos()");
+            assertThat(pos).as("geyser must project on-screen").isNotNull();
+
+            int sx = ((Number) pos.get("x")).intValue();
+            int sy = ((Number) pos.get("y")).intValue();
+
+            @SuppressWarnings("unchecked")
+            Map<?, ?> pixel = (Map<?, ?>) page.evaluate(
+                "() => window.__test.samplePixel(" + sx + ", " + sy + ")");
+            int r = ((Number) pixel.get("r")).intValue();
+            int g = ((Number) pixel.get("g")).intValue();
+            int b = ((Number) pixel.get("b")).intValue();
+
+            // Geyser green (0x00dd66): G should dominate over R.
+            assertThat(g).as(
+                "geyser pixel must be green-dominant, not sandy terrain. "
+                + "Got R=%d G=%d B=%d at (%d,%d)".formatted(r, g, b, sx, sy))
+                .isGreaterThan(r);
         }
     }
 
