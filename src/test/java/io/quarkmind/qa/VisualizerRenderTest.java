@@ -1906,6 +1906,12 @@ class VisualizerRenderTest {
         int enemyBuildings = ((Number) page.evaluate("() => window.__test.enemyBuildingCount()")).intValue();
         assertThat(enemyBuildings).as("1 showcase enemy building must render").isEqualTo(1);
 
+        // 2d. Creep tiles rendered around the Hatchery
+        page.waitForFunction("() => window.__test.creepTileCount() > 0",
+            null, new Page.WaitForFunctionOptions().setTimeout(5_000));
+        int creepTiles = ((Number) page.evaluate("() => window.__test.creepTileCount()")).intValue();
+        assertThat(creepTiles).as("creep tiles must render around showcase Hatchery").isGreaterThan(0);
+
         // 3. No unit sunk at or below terrain surface
         double terrainSurfaceY = ((Number) page.evaluate("() => TERRAIN_SURFACE_Y")).doubleValue();
         @SuppressWarnings("unchecked")

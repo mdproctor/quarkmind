@@ -203,8 +203,9 @@ public class ShowcaseResource {
             simulatedGame.spawnMineralPatchForTesting(new Point2d(2 + i * 2, 36), 1500);
         }
 
-        // z=38: 1 enemy Hatchery (demonstrates enemy building rendering)
-        simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(8, 38));
+        // z=38: 1 enemy Hatchery (demonstrates enemy building + creep rendering)
+        // x≥12 ensures the CREEP_RADIUS=10 circle stays within worldX ≥ -23
+        simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(12, 38));
 
         engine.observe();
 
