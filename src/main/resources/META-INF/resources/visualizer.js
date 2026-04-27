@@ -883,10 +883,11 @@ function syncGeysers(geysers) {
     if (!geyserMeshes.has(g.tag)) {
       const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(TILE*0.6*MARKER_SCALE, TILE*0.25*MARKER_SCALE, TILE*0.6*MARKER_SCALE),
-        new THREE.MeshLambertMaterial({ color: 0x224422, emissive: 0x001100 })
+        new THREE.MeshLambertMaterial({ color: 0x22cc44, emissive: 0x004411 })
       );
       const wp = gw(g.position.x, g.position.y);
-      mesh.position.set(wp.x, TILE*0.125, wp.z);
+      // y=0.06 is above the real-terrain ground plane (y=0.04); MARKER_SCALE raises height
+      mesh.position.set(wp.x, 0.06 + TILE*0.125*MARKER_SCALE, wp.z);
       // Geysers are always-visible anchors — not toggled by 2D/3D mode
       scene.add(mesh);
       geyserMeshes.set(g.tag, mesh);
@@ -907,7 +908,7 @@ function syncMineralPatches(patches) {
         new THREE.MeshLambertMaterial({ color: 0x44aacc, emissive: 0x001133 })
       );
       const wp = gw(p.position.x, p.position.y);
-      mesh.position.set(wp.x, TILE * 0.075, wp.z);
+      mesh.position.set(wp.x, 0.06 + TILE * 0.075 * MARKER_SCALE, wp.z);
       scene.add(mesh);
       mineralMeshes.set(p.tag, mesh);
     }
@@ -962,13 +963,15 @@ function syncCreep(enemyBuildings) {
       const mesh = new THREE.Mesh(
         new THREE.PlaneGeometry(TILE * MARKER_SCALE, TILE * MARKER_SCALE),
         new THREE.MeshBasicMaterial({
-          color: 0x4a1a6e, transparent: true, opacity: 0.45,
+          // Bright SC2-style purple — visible on sandy terrain at any opacity.
+          // Real terrain ground plane sits at y=0.04; creep must be above it.
+          color: 0x9030c0, transparent: true, opacity: 0.6,
           depthWrite: false, side: THREE.DoubleSide
         })
       );
       const wp = gw(tx, tz);
       mesh.rotation.x = -Math.PI / 2;
-      mesh.position.set(wp.x, 0.02, wp.z); // just above ground, below geysers/minerals
+      mesh.position.set(wp.x, 0.06, wp.z); // above ground plane (y=0.04)
       scene.add(mesh);
       creepMeshes.set(key, mesh);
     }
