@@ -876,21 +876,24 @@ function syncBuildings(buildings) {
   });
 }
 
+// Sprite size for resources — large enough to see at real-map camera distances.
+// Sprites always face the camera and are never depth-occluded by terrain geometry.
+const RESOURCE_SPRITE_SIZE = () => TILE * 1.2 * Math.max(1, MARKER_SCALE);
+
 function syncGeysers(geysers) {
   const seen = new Set();
   geysers.forEach(g => {
     seen.add(g.tag);
     if (!geyserMeshes.has(g.tag)) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TILE*0.6*MARKER_SCALE, TILE*0.25*MARKER_SCALE, TILE*0.6*MARKER_SCALE),
-        new THREE.MeshLambertMaterial({ color: 0x22cc44, emissive: 0x004411 })
+      const s = RESOURCE_SPRITE_SIZE();
+      const sp = new THREE.Sprite(
+        new THREE.SpriteMaterial({ color: 0x00dd66, opacity: 0.95 })
       );
+      sp.scale.set(s, s, 1);
       const wp = gw(g.position.x, g.position.y);
-      // y=0.06 is above the real-terrain ground plane (y=0.04); MARKER_SCALE raises height
-      mesh.position.set(wp.x, 0.06 + TILE*0.125*MARKER_SCALE, wp.z);
-      // Geysers are always-visible anchors — not toggled by 2D/3D mode
-      scene.add(mesh);
-      geyserMeshes.set(g.tag, mesh);
+      sp.position.set(wp.x, TERRAIN_SURFACE_Y + s * 0.5, wp.z);
+      scene.add(sp);
+      geyserMeshes.set(g.tag, sp);
     }
   });
   geyserMeshes.forEach((m, tag) => {
@@ -903,14 +906,15 @@ function syncMineralPatches(patches) {
   patches.forEach(p => {
     seen.add(p.tag);
     if (!mineralMeshes.has(p.tag)) {
-      const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(TILE*0.5*MARKER_SCALE, TILE*0.15*MARKER_SCALE, TILE*0.3*MARKER_SCALE),
-        new THREE.MeshLambertMaterial({ color: 0x44aacc, emissive: 0x001133 })
+      const s = RESOURCE_SPRITE_SIZE();
+      const sp = new THREE.Sprite(
+        new THREE.SpriteMaterial({ color: 0x44ccff, opacity: 0.95 })
       );
+      sp.scale.set(s * 1.4, s * 0.8, 1); // wider than tall — mineral patch shape
       const wp = gw(p.position.x, p.position.y);
-      mesh.position.set(wp.x, 0.06 + TILE * 0.075 * MARKER_SCALE, wp.z);
-      scene.add(mesh);
-      mineralMeshes.set(p.tag, mesh);
+      sp.position.set(wp.x, TERRAIN_SURFACE_Y + s * 0.4, wp.z);
+      scene.add(sp);
+      mineralMeshes.set(p.tag, sp);
     }
   });
   mineralMeshes.forEach((m, tag) => {
