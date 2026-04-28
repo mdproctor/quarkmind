@@ -58,7 +58,8 @@ function initMaterials() {
 let terrainLoaded = false;
 let hasRealTerrain = false;
 let cameraMode   = localStorage.getItem('quarkmind.cameraMode') || 'sc2';
-let enemyVisible = true;
+let enemyVisible    = true;
+let cameraCentred   = false;  // set after first auto-centre on friendly base
 
 window.__test = {
   threeReady:    () => !!renderer,
@@ -74,6 +75,7 @@ window.__test = {
   mineralCount:       () => mineralMeshes.size,
   creepTileCount:     () => creepMeshes.size,
   markerScale:        () => MARKER_SCALE,
+  cameraTarget:       () => ({ x: camTarget.x, y: camTarget.y, z: camTarget.z }),
   // Returns true if any mesh in the given internal map projects within the NDC [-1,1] cube.
   // Used by Playwright tests to verify elements are actually visible to the camera.
   _anyOnScreen: map => {
@@ -895,7 +897,7 @@ function gw(gx, gz) {
 
 function connectWebSocket() {
   const ws = new WebSocket(`ws://${window.location.host}/ws/gamestate`);
-  ws.onopen  = () => { wsConnected = true; };
+  ws.onopen  = () => { wsConnected = true; cameraCentred = false; };
   ws.onmessage = e => {
     try {
       const msg = JSON.parse(e.data);
@@ -912,9 +914,24 @@ function connectWebSocket() {
 
 function onFrame(state, visibility) {
   if (!state) return;
+  autocentreCamera(state);
   updateHud(state);
   updateFog(visibility);
   syncUnits(state);
+}
+
+// On the first frame that has friendly buildings, aim the camera at the first
+// building (Nexus). Fires once — subsequent frames leave the camera where the
+// user has panned it.
+function autocentreCamera(state) {
+  if (cameraCentred) return;
+  const bldgs = state.myBuildings;
+  if (!bldgs || bldgs.length === 0) return;
+  const b  = bldgs[0];
+  const wp = gw(b.position.x, b.position.y);
+  camTarget.set(wp.x, 0, wp.z);
+  updateCamera();
+  cameraCentred = true;
 }
 
 function updateHud(state) {

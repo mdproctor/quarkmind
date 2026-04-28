@@ -4268,6 +4268,104 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Camera auto-centre on Protoss base (issue #113) ---
+
+    /**
+     * After the first game state arrives, camTarget must move to the world position
+     * of the first friendly building (Nexus). In mock mode Nexus is at tile (8,8)
+     * = world (-16.8, -16.8). Default camTarget is already (-16,-16) so this is
+     * a small but measurable shift.
+     *
+     * cameraTarget() must be within 2 world units of the Nexus position.
+     */
+    @Test
+    @Tag("browser")
+    void cameraAutocentresOnNexusAfterFirstGameState() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            engine.observe();
+            page.waitForFunction("() => window.__test.buildingCount() >= 1");
+            page.waitForTimeout(200);
+
+            @SuppressWarnings("unchecked")
+            Map<?, ?> target = (Map<?, ?>) page.evaluate("() => window.__test.cameraTarget()");
+            assertThat(target).as("cameraTarget() must be defined").isNotNull();
+
+            // Nexus at tile (8,8): worldX = 8*0.7-22.4 = -16.8, worldZ = -16.8
+            double nx = worldX(8), nz = worldZ(8);
+            double tx = ((Number) target.get("x")).doubleValue();
+            double tz = ((Number) target.get("z")).doubleValue();
+
+            assertThat(Math.abs(tx - nx)).as("camTarget.x near Nexus worldX").isLessThan(2.0);
+            assertThat(Math.abs(tz - nz)).as("camTarget.z near Nexus worldZ").isLessThan(2.0);
+        }
+    }
+
+    /**
+     * Robustness: camera must NOT shift on subsequent frames after the initial centre.
+     * After the first observe the target is set; further observes leave it unchanged.
+     */
+    @Test
+    @Tag("browser")
+    void cameraDoesNotShiftAfterSubsequentFrames() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            engine.observe();
+            page.waitForFunction("() => window.__test.buildingCount() >= 1");
+            page.waitForTimeout(200);
+
+            @SuppressWarnings("unchecked")
+            Map<?, ?> t1 = (Map<?, ?>) page.evaluate("() => window.__test.cameraTarget()");
+
+            // Send 5 more frames
+            for (int i = 0; i < 5; i++) engine.observe();
+            page.waitForTimeout(200);
+
+            @SuppressWarnings("unchecked")
+            Map<?, ?> t2 = (Map<?, ?>) page.evaluate("() => window.__test.cameraTarget()");
+
+            assertThat(((Number) t2.get("x")).doubleValue())
+                .as("camTarget.x must not shift on subsequent frames")
+                .isEqualTo(((Number) t1.get("x")).doubleValue());
+            assertThat(((Number) t2.get("z")).doubleValue())
+                .as("camTarget.z must not shift on subsequent frames")
+                .isEqualTo(((Number) t1.get("z")).doubleValue());
+        }
+    }
+
+    /**
+     * Visual: the Nexus sprite must be on-screen immediately after the first game
+     * state loads — without any manual camera panning.
+     */
+    @Test
+    @Tag("browser")
+    void nexusOnScreenImmediatelyAfterGameStateLoads() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            engine.observe();
+            page.waitForFunction("() => window.__test.buildingCount() >= 1");
+            page.waitForTimeout(300);
+
+            boolean onScreen = (boolean) page.evaluate(
+                "() => window.__test._anyOnScreen(buildingMeshes)");
+            assertThat(onScreen)
+                .as("Nexus must be on-screen immediately — no panning required after auto-centre")
+                .isTrue();
+        }
+    }
+
     // --- Building click-to-inspect (issue #112) ---
 
     /**

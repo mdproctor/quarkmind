@@ -268,6 +268,76 @@ class ReplayVisualizerIT {
         }
     }
 
+    /**
+     * #113 — Camera auto-centre: after replay loads the first friendly building
+     * (Nexus) must be on-screen WITHOUT manual panning. This is the key UX test.
+     */
+    @Test
+    @Order(5)
+    void nexusOnScreenImmediatelyAfterReplayLoad() throws Exception {
+        try (var ctx = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = ctx.newPage()) {
+
+            page.navigate(BASE_URL + "/visualizer.html");
+            page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+                null, new Page.WaitForFunctionOptions().setTimeout(15_000));
+
+            page.waitForFunction("() => window.__test.buildingCount() > 0",
+                null, new Page.WaitForFunctionOptions().setTimeout(10_000));
+            page.waitForTimeout(400); // let camera settle
+
+            boolean onScreen = (boolean) page.evaluate(
+                "() => window.__test._anyOnScreen(buildingMeshes)");
+            assertThat(onScreen).as(
+                "Nexus must be on-screen immediately after replay load — camera must auto-centre. " +
+                "If false the camera is still at the mock-mode default, not at the Protoss base."
+            ).isTrue();
+        }
+    }
+
+    /**
+     * #114 — Mineral depletion: at game-end (loop ~11000), browser mineralCount()
+     * must be less than the initial count of 154. Proves UnitDied depletion events
+     * are being processed and the browser reflects them.
+     */
+    @Test
+    @Order(6)
+    void mineralCountDecreasesAsGameProgressesInBrowser() throws Exception {
+        try (var ctx = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = ctx.newPage()) {
+
+            page.navigate(BASE_URL + "/visualizer.html");
+            page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+                null, new Page.WaitForFunctionOptions().setTimeout(15_000));
+
+            page.waitForFunction("() => window.__test.mineralCount() > 0",
+                null, new Page.WaitForFunctionOptions().setTimeout(10_000));
+
+            int initialCount = ((Number) page.evaluate("() => window.__test.mineralCount()")).intValue();
+            assertThat(initialCount).as("replay must start with mineral patches").isGreaterThan(0);
+
+            // Seek to near game-end — minerals should have been mined
+            var http = HttpClient.newHttpClient();
+            var seekReq = HttpRequest.newBuilder()
+                .uri(URI.create(BASE_URL + "/qa/replay/seek?loop=11000"))
+                .POST(HttpRequest.BodyPublishers.noBody()).build();
+            http.send(seekReq, HttpResponse.BodyHandlers.discarding());
+
+            // Wait for the browser to receive and process the new state
+            page.waitForFunction(
+                "() => window.__test.mineralCount() < " + initialCount,
+                null, new Page.WaitForFunctionOptions().setTimeout(10_000));
+
+            int lateCount = ((Number) page.evaluate("() => window.__test.mineralCount()")).intValue();
+            assertThat(lateCount).as(
+                "Mineral count at game-end (" + lateCount + ") must be less than initial (" + initialCount + "). " +
+                "Depleted patches must be removed via UnitDied events."
+            ).isLessThan(initialCount);
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Infrastructure
     // -----------------------------------------------------------------------

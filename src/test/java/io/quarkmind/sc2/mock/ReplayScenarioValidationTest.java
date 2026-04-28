@@ -163,6 +163,44 @@ class ReplayScenarioValidationTest {
     }
 
     // ------------------------------------------------------------------
+    // Mineral depletion (issue #114)
+    // ------------------------------------------------------------------
+
+    @Test
+    void mineralPatchesDepletedByGameEnd() {
+        var game = new ReplaySimulatedGame(NOTHING_PVZ, 1);
+        int initial = game.snapshot().mineralPatches().size();
+        assertThat(initial).as("minerals present at game start").isGreaterThan(0);
+
+        // Run to completion
+        while (!game.isComplete()) game.tick();
+
+        int atEnd = game.snapshot().mineralPatches().size();
+        assertThat(atEnd).as(
+            "Mineral patches at game-end (%d) must be less than initial (%d). "
+            + "Protoss mines minerals — UnitDied depletion events must be processed."
+            .formatted(atEnd, initial)
+        ).isLessThan(initial);
+    }
+
+    @Test
+    void mineralPatchCountNeverIncreasesAcrossShortReplay() {
+        // Separate short replay (4 min) — verify monotonic decrease over 8 checkpoints
+        var game = new ReplaySimulatedGame(PUCK_PVZ_SHORT, 1);
+        int prev = game.snapshot().mineralPatches().size();
+
+        for (int i = 0; i < 8; i++) {
+            tickTo(game, game.currentLoop() + LOOPS_PER_SEC * 30L);
+            int cur = game.snapshot().mineralPatches().size();
+            assertThat(cur).as(
+                "Mineral count must not increase at loop %d (was %d, now %d)"
+                .formatted(game.currentLoop(), prev, cur)
+            ).isLessThanOrEqualTo(prev);
+            prev = cur;
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Throughput benchmark — measures raw replay processing speed.
     // Not a correctness test: asserts no minimum (machines vary).
     // Results printed for manual comparison and stored in git log.
