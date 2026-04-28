@@ -4,6 +4,8 @@ import com.microsoft.playwright.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Tag;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -227,6 +229,42 @@ class ReplayVisualizerIT {
                 "Got R=%d G=%d B=%d. Creep is NOT visible to the user.")
                 .formatted(sx, sy, r, g, b)
             ).isGreaterThan(g);
+        }
+    }
+
+    /**
+     * Clicking the first enemy building in the replay must open the inspect panel
+     * and show the building type name from /qa/building/{tag}.
+     */
+    @Test
+    @Order(4)
+    void enemyBuildingInspectPanelOpensInRealReplay() throws Exception {
+        try (var ctx = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = ctx.newPage()) {
+
+            page.navigate(BASE_URL + "/visualizer.html");
+            page.waitForFunction("() => window.__test?.wsConnected?.() === true",
+                null, new Page.WaitForFunctionOptions().setTimeout(15_000));
+
+            page.waitForFunction("() => window.__test.enemyBuildingCount() > 0",
+                null, new Page.WaitForFunctionOptions().setTimeout(10_000));
+
+            String firstTag = (String) page.evaluate(
+                "() => window.__test.firstEnemyBuildingTag()");
+
+            assertThat(firstTag).as("replay must have an enemy building sprite in scene").isNotNull();
+
+            boolean hit = (boolean) page.evaluate(
+                "async () => window.__test.clickBuilding('" + firstTag + "', true)");
+            assertTrue(hit, "clickBuilding must hit the enemy building sprite");
+            assertTrue((Boolean) page.evaluate("() => window.__test.panelVisible()"),
+                "Panel must be visible after clicking enemy building");
+
+            String name = (String) page.evaluate(
+                "() => document.getElementById('up-name').textContent");
+            assertThat(name).as("panel shows building type from /qa/building/{tag}")
+                .isNotBlank();
         }
     }
 

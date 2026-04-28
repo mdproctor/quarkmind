@@ -4268,6 +4268,68 @@ class VisualizerRenderTest {
         }
     }
 
+    // --- Building click-to-inspect (issue #112) ---
+
+    /**
+     * Clicking an enemy building sprite must open the inspect panel and show the
+     * building type name. Tests the full path: raycaster → /qa/building/{tag} → DOM.
+     */
+    @Test
+    @Tag("browser")
+    void enemyBuildingInspectPanelShowsTypeName() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+
+            simulatedGame.spawnEnemyBuildingForTesting(BuildingType.HATCHERY, new Point2d(14, 14));
+            engine.observe();
+            page.waitForFunction("() => window.__test.enemyBuildingCount() >= 1");
+
+            String bldgTag = simulatedGame.snapshot().enemyBuildings().get(0).tag();
+
+            boolean hit = (boolean) page.evaluate(
+                "async () => window.__test.clickBuilding('" + bldgTag + "', true)");
+            assertTrue(hit, "Raycaster must hit enemy building sprite");
+            assertTrue((Boolean) page.evaluate("() => window.__test.panelVisible()"),
+                "Panel must be visible after clicking enemy building");
+
+            String name = (String) page.evaluate(
+                "() => document.getElementById('up-name').textContent");
+            assertThat(name).as("panel shows building type").containsIgnoringCase("HATCHERY");
+        }
+    }
+
+    /**
+     * Clicking a friendly building (Nexus) must also open the inspect panel.
+     */
+    @Test
+    @Tag("browser")
+    void friendlyBuildingInspectPanelShowsTypeName() {
+        assumeTrue(browser != null, "Chromium not installed");
+        try (var context = browser.newContext(
+                 new Browser.NewContextOptions().setViewportSize(1280, 720));
+             var page = context.newPage()) {
+            page.navigate(pageUrl.toString());
+            page.waitForFunction("() => window.__test && window.__test.wsConnected()");
+            engine.observe();
+            page.waitForFunction("() => window.__test.buildingCount() >= 1");
+
+            // Nexus tag is "nexus-0" from SimulatedGame.reset()
+            boolean hit = (boolean) page.evaluate(
+                "async () => window.__test.clickBuilding('nexus-0', false)");
+            assertTrue(hit, "Raycaster must hit friendly Nexus sprite");
+            assertTrue((Boolean) page.evaluate("() => window.__test.panelVisible()"),
+                "Panel must be visible after clicking Nexus");
+
+            String name = (String) page.evaluate(
+                "() => document.getElementById('up-name').textContent");
+            assertThat(name).as("panel shows building type").containsIgnoringCase("NEXUS");
+        }
+    }
+
     // --- Visual verification: minerals, geysers, creep, enemy buildings on-screen ---
 
     /**

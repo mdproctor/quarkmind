@@ -155,7 +155,9 @@ window.__test = {
   },
   anyGeyserOnScreen:      () => window.__test._anyOnScreen(geyserMeshes),
   anyCreepOnScreen:       () => window.__test._anyOnScreen(creepMeshes),
-  anyEnemyBuildingOnScreen: () => window.__test._anyOnScreen(enemyBuildingMeshes),
+  anyEnemyBuildingOnScreen:   () => window.__test._anyOnScreen(enemyBuildingMeshes),
+  firstEnemyBuildingTag:      () => enemyBuildingMeshes.keys().next().value ?? null,
+  firstFriendlyBuildingTag:   () => buildingMeshes.keys().next().value ?? null,
   hasRealTerrain: () => terrainLoaded && hasRealTerrain,
   fogOpacity:    (x, z) => {
     const p = fogPlanes.get(`${x},${z}`);
@@ -213,6 +215,21 @@ window.__test = {
   // inspect panel, and awaits the full fetch+DOM pipeline before resolving.
   // page.evaluate("async () => window.__test.clickUnit(tag)") will await this,
   // so the panel is guaranteed visible when page.evaluate() returns.
+  // Async — fires raycaster at building sprite's NDC, awaits fetch+DOM pipeline.
+  clickBuilding: async (tag, isEnemy = false) => {
+    const sp = isEnemy ? enemyBuildingMeshes.get(tag) : buildingMeshes.get(tag);
+    if (!sp || !camera) return false;
+    const ndc = sp.position.clone().project(camera);
+    ndcMouse.x = ndc.x;
+    ndcMouse.y = ndc.y;
+    raycaster.setFromCamera(ndcMouse, camera);
+    const allBuildings = [...buildingMeshes.values(), ...enemyBuildingMeshes.values()];
+    const hits = raycaster.intersectObjects(allBuildings);
+    if (hits.length === 0) return false;
+    const obj = hits[0].object;
+    await showBuildingPanelAsync(obj.userData.buildingTag, obj.userData.isEnemy);
+    return true;
+  },
   clickUnit: async (tag, isEnemy = false) => {
     const sp = isEnemy ? enemySprites.get(tag) : unitSprites.get(tag);
     if (!sp || !camera) return false;
@@ -423,11 +440,18 @@ function setupInspectPanel() {
     ndcMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(ndcMouse, camera);
 
-    const allSprites = [...unitSprites.values(), ...enemySprites.values()];
-    const hits = raycaster.intersectObjects(allSprites);
+    const allClickable = [
+      ...unitSprites.values(), ...enemySprites.values(),
+      ...buildingMeshes.values(), ...enemyBuildingMeshes.values()
+    ];
+    const hits = raycaster.intersectObjects(allClickable);
     if (hits.length > 0) {
       const obj = hits[0].object;
-      showUnitPanel(obj.userData.unitTag, obj.userData.isEnemy);
+      if (obj.userData.buildingTag !== undefined) {
+        showBuildingPanelAsync(obj.userData.buildingTag, obj.userData.isEnemy);
+      } else {
+        showUnitPanel(obj.userData.unitTag, obj.userData.isEnemy);
+      }
     } else {
       hideUnitPanel();
     }
@@ -446,6 +470,22 @@ function showUnitPanel(tag, isEnemy) {
       _populateUnitPanel(data, isEnemy);
       document.getElementById('unit-panel').classList.add('visible');
     });
+}
+
+async function showBuildingPanelAsync(tag, isEnemy) {
+  const r    = await fetch(`/qa/building/${encodeURIComponent(tag)}`);
+  const data = r.ok ? await r.json() : null;
+  if (!data) return;
+  document.getElementById('up-name').textContent = data.type.replace(/_/g, ' ');
+  document.getElementById('up-team').textContent = isEnemy ? '⚔ Enemy' : '🛡 Friendly';
+  const hpPct = data.maxHealth > 0 ? (data.health / data.maxHealth * 100) : 0;
+  const hpEl  = document.getElementById('up-hp');
+  hpEl.style.width      = hpPct + '%';
+  hpEl.style.background = hpPct > 50 ? '#44cc44' : hpPct > 25 ? '#cccc44' : '#cc4444';
+  document.getElementById('up-hp-txt').textContent = `${data.health}/${data.maxHealth}`;
+  // Buildings have no shields — hide that row; show complete status instead
+  document.querySelector('.sh-row').style.display = 'none';
+  document.getElementById('unit-panel').classList.add('visible');
 }
 
 async function showUnitPanelAsync(tag, isEnemy) {
@@ -935,6 +975,8 @@ function syncBuildings(buildings) {
       sp.scale.set(TILE * w, TILE * h, 1);
       const wp = gw(b.position.x, b.position.y);
       sp.position.set(wp.x, TERRAIN_SURFACE_Y + TILE * h * 0.5, wp.z);
+      sp.userData.buildingTag = b.tag;
+      sp.userData.isEnemy     = false;
       scene.add(sp);
       buildingMeshes.set(b.tag, sp);
     }
@@ -1005,6 +1047,8 @@ function syncEnemyBuildings(buildings) {
       sp.material = mat.clone();
       sp.material.color.setHex(0xff4422);
       sp.visible = enemyVisible;
+      sp.userData.buildingTag = b.tag;
+      sp.userData.isEnemy     = true;
       scene.add(sp);
       enemyBuildingMeshes.set(b.tag, sp);
     }
